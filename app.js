@@ -42,10 +42,16 @@ function calculateDeploymentsForRange(startDate, endDate) {
                     // Thursday before Nifty weekly expiry (Tuesday) = E - 5 days
                     nominalDate = new Date(expiry.actual.getTime());
                     nominalDate.setDate(nominalDate.getDate() - 5);
-                } else if (strategy.name === "CE Dominator" || strategy.name === "Fin Nifty 2D Ladder") {
+                } else if (strategy.name === "CE Dominator") {
                     // Friday before Nifty weekly expiry = E - 4 days
                     nominalDate = new Date(expiry.actual.getTime());
                     nominalDate.setDate(nominalDate.getDate() - 4);
+                } else if (strategy.name === "Fin Nifty 2D Ladder") {
+                    // Only deploy on Monthly Expiries (E - 4 days)
+                    if (expiry.isMonthly) {
+                        nominalDate = new Date(expiry.actual.getTime());
+                        nominalDate.setDate(nominalDate.getDate() - 4);
+                    }
                 } else if (strategy.name === "Sensex No brainer") {
                     // Friday before Sensex weekly expiry = E - 6 days
                     nominalDate = new Date(expiry.actual.getTime());
