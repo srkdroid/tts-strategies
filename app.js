@@ -326,7 +326,9 @@ let activeDbTab = "users";
 // Initialize Dashboard
 document.addEventListener("DOMContentLoaded", async () => {
     // Set current date in header
-    document.getElementById("current-time-display").innerText = `System Date: July 2, 2026`;
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    const todayStr = new Date().toLocaleDateString('en-US', options);
+    document.getElementById("current-time-display").innerText = `System Date: ${todayStr}`;
     
     // Fetch secure strategies data
     try {
