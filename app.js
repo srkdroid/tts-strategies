@@ -810,7 +810,7 @@ async function openAddUserForm() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                action: 'add_user',
+                action: 'save_user',
                 data: { phone, pin }
             })
         });
