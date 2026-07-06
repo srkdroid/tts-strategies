@@ -896,3 +896,25 @@ header {
     line-height: 1;
 }
 
+/* Beta Header Badge */
+.beta-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: rgba(99, 102, 241, 0.15);
+    color: #a5b4fc;
+    padding: 0.15rem 0.45rem;
+    border-radius: 6px;
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    vertical-align: middle;
+    margin-left: 0.6rem;
+    display: inline-block;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.light-theme .beta-badge {
+    background: rgba(79, 70, 229, 0.08);
+    color: var(--primary-color);
+    border: 1px solid rgba(79, 70, 229, 0.18);
+}
+
