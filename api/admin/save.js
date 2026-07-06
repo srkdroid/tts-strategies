@@ -101,7 +101,21 @@ module.exports = async (req, res) => {
                         await queryKV(['SET', 'holidays', match[1]]);
                     }
                 }
-                return res.status(200).json({ success: true, message: 'Successfully synced Vercel KV with server strategies and holidays' });
+                
+                // Sync whitelist.json to KV hash
+                const whitelistPath = path.join(process.cwd(), 'whitelist.json');
+                if (fs.existsSync(whitelistPath)) {
+                    const whitelist = JSON.parse(fs.readFileSync(whitelistPath, 'utf8'));
+                    const hmsetCmd = ["HMSET", "whitelist"];
+                    Object.entries(whitelist).forEach(([phone, pin]) => {
+                        hmsetCmd.push(phone, pin.toString());
+                    });
+                    if (hmsetCmd.length > 2) {
+                        await queryKV(hmsetCmd);
+                    }
+                }
+                
+                return res.status(200).json({ success: true, message: 'Successfully synced Vercel KV with server strategies, holidays, and whitelist' });
             }
             
             else if (action === 'save_strategies') {
