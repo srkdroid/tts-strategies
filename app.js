@@ -114,15 +114,7 @@ function calculateDeploymentsForRange(startDate, endDate) {
                         nominalDate = new Date(expiry.actual.getTime());
                         nominalDate.setDate(nominalDate.getDate() - 12);
                     } else if (strategy.name === "Auto-Pilot") {
-                        // Thursday 12 days before Nifty weekly expiry (Bi-Weekly cycle in sheet)
-                        // If it's a weekly expiry, Auto-Pilot is deployed on Thursday
-                        nominalDate = new Date(expiry.actual.getTime());
-                        nominalDate.setDate(nominalDate.getDate() - 12);
-                    }
-                } else {
-                    // Some bi-weekly monthly sheets also deploy weekly
-                    if (strategy.name === "Auto-Pilot") {
-                        // Deploy on Thursday, 12 days before weekly expiry
+                        // Thursday 12 days before monthly expiry
                         nominalDate = new Date(expiry.actual.getTime());
                         nominalDate.setDate(nominalDate.getDate() - 12);
                     }
