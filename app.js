@@ -306,11 +306,12 @@ function renderCalendar(containerId, year, month, deployments, activeFilters) {
             const dayDeployments = deployments.filter(dep => formatDateString(dep.actualDate) === dateStr);
             
             // Filter according to active filters
-            const filteredDeployments = dayDeployments.filter(dep => {
+            const showDeploys = activeFilters.view === "both" || activeFilters.view === "deploy";
+            const filteredDeployments = showDeploys ? dayDeployments.filter(dep => {
                 const matchesIndex = activeFilters.index === "all" || dep.strategy.index.startsWith(activeFilters.index);
                 const matchesType = activeFilters.type === "all" || dep.strategy.sheet === activeFilters.type;
                 return matchesIndex && matchesType;
-            });
+            }) : [];
             
             filteredDeployments.forEach(dep => {
                 const badge = document.createElement("div");
@@ -391,12 +392,13 @@ function renderCalendar(containerId, year, month, deployments, activeFilters) {
             });
             
             // Exit dot: find filtered deployments whose exitDate falls on this day
-            const exitingToday = deployments.filter(dep => {
+            const showExits = activeFilters.view === "both" || activeFilters.view === "exit";
+            const exitingToday = showExits ? deployments.filter(dep => {
                 if (!dep.exitDate) return false;
                 const matchesIndex = activeFilters.index === "all" || dep.strategy.index.startsWith(activeFilters.index);
                 const matchesType = activeFilters.type === "all" || dep.strategy.sheet === activeFilters.type;
                 return matchesIndex && matchesType && formatDateString(dep.exitDate) === dateStr;
-            });
+            }) : [];
             
             if (exitingToday.length > 0) {
                 // Count pill in date header (at-a-glance)
@@ -449,7 +451,8 @@ function renderCalendar(containerId, year, month, deployments, activeFilters) {
 // Global active filters
 let activeFilters = {
     index: "all",
-    type: "all"
+    type: "all",
+    view: "both"
 };
 
 // Global deployments cache
@@ -510,6 +513,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     document.getElementById("filter-type").addEventListener("change", (e) => {
         activeFilters.type = e.target.value;
+        updateCalendars();
+    });
+    
+    document.getElementById("filter-view").addEventListener("change", (e) => {
+        activeFilters.view = e.target.value;
         updateCalendars();
     });
     
