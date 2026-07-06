@@ -970,6 +970,11 @@ async function syncLocalCodebase() {
 }
 
 async function logoutAdmin() {
+    try {
+        await fetch('/api/admin/logout', { method: 'POST' });
+    } catch (e) {
+        console.warn("Server logout failed, attempting local cookie overwrite fallback", e);
+    }
     document.cookie = 'admin_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     window.location.reload();
 }

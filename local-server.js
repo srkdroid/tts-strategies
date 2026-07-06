@@ -39,6 +39,7 @@ const server = http.createServer((req, res) => {
             else if (pathname === '/api/admin/login') apiFile = './api/admin/login.js';
             else if (pathname === '/api/admin/get') apiFile = './api/admin/get.js';
             else if (pathname === '/api/admin/save') apiFile = './api/admin/save.js';
+            else if (pathname === '/api/admin/logout') apiFile = './api/admin/logout.js';
 
             if (apiFile) {
                 try {
