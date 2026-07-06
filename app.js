@@ -200,7 +200,23 @@ function renderCalendar(containerId, year, month, deployments, activeFilters) {
         // Add date number
         const dateNum = document.createElement("div");
         dateNum.className = "date-number";
-        dateNum.innerText = d;
+        
+        const dateSpan = document.createElement("span");
+        dateSpan.innerText = d;
+        dateNum.appendChild(dateSpan);
+        
+        const today = new Date();
+        const isToday = currentDate.getDate() === today.getDate() && 
+                        currentDate.getMonth() === today.getMonth() && 
+                        currentDate.getFullYear() === today.getFullYear();
+        if (isToday) {
+            cell.classList.add("today");
+            const todayTag = document.createElement("span");
+            todayTag.className = "today-tag";
+            todayTag.innerText = "Today";
+            dateNum.appendChild(todayTag);
+        }
+        
         cell.appendChild(dateNum);
         
         if (holidayOrWeekend) {

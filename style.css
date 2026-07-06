@@ -869,3 +869,30 @@ header {
     background: rgba(255, 255, 255, 0.1);
 }
 
+/* Today's Cell Highlighting */
+.calendar-cell.today {
+    border: 2px solid var(--primary-color) !important;
+    background: rgba(99, 102, 241, 0.05) !important;
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.15) inset;
+}
+
+.light-theme .calendar-cell.today {
+    background: rgba(79, 70, 229, 0.04) !important;
+    box-shadow: 0 0 10px rgba(79, 70, 229, 0.1) inset;
+}
+
+.today-tag {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #ffffff;
+    background: var(--primary-color);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+    text-transform: uppercase;
+    display: inline-block;
+    letter-spacing: 0.05em;
+    line-height: 1;
+}
+
