@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTS Options Strategy Calendar</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Admin Bar -->
+        <div id="admin-bar" class="admin-bar" style="display: none;">
+            <div class="admin-bar-left">
+                <span class="admin-badge">🛠️ Admin Mode</span>
+                <span id="admin-user-info">Logged in as Admin</span>
+            </div>
+            <div class="admin-bar-right">
+                <button onclick="openDbManagementModal()" class="admin-btn edit">📂 Manage DB (Users & Holidays)</button>
+                <button onclick="syncLocalCodebase()" class="admin-btn sync">🔄 Sync Codebase Files</button>
+                <button onclick="logoutAdmin()" class="admin-btn logout">🚪 Admin Logout</button>
+            </div>
+        </div>
+
+        <!-- Main Header -->
+        <header>
+            <div class="header-title">
+                <h1>TTS Options Strategy Calendar</h1>
+                <p>Interactive deployment guide considering Indian F&O expiries & trading holidays</p>
+            </div>
+            <div style="display: flex; gap: 0.8rem; align-items: center;">
+                <div id="current-time-display">System Date: July 2, 2026</div>
+                <button id="theme-toggle-btn" class="theme-toggle-btn" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.5rem 1rem; border-radius: 9999px; cursor: pointer; font-weight: 500; font-family: var(--font-body); font-size: 0.95rem; transition: background-color 0.2s;">☀️ Light Theme</button>
+            </div>
+        </header>
+
+        <!-- Filters Section -->
+        <section class="filters-bar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <div class="filter-group">
+                    <label for="filter-index">Index</label>
+                    <select id="filter-index">
+                        <option value="all">All Indices</option>
+                        <option value="Nifty">Nifty</option>
+                        <option value="Bank Nifty">Bank Nifty</option>
+                        <option value="Sensex">Sensex</option>
+                        <option value="Fin Nifty">Fin Nifty</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filter-type">Strategy Type</label>
+                    <select id="filter-type">
+                        <option value="all">All Types</option>
+                        <option value="Monthly">Monthly</option>
+                        <option value="BiWkly">Bi-Weekly & Weekly</option>
+                        <option value="STBT">STBT (Avoid Events)</option>
+                    </select>
+                </div>
+            </div>
+            <button id="add-strategy-btn" onclick="openAddStrategyModal()" class="admin-btn add" style="display: none; height: fit-content; align-self: center; margin: 0;">➕ Add Strategy</button>
+        </section>
+
+        <!-- Legend Block -->
+        <section class="legend-container">
+            <div class="legend-item">
+                <div class="legend-dot monthly"></div>
+                <span>Monthly Strategies</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot biweekly"></div>
+                <span>Bi-Weekly & Weekly</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot stbt"></div>
+                <span>STBT Strategies</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot holiday"></div>
+                <span>Market Holiday</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot shifted"></div>
+                <span>Holiday Adjusted (Shifted Back)</span>
+            </div>
+        </section>
+
+        <!-- Calendars Grid -->
+        <main class="calendars-grid">
+            <!-- July 2026 (Current Month) -->
+            <article class="month-container">
+                <div class="month-header-row">
+                    <h2 class="month-title">July 2026 (Current Month)</h2>
+                    <span class="swipe-hint">↔️ Swipe to scroll</span>
+                </div>
+                <div class="calendar-scroll-wrapper">
+                    <div class="calendar-grid" id="calendar-july"></div>
+                </div>
+            </article>
+
+            <!-- August 2026 (Next Month) -->
+            <article class="month-container">
+                <div class="month-header-row">
+                    <h2 class="month-title">August 2026 (Next Month)</h2>
+                    <span class="swipe-hint">↔️ Swipe to scroll</span>
+                </div>
+                <div class="calendar-scroll-wrapper">
+                    <div class="calendar-grid" id="calendar-august"></div>
+                </div>
+            </article>
+
+            <!-- June 2026 (Previous Month) -->
+            <article class="month-container" style="opacity: 0.85;">
+                <div class="month-header-row">
+                    <h2 class="month-title" style="border-left-color: #64748b;">June 2026 (Previous Month)</h2>
+                    <span class="swipe-hint">↔️ Swipe to scroll</span>
+                </div>
+                <div class="calendar-scroll-wrapper">
+                    <div class="calendar-grid" id="calendar-june"></div>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <!-- Strategy Detail Modal -->
+    <div id="strategy-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-header-left" style="display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;">
+                    <h2 id="modal-strategy-name" style="margin: 0;">Strategy Name</h2>
+                    <span id="modal-sheet-type" class="badge">Monthly</span>
+                    <div id="modal-admin-actions" style="display: none; gap: 0.5rem; margin-left: 1rem; align-items: center;">
+                        <button id="modal-edit-btn" class="admin-btn edit" style="padding: 0.35rem 0.7rem; font-size: 0.75rem; border-radius: 6px;">✏️ Edit</button>
+                        <button id="modal-delete-btn" class="admin-btn logout" style="padding: 0.35rem 0.7rem; font-size: 0.75rem; border-radius: 6px; background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.2); color: #fca5a5; margin: 0;">🗑️ Delete</button>
+                    </div>
+                </div>
+                <span class="close-btn">&times;</span>
+            </div>
+            
+            <!-- Holiday Shifting Notice -->
+            <div id="modal-holiday-notice" class="holiday-notice-card">
+                <span>⚠️ <strong>Holiday Adjusted:</strong> Originally scheduled for <span id="modal-original-date"></span> but moved to this day due to market holiday: <strong><span id="modal-holiday-name"></span></strong>.</span>
+            </div>
+
+            <div class="modal-grid">
+                <!-- Left Column: Parameters -->
+                <div class="modal-left-col">
+                    <div class="modal-card">
+                        <h3>General Parameters</h3>
+                        <div class="meta-info-grid">
+                            <div class="meta-item">
+                                <strong>Underlying Index</strong>
+                                <span id="modal-index">Nifty</span>
+                            </div>
+                            <div class="meta-item">
+                                <strong>Expiry Cycle</strong>
+                                <span id="modal-expiry">Monthly</span>
+                            </div>
+                            <div class="meta-item">
+                                <strong>Deployment Target</strong>
+                                <span id="modal-dte">39-44 DTE</span>
+                            </div>
+                            <div class="meta-item">
+                                <strong>Deployment Time</strong>
+                                <span id="modal-deploy-day">Friday 3:15 PM</span>
+                            </div>
+                            <div class="meta-item">
+                                <strong>Deployment Date</strong>
+                                <span id="modal-target-date" style="color: #3b82f6;">2026-07-17</span>
+                            </div>
+                            <div class="meta-item">
+                                <strong>Contract Expiry Date</strong>
+                                <span id="modal-expiry-date" style="color: #a855f7;">2026-08-25</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-card" style="margin-top: 1rem;">
+                        <h3>Deployment Conditions</h3>
+                        <div class="meta-item" style="margin-bottom: 0.8rem;">
+                            <strong>Credit Range</strong>
+                            <span id="modal-credit-range">5% to 6%</span>
+                        </div>
+                        <div class="meta-item" style="margin-bottom: 0.8rem;">
+                            <strong>Refine Credit Rule</strong>
+                            <span id="modal-refine-credit" style="font-size: 0.85rem; line-height: 1.4;">N/A</span>
+                        </div>
+                        <div class="meta-item" id="modal-refine-blueline-row" style="margin-bottom: 0.8rem;">
+                            <strong>Refine Blue Line Rule</strong>
+                            <span id="modal-refine-blueline" style="font-size: 0.85rem; line-height: 1.4;">N/A</span>
+                        </div>
+                        <div class="meta-item" id="modal-delta-row">
+                            <strong>Position Delta Rule</strong>
+                            <span id="modal-delta" style="font-size: 0.85rem; line-height: 1.4;">N/A</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Setup Legs & Exit -->
+                <div class="modal-right-col">
+                    <div class="modal-card">
+                        <h3>Strategy Setup (Legs)</h3>
+                        <div id="modal-legs-list">
+                            <!-- JS populated -->
+                        </div>
+                    </div>
+
+                    <div class="modal-card" style="margin-top: 1rem;">
+                        <h3>Concrete Strike Example</h3>
+                        <div id="modal-strikes-list">
+                            <!-- JS populated -->
+                        </div>
+                    </div>
+
+                    <div class="modal-card" style="margin-top: 1rem;">
+                        <h3>Exit Parameters</h3>
+                        <div class="meta-info-grid">
+                            <div class="meta-item">
+                                <strong>Target Profit</strong>
+                                <span id="modal-exit-target" style="color: #10b981;">2% Profit</span>
+                            </div>
+                            <div class="meta-item">
+                                <strong>Stop Loss (SL)</strong>
+                                <span id="modal-exit-sl" style="color: #ef4444;">2.5% Loss</span>
+                            </div>
+                        </div>
+                        <div class="meta-item" style="margin-top: 0.8rem;">
+                            <strong>Market Move Trigger</strong>
+                            <span id="modal-exit-move" style="font-size: 0.85rem; line-height: 1.4;">N/A</span>
+                        </div>
+                        <div class="meta-item" style="margin-top: 0.8rem;">
+                            <strong>Holding Duration</strong>
+                            <span id="modal-exit-duration" style="font-size: 0.85rem; line-height: 1.4;">Hold max 15 days</span>
+                        </div>
+                        <div class="meta-item" id="modal-gapup-row" style="margin-top: 0.8rem;">
+                            <strong>Gap Up Notice</strong>
+                            <span id="modal-gapup" style="font-size: 0.85rem; line-height: 1.4;">N/A</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit/Add Strategy Modal -->
+    <div id="edit-strategy-modal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2 id="edit-modal-title">Edit Strategy</h2>
+                <span class="close-btn" onclick="closeEditStrategyModal()">&times;</span>
+            </div>
+            <form id="edit-strategy-form" onsubmit="saveStrategyForm(event)">
+                <input type="hidden" id="edit-strat-id">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="edit-strat-name">Strategy Name</label>
+                        <input type="text" id="edit-strat-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-strat-sheet">Category</label>
+                        <select id="edit-strat-sheet" required>
+                            <option value="Monthly">Monthly</option>
+                            <option value="BiWkly">Bi-Weekly / Weekly</option>
+                            <option value="STBT">STBT</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-strat-index">Index</label>
+                        <select id="edit-strat-index" required>
+                            <option value="Nifty">Nifty</option>
+                            <option value="Bank Nifty">Bank Nifty</option>
+                            <option value="Sensex (Expiry Thur)">Sensex (Expiry Thur)</option>
+                            <option value="Fin Nifty (Expiry Tue)">Fin Nifty (Expiry Tue)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-strat-expiry">Expiry Cycle (e.g. Monthly, Weekly)</label>
+                        <input type="text" id="edit-strat-expiry" placeholder="e.g. Monthly" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-strat-dte">DTE (e.g. 12 DTE)</label>
+                        <input type="text" id="edit-strat-dte" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-strat-day">Deployment Day</label>
+                        <select id="edit-strat-day" required>
+                            <option value="Mon">Monday</option>
+                            <option value="Tue">Tuesday</option>
+                            <option value="Wed">Wednesday</option>
+                            <option value="Thu">Thursday</option>
+                            <option value="Fri">Friday</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-strat-time">Deployment Time</label>
+                        <input type="text" id="edit-strat-time" placeholder="HH:MM:SS" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-strat-type">Position Type</label>
+                        <select id="edit-strat-type" required>
+                            <option value="Both sides">Both sides</option>
+                            <option value="CE Only">CE Only</option>
+                            <option value="PE Only">PE Only</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-color); margin: 1.5rem 0; padding-top: 1rem;">
+                    <h3>Deployment Conditions</h3>
+                    <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="edit-strat-credit">Credit Range</label>
+                            <input type="text" id="edit-strat-credit">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="edit-strat-delta">Delta Rule</label>
+                            <input type="text" id="edit-strat-delta">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label for="edit-strat-refine-credit">Refine Credit Rule</label>
+                        <textarea id="edit-strat-refine-credit" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-strat-refine-blueline">Refine Blue Line Rule</label>
+                        <textarea id="edit-strat-refine-blueline" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-color); margin: 1.5rem 0; padding-top: 1rem;">
+                    <h3>Exit Parameters</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="edit-strat-target">Target Profit</label>
+                            <input type="text" id="edit-strat-target">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-strat-sl">Stop Loss (SL)</label>
+                            <input type="text" id="edit-strat-sl">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-strat-exit-move">Market Move Trigger</label>
+                            <input type="text" id="edit-strat-exit-move">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-strat-exit-duration">Holding Duration</label>
+                            <input type="text" id="edit-strat-exit-duration">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-strat-gapup">Gap Up Notice</label>
+                        <textarea id="edit-strat-gapup" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-color); margin: 1.5rem 0; padding-top: 1rem;">
+                    <h3>Strategy Setup (Legs JSON)</h3>
+                    <div class="form-group">
+                        <label for="edit-strat-legs">Setup Legs JSON format (e.g. {"CE": ["Sell 1 ATM..."], "PE": []})</label>
+                        <textarea id="edit-strat-legs" rows="4" required style="font-family: monospace;"></textarea>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+                    <button type="button" class="admin-btn logout" onclick="closeEditStrategyModal()" style="margin: 0;">Cancel</button>
+                    <button type="submit" class="admin-btn sync" style="margin: 0;">Save Strategy</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- DB Management Modal -->
+    <div id="db-management-modal" class="modal">
+        <div class="modal-content" style="max-width: 900px; height: 85vh; display: flex; flex-direction: column;">
+            <div class="modal-header">
+                <h2>Database Management</h2>
+                <span class="close-btn" onclick="closeDbManagementModal()">&times;</span>
+            </div>
+            
+            <!-- Modal Tabs Nav -->
+            <div class="admin-tab-nav" style="display: flex; gap: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1.5rem;">
+                <button id="tab-users-btn" class="tab-nav-btn active" onclick="switchDbTab('users')">Whitelisted Users</button>
+                <button id="tab-holidays-btn" class="tab-nav-btn" onclick="switchDbTab('holidays')">Market Holidays</button>
+            </div>
+
+            <!-- Tab Content: Users -->
+            <div id="tab-users-content" class="admin-tab-content" style="display: flex; flex-direction: column; flex-grow: 1; overflow: hidden;">
+                <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: flex-end;">
+                    <div style="flex-grow: 1;">
+                        <input type="text" id="user-search-input" placeholder="🔍 Search phone numbers..." oninput="filterUsersList()" style="width: 100%; padding: 0.6rem 1rem; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: #fff;">
+                    </div>
+                    <div>
+                        <button onclick="openAddUserForm()" class="admin-btn add" style="margin:0;">Add User</button>
+                    </div>
+                </div>
+
+                <div class="table-scroll-container" style="flex-grow: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 10px;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Phone Number (WhatsApp)</th>
+                                <th>Telegram Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="whitelist-table-body">
+                            <!-- JS populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab Content: Holidays -->
+            <div id="tab-holidays-content" class="admin-tab-content" style="display: none; flex-direction: column; flex-grow: 1; overflow: hidden;">
+                <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: flex-end;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="new-holiday-date">Date</label>
+                        <input type="date" id="new-holiday-date" style="padding: 0.6rem; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: #fff; width: 150px; display: block; box-sizing: border-box; height: 38px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0; flex-grow: 1;">
+                        <label for="new-holiday-name">Holiday Name</label>
+                        <input type="text" id="new-holiday-name" placeholder="e.g. Muharram" style="padding: 0.6rem; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: #fff; display: block; width: 100%; box-sizing: border-box; height: 38px;">
+                    </div>
+                    <div>
+                        <button onclick="addNewHoliday()" class="admin-btn add" style="margin: 0; height: 38px;">➕ Add Holiday</button>
+                    </div>
+                </div>
+
+                <div class="table-scroll-container" style="flex-grow: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 10px; margin-top: 1rem;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Holiday Name</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="holidays-table-body">
+                            <!-- JS populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script imports -->
+    <script src="holidays.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+
+const SECRET = 'TTS_STRATEGIES_SECURE_KEY_2026_JULY'; // Secret key for cookie signing
+
+function normalizePhoneNumber(phone) {
+    if (!phone) return "";
+    let cleaned = phone.replace(/[^\d+]/g, '');
+    if (!cleaned.startsWith('+')) {
+        if (cleaned.length === 10) {
+            cleaned = '+91' + cleaned;
+        } else {
+            cleaned = '+' + cleaned;
+        }
+    }
+    return cleaned;
+}
+
+function generateToken(phone) {
+    const expires = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
+    const data = JSON.stringify({ phone, expires });
+    const hmac = crypto.createHmac('sha256', SECRET);
+    hmac.update(data);
+    const signature = hmac.digest('hex');
+    return Buffer.from(JSON.stringify({ data, signature })).toString('base64');
+}
+
+async function queryKV(command) {
+    const url = process.env.KV_REST_API_URL;
+    const token = process.env.KV_REST_API_TOKEN;
+    
+    if (!url || !token) {
+        throw new Error("KV_DATABASE_UNCONNECTED");
+    }
+    
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(command)
+    });
+    
+    if (!response.ok) {
+        throw new Error(`KV API returned ${response.status}`);
+    }
+    
+    const resJson = await response.json();
+    return resJson.result;
+}
+
+// Check if a phone number is whitelisted
+async function isWhitelisted(phone) {
+    try {
+        const pin = await queryKV(['HGET', 'whitelist', phone]);
+        if (pin) return true;
+        
+        // If whitelist hash is empty, check length to trigger auto-migration
+        const size = await queryKV(['HLEN', 'whitelist']);
+        if (size === 0 || !size) {
+            // Trigger auto-migration
+            const whitelistPath = path.join(process.cwd(), 'whitelist.json');
+            if (fs.existsSync(whitelistPath)) {
+                const whitelist = JSON.parse(fs.readFileSync(whitelistPath, 'utf8'));
+                const hmsetCmd = ["HMSET", "whitelist"];
+                Object.entries(whitelist).forEach(([k, v]) => {
+                    hmsetCmd.push(k, v);
+                });
+                await queryKV(hmsetCmd);
+                return whitelist[phone] !== undefined;
+            }
+        }
+        return false;
+    } catch (e) {
+        // Fallback to local files if database is not connected
+        const whitelistPath = path.join(process.cwd(), 'whitelist.json');
+        if (fs.existsSync(whitelistPath)) {
+            const whitelist = JSON.parse(fs.readFileSync(whitelistPath, 'utf8'));
+            return whitelist[phone] !== undefined;
+        }
+        return false;
+    }
+}
+
+module.exports = async (req, res) => {
+    // 1. Polling verification check (GET /api/login?check=token)
+    if (req.method === 'GET') {
+        const url = new URL(req.url, `http://${req.headers.host}`);
+        const token = url.searchParams.get('check');
+
+        if (!token) {
+            return res.status(400).json({ error: 'Token is required for verification check' });
+        }
+
+        try {
+            let sessionStr = null;
+            try {
+                sessionStr = await queryKV(['GET', `auth_token:${token}`]);
+            } catch (err) {
+                // If KV unconnected, check local memory/mock (which shouldn't happen unless simulated)
+                return res.status(200).json({ verified: false, error: 'Database unconnected' });
+            }
+
+            if (!sessionStr) {
+                return res.status(400).json({ error: 'Token expired or invalid' });
+            }
+
+            const session = JSON.parse(sessionStr);
+
+            if (session.verified) {
+                // Generate secure JWT-like session token
+                const sessionCookie = generateToken(session.phone);
+                
+                // Cleanup the token from KV
+                await queryKV(['DEL', `auth_token:${token}`]);
+
+                res.setHeader('Set-Cookie', [
+                    `session_token=${sessionCookie}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${30 * 24 * 60 * 60}`
+                ]);
+                return res.status(200).json({ success: true, verified: true });
+            }
+
+            return res.status(200).json({ success: true, verified: false });
+
+        } catch (error) {
+            console.error('Polling error:', error);
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+    }
+
+    // 2. Auth request initiating (POST /api/login)
+    if (req.method === 'POST') {
+        try {
+            const { phone, simulate_local } = req.body || {};
+
+            if (!phone) {
+                return res.status(400).json({ error: 'Phone number is required' });
+            }
+
+            const cleanPhone = normalizePhoneNumber(phone);
+            const whitelisted = await isWhitelisted(cleanPhone);
+
+            if (!whitelisted) {
+                return res.status(401).json({ error: 'Phone number not registered. Access denied.' });
+            }
+
+            // A. Local simulation bypass for local offline testing
+            if (simulate_local) {
+                const sessionCookie = generateToken(cleanPhone);
+                res.setHeader('Set-Cookie', [
+                    `session_token=${sessionCookie}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${30 * 24 * 60 * 60}`
+                ]);
+                return res.status(200).json({ success: true, message: 'Local simulation successful' });
+            }
+
+            // B. Standard production flow: generate Telegram OTP token
+            // Generate a secure 6-digit random token
+            const token = Math.floor(100000 + Math.random() * 900000).toString();
+
+            try {
+                // Save in Vercel KV with 5 minutes (300s) TTL
+                await queryKV(['SET', `auth_token:${token}`, JSON.stringify({ phone: cleanPhone, verified: false }), 'EX', '300']);
+            } catch (err) {
+                // If database unconnected, tell client to run local simulation bypass
+                return res.status(200).json({ 
+                    success: true, 
+                    token, 
+                    local_simulation_required: true,
+                    message: 'Database unconnected. Local simulation button is available.' 
+                });
+            }
+
+            return res.status(200).json({ success: true, token });
+
+        } catch (error) {
+            console.error('Auth request error:', error);
+            return res.status(500).json({ error: 'Internal Server Error' });
+        }
+    }
+
+    res.setHeader('Allow', ['POST', 'GET']);
+    return res.status(405).json({ error: 'Method Not Allowed' });
+};

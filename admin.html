@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - TTS Strategy Calendar</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .login-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 90vh;
+        }
+        
+        .login-card {
+            background: rgba(30, 41, 59, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+            padding: 2.5rem;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            animation: fadeIn 0.4s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { transform: translateY(15px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .login-card h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #f472b6, #a855f7, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .login-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-group input {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #fff;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .form-group input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+        }
+        
+        .login-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #a855f7 0%, #3b82f6 100%);
+            color: #fff;
+            border: none;
+            padding: 0.9rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, filter 0.2s;
+            margin-top: 1rem;
+            text-align: center;
+        }
+        
+        .login-btn:hover {
+            filter: brightness(1.1);
+        }
+        
+        .login-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .error-box {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 0.8rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+            display: none;
+            animation: shake 0.3s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container login-wrapper">
+        <div class="login-card">
+            <h2>Admin Portal</h2>
+            <p>Enter the administrative password to manage strategies and users</p>
+            
+            <!-- Error feedback -->
+            <div id="login-error" class="error-box"></div>
+            
+            <form id="admin-login-form">
+                <div class="form-group">
+                    <label for="admin-password">Password</label>
+                    <input type="password" id="admin-password" placeholder="Enter Admin Password" required>
+                </div>
+                
+                <button type="submit" class="login-btn" id="submit-btn">Login to Calendar</button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // Check if already authenticated as admin
+        async function checkAdminSession() {
+            try {
+                const response = await fetch('/api/admin/get');
+                if (response.ok) {
+                    window.location.href = '/index.html';
+                }
+            } catch (err) {
+                console.warn("Session check offline");
+            }
+        }
+
+        document.getElementById('admin-login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('admin-password').value;
+            const errorBox = document.getElementById('login-error');
+            const submitBtn = document.getElementById('submit-btn');
+            
+            errorBox.style.display = 'none';
+            submitBtn.innerText = 'Logging in...';
+            submitBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    window.location.href = '/index.html';
+                } else {
+                    errorBox.innerText = data.error || 'Authentication failed.';
+                    errorBox.style.display = 'block';
+                    submitBtn.innerText = 'Login to Calendar';
+                    submitBtn.disabled = false;
+                }
+            } catch (err) {
+                console.error(err);
+                errorBox.innerText = 'Network error. Please try again.';
+                errorBox.style.display = 'block';
+                submitBtn.innerText = 'Login to Calendar';
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Initialize Theme if preference exists
+        const currentTheme = localStorage.getItem("theme");
+        if (currentTheme === "light") {
+            document.body.classList.add("light-theme");
+        }
+
+        checkAdminSession();
+    </script>
+</body>
+</html>

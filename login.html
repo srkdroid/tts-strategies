@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - TTS Strategy Calendar</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .login-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 90vh;
+        }
+        
+        .login-card {
+            background: rgba(30, 41, 59, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+            padding: 2.5rem;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            animation: fadeIn 0.4s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { transform: translateY(15px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .login-card h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #f472b6, #a855f7, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .login-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-group input {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #fff;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .form-group input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+        }
+        
+        .login-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #a855f7 0%, #3b82f6 100%);
+            color: #fff;
+            border: none;
+            padding: 0.9rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, filter 0.2s;
+            margin-top: 1rem;
+            text-align: center;
+        }
+        
+        .login-btn:hover {
+            filter: brightness(1.1);
+        }
+        
+        .login-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .error-box {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 0.8rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+            display: none;
+            animation: shake 0.3s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            border-top-color: #a855f7;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container login-wrapper">
+        <div class="login-card">
+            <h2>Access Portal</h2>
+            <p>Enter your registered phone number to authenticate via Telegram</p>
+            
+            <!-- Error feedback -->
+            <div id="error-message" class="error-box"></div>
+            
+            <!-- Phase 1: Request Verification -->
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="text" id="phone" placeholder="e.g. 9876543210" required>
+                </div>
+                
+                <button type="submit" class="login-btn" id="submit-btn">Verify on Telegram</button>
+            </form>
+
+            <!-- Phase 2: Telegram Webhook OTP / Polling -->
+            <div id="telegram-verify-step" style="display: none; margin-top: 1rem; text-align: center; animation: fadeIn 0.4s ease-out;">
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                    Please open Telegram and click "Start" in the bot to verify your number:
+                </p>
+                <div style="background: rgba(15, 23, 42, 0.4); padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 1.5rem;">
+                    <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); display: block; margin-bottom: 0.2rem;">Your Auth Code</span>
+                    <strong id="auth-token-display" style="font-size: 1.6rem; letter-spacing: 0.1em; color: #a855f7;">------</strong>
+                </div>
+                
+                <a id="telegram-bot-link" href="#" target="_blank" class="login-btn" style="display: block; text-decoration: none; background: #0088cc; margin-bottom: 1.5rem;">
+                    💬 Open Telegram Bot
+                </a>
+                
+                <div id="polling-status" style="font-size: 0.85rem; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; gap: 0.6rem;">
+                    <span class="spinner"></span>
+                    <span>Waiting for Telegram verification...</span>
+                </div>
+
+                <!-- Simulation bypass button for local offline testing -->
+                <button id="simulate-btn" class="login-btn" style="background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.3); color: #d8b4fe; margin-top: 1.5rem; display: none;">
+                    ⚡ Skip Telegram (Local Test Bypass)
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let pollingInterval = null;
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const phone = document.getElementById('phone').value;
+            const errorBox = document.getElementById('error-message');
+            const submitBtn = document.getElementById('submit-btn');
+            
+            errorBox.style.display = 'none';
+            submitBtn.innerText = 'Verifying number...';
+            submitBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // Show Phase 2 Step
+                    document.getElementById('login-form').style.display = 'none';
+                    document.getElementById('telegram-verify-step').style.display = 'block';
+                    
+                    document.getElementById('auth-token-display').innerText = data.token;
+                    // Bot link populated dynamically. Uses generic bot name or placeholder.
+                    // Replace "TTSStrategiesBot" with your registered Telegram Bot username.
+                    const botUsername = "TTSStrategiesBot"; 
+                    document.getElementById('telegram-bot-link').href = `https://t.me/${botUsername}?start=${data.token}`;
+                    
+                    // Show simulation button if database is offline or explicitly requested
+                    if (data.local_simulation_required) {
+                        document.getElementById('simulate-btn').style.display = 'block';
+                        document.getElementById('polling-status').innerHTML = "⚠️ DB Offline: Please use Local Test Bypass button below.";
+                    } else {
+                        // Start polling verified status
+                        startPolling(data.token);
+                    }
+                    
+                    // Set up simulate button handler
+                    document.getElementById('simulate-btn').addEventListener('click', async () => {
+                        try {
+                            const bypassRes = await fetch('/api/login', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ phone, simulate_local: true })
+                            });
+                            if (bypassRes.ok) {
+                                window.location.href = '/index.html';
+                            } else {
+                                const bypassData = await bypassRes.json();
+                                alert(bypassData.error || "Bypass failed");
+                            }
+                        } catch (err) {
+                            alert("Simulation error");
+                        }
+                    });
+
+                } else {
+                    errorBox.innerText = data.error || 'Access denied.';
+                    errorBox.style.display = 'block';
+                    submitBtn.innerText = 'Verify on Telegram';
+                    submitBtn.disabled = false;
+                }
+            } catch (err) {
+                console.error(err);
+                // Fallback to local bypass suggestion on network error
+                errorBox.innerText = 'Server connection failed. Showing offline controls.';
+                errorBox.style.display = 'block';
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('telegram-verify-step').style.display = 'block';
+                document.getElementById('simulate-btn').style.display = 'block';
+                document.getElementById('polling-status').innerHTML = "⚠️ Offline mode: click local bypass button below.";
+                
+                document.getElementById('simulate-btn').addEventListener('click', async () => {
+                    try {
+                        const bypassRes = await fetch('/api/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ phone, simulate_local: true })
+                        });
+                        if (bypassRes.ok) {
+                            window.location.href = '/index.html';
+                        }
+                    } catch (e) {
+                        alert("Bypass failed");
+                    }
+                });
+            }
+        });
+
+        function startPolling(token) {
+            if (pollingInterval) clearInterval(pollingInterval);
+            
+            pollingInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/login?check=${token}`);
+                    const data = await response.json();
+                    
+                    if (response.ok && data.verified) {
+                        clearInterval(pollingInterval);
+                        window.location.href = '/index.html';
+                    } else if (!response.ok) {
+                        clearInterval(pollingInterval);
+                        const errorBox = document.getElementById('error-message');
+                        errorBox.innerText = data.error || 'Token expired or invalid.';
+                        errorBox.style.display = 'block';
+                        
+                        // Revert to form
+                        document.getElementById('login-form').style.display = 'block';
+                        document.getElementById('telegram-verify-step').style.display = 'none';
+                        const submitBtn = document.getElementById('submit-btn');
+                        submitBtn.innerText = 'Verify on Telegram';
+                        submitBtn.disabled = false;
+                    }
+                } catch (err) {
+                    console.warn("Polling network issue:", err);
+                }
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
