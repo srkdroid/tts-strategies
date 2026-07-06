@@ -329,6 +329,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             document.getElementById("add-strategy-btn").style.display = "block";
             document.getElementById("modal-admin-actions").style.display = "flex";
             document.getElementById("admin-user-info").innerText = `Logged in as Admin (${resJson.userPhone})`;
+        } else {
+            const userLogoutBtn = document.getElementById("user-logout-btn");
+            if (userLogoutBtn) userLogoutBtn.style.display = "block";
         }
     } catch (error) {
         console.error('Authentication check failed:', error);
@@ -976,5 +979,15 @@ async function logoutAdmin() {
         console.warn("Server logout failed, attempting local cookie overwrite fallback", e);
     }
     document.cookie = 'admin_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    window.location.reload();
+}
+
+async function logoutUser() {
+    try {
+        await fetch('/api/logout', { method: 'POST' });
+    } catch (e) {
+        console.warn("Server logout failed, attempting local cookie overwrite fallback", e);
+    }
+    document.cookie = 'session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     window.location.reload();
 }

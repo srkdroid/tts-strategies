@@ -27,9 +27,10 @@
                 <h1>TTS Options Strategy Calendar</h1>
                 <p>Interactive deployment guide considering Indian F&O expiries & trading holidays</p>
             </div>
-            <div style="display: flex; gap: 0.8rem; align-items: center;">
+            <div style="display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap;">
                 <div id="current-time-display">System Date: July 2, 2026</div>
-                <button id="theme-toggle-btn" class="theme-toggle-btn" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.5rem 1rem; border-radius: 9999px; cursor: pointer; font-weight: 500; font-family: var(--font-body); font-size: 0.95rem; transition: background-color 0.2s;">☀️ Light Theme</button>
+                <button id="theme-toggle-btn" class="theme-toggle-btn" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.5rem 1rem; border-radius: 9999px; cursor: pointer; font-weight: 500; font-family: var(--font-body); font-size: 0.95rem; transition: background-color 0.2s; margin: 0;">☀️ Light Theme</button>
+                <button id="user-logout-btn" onclick="logoutUser()" class="admin-btn logout" style="display: none; padding: 0.5rem 1rem; border-radius: 9999px; font-size: 0.95rem; margin: 0; font-weight: 500;">🚪 Logout</button>
             </div>
         </header>
 

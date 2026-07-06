@@ -40,6 +40,7 @@ const server = http.createServer((req, res) => {
             else if (pathname === '/api/admin/get') apiFile = './api/admin/get.js';
             else if (pathname === '/api/admin/save') apiFile = './api/admin/save.js';
             else if (pathname === '/api/admin/logout') apiFile = './api/admin/logout.js';
+            else if (pathname === '/api/logout') apiFile = './api/logout.js';
 
             if (apiFile) {
                 try {
