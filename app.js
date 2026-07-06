@@ -547,9 +547,6 @@ function showStrategyDetails(dep) {
         gapUpRow.style.display = "none";
     }
     
-    modal.style.display = "block";
-}
-
     if (isAdminMode) {
         const editBtn = document.getElementById("modal-edit-btn");
         const deleteBtn = document.getElementById("modal-delete-btn");
