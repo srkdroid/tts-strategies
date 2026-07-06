@@ -708,7 +708,15 @@ async function saveStrategyForm(event) {
 }
 
 async function deleteStrategy(id) {
-    if (!confirm("Are you sure you want to delete this strategy?")) return;
+    const strategy = strategiesData.find(s => s.id === id);
+    if (!strategy) return;
+    
+    const userInput = prompt(`To delete this strategy, please type its name to confirm:\n"${strategy.name}"`);
+    if (userInput === null) return; // clicked Cancel
+    if (userInput.trim() !== strategy.name) {
+        alert("Incorrect strategy name. Deletion canceled.");
+        return;
+    }
     
     strategiesData = strategiesData.filter(s => s.id !== id);
     try {
