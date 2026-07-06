@@ -222,7 +222,7 @@ function renderCalendar(containerId, year, month, deployments, activeFilters) {
             
             // Filter according to active filters
             const filteredDeployments = dayDeployments.filter(dep => {
-                const matchesIndex = activeFilters.index === "all" || dep.strategy.index.includes(activeFilters.index);
+                const matchesIndex = activeFilters.index === "all" || dep.strategy.index === activeFilters.index;
                 const matchesType = activeFilters.type === "all" || dep.strategy.sheet === activeFilters.type;
                 return matchesIndex && matchesType;
             });
@@ -240,7 +240,13 @@ function renderCalendar(containerId, year, month, deployments, activeFilters) {
                         timeStr = ` (${hrs}:${parts[1]})`;
                     }
                 }
-                const badgeText = `${dep.strategy.name} (${cleanIndex})${timeStr}`;
+                
+                let baseName = dep.strategy.name;
+                const indexSuffix = `(${cleanIndex})`;
+                if (!baseName.includes(indexSuffix)) {
+                    baseName = `${baseName} ${indexSuffix}`;
+                }
+                const badgeText = `${baseName}${timeStr}`;
                 badge.innerText = badgeText;
                 badge.title = `${dep.strategy.name} (${dep.strategy.index})`;
                 
