@@ -10,6 +10,74 @@ const indexSpotPrices = {
     "Fin Nifty (Expiry Tue)": 25000
 };
 
+// Machine-readable exit rules keyed by strategy ID
+const EXIT_RULES = {
+    "monthly-batman":               { type: "day_of_expiry_month", day: 7 },
+    "monthly-no-brainer-nifty":     { type: "day_of_expiry_month", day: 21 },
+    "monthly-no-brainer-banknifty": { type: "before_expiry", days: 1 },
+    "monthly-hni-nifty":            { type: "nth_weekday_of_expiry_month", weekday: 5, n: 3 },
+    "monthly-autopilot-finnifty":   { type: "next_weekday", weekday: 4 },
+    "monthly-double-decker":        { type: "day_of_expiry_month", day: 12 },
+    "biweekly-bwb-2":               { type: "next_weekday", weekday: 4 },
+    "biweekly-broken-wing-3":       { type: "next_weekday", weekday: 2 },
+    "biweekly-hni-4":               { type: "next_weekday", weekday: 5 },
+    "stbt-nifty-3d-ladder-2":       { type: "next_weekday", weekday: 5 },
+    "stbt-ce-dominator-3":          { type: "next_weekday", weekday: 1 },
+    "stbt-matrix-calendar-4":       { type: "next_weekday", weekday: 1 },
+    "stbt-sensex-no-brainer-5":     { type: "next_weekday", weekday: 1 },
+    "stbt-fin-nifty-2d-ladder-6":   { type: "next_weekday", weekday: 1 }
+};
+
+// Calculate the max exit date for a deployment given its exit rule
+function calculateExitDate(deployDate, expiryDate, exitRule) {
+    if (!exitRule) return null;
+
+    let exitDate = null;
+
+    if (exitRule.type === "day_of_expiry_month") {
+        // e.g., "max till 7th of expiry month"
+        exitDate = new Date(expiryDate.getFullYear(), expiryDate.getMonth(), exitRule.day);
+
+    } else if (exitRule.type === "before_expiry") {
+        // e.g., "1 day before expiry"
+        exitDate = new Date(expiryDate.getTime());
+        exitDate.setDate(exitDate.getDate() - exitRule.days);
+
+    } else if (exitRule.type === "nth_weekday_of_expiry_month") {
+        // e.g., "3rd Friday of expiry month"
+        const { weekday, n } = exitRule;
+        let d = new Date(expiryDate.getFullYear(), expiryDate.getMonth(), 1);
+        let count = 0;
+        while (d.getMonth() === expiryDate.getMonth()) {
+            if (d.getDay() === weekday) {
+                count++;
+                if (count === n) { exitDate = new Date(d); break; }
+            }
+            d.setDate(d.getDate() + 1);
+        }
+
+    } else if (exitRule.type === "next_weekday") {
+        // e.g., "exit by next Monday/Thursday/Friday after deploy date"
+        const { weekday } = exitRule;
+        let d = new Date(deployDate.getTime());
+        d.setDate(d.getDate() + 1); // start from the day after deploy
+        while (d.getDay() !== weekday) {
+            d.setDate(d.getDate() + 1);
+        }
+        exitDate = d;
+    }
+
+    // Shift exit date backward if it lands on a holiday or weekend
+    if (exitDate) {
+        const holiday = getHolidayOrWeekend(exitDate);
+        if (holiday) {
+            exitDate = getPreviousTradingDay(exitDate);
+        }
+    }
+
+    return exitDate;
+}
+
 // Main calculation engine to find all strategy deployments
 function calculateDeploymentsForRange(startDate, endDate) {
     let deployments = [];
@@ -140,11 +208,14 @@ function calculateDeploymentsForRange(startDate, endDate) {
                 
                 // Only include if actual date is within our June-August 2026 range
                 if (actualDeploymentDate >= startDate && actualDeploymentDate <= endDate) {
+                    const exitRule = EXIT_RULES[strategy.id] || null;
+                    const exitDate = calculateExitDate(actualDeploymentDate, expiry.actual, exitRule);
                     deployments.push({
                         strategy: strategy,
                         nominalDate: new Date(nominalDate.getTime()),
                         actualDate: actualDeploymentDate,
                         expiryDate: expiry.actual,
+                        exitDate: exitDate,
                         shifted: shifted,
                         holidayName: holidayName
                     });
@@ -261,7 +332,21 @@ function renderCalendar(containerId, year, month, deployments, activeFilters) {
                     baseName = `${baseName} ${indexSuffix}`;
                 }
                 const badgeText = `${baseName}${timeStr}`;
-                badge.innerText = badgeText;
+                
+                // Build badge content with main text + optional exit hint
+                const mainLine = document.createElement("span");
+                mainLine.className = "badge-main-text";
+                mainLine.textContent = badgeText;
+                badge.appendChild(mainLine);
+                
+                if (dep.exitDate) {
+                    const exitHint = document.createElement("span");
+                    exitHint.className = "exit-hint";
+                    const exitLabel = dep.exitDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                    exitHint.textContent = `\u21a9 exit by ${exitLabel}`;
+                    badge.appendChild(exitHint);
+                }
+                
                 badge.title = `${dep.strategy.name} (${dep.strategy.index})`;
                 
                 if (dep.shifted) {
@@ -304,6 +389,57 @@ function renderCalendar(containerId, year, month, deployments, activeFilters) {
                     cell.appendChild(badge);
                 }
             });
+            
+            // Exit dot: find filtered deployments whose exitDate falls on this day
+            const exitingToday = deployments.filter(dep => {
+                if (!dep.exitDate) return false;
+                const matchesIndex = activeFilters.index === "all" || dep.strategy.index.startsWith(activeFilters.index);
+                const matchesType = activeFilters.type === "all" || dep.strategy.sheet === activeFilters.type;
+                return matchesIndex && matchesType && formatDateString(dep.exitDate) === dateStr;
+            });
+            
+            if (exitingToday.length > 0) {
+                // Count pill in date header (at-a-glance)
+                const exitDot = document.createElement("span");
+                exitDot.className = "exit-dot-count";
+                exitDot.textContent = `\u21a9 ${exitingToday.length}`;
+                dateNum.appendChild(exitDot);
+                
+                // Horizontal divider — only if there are also deploy badges above
+                if (filteredDeployments.length > 0) {
+                    const divider = document.createElement("div");
+                    divider.className = "cell-section-divider";
+                    divider.textContent = "Exits";
+                    cell.appendChild(divider);
+                }
+                
+                // Individual exit entry badges in cell body
+                exitingToday.forEach(dep => {
+                    const exitEntry = document.createElement("div");
+                    exitEntry.className = "exit-entry";
+                    
+                    const cleanIndex = dep.strategy.index.split('(')[0].trim();
+                    let baseName = dep.strategy.name;
+                    const indexSuffix = `(${cleanIndex})`;
+                    if (!baseName.includes(indexSuffix)) {
+                        baseName = `${baseName} ${indexSuffix}`;
+                    }
+                    
+                    const mainLine = document.createElement("span");
+                    mainLine.className = "exit-entry-name";
+                    mainLine.textContent = `\u21a9 ${baseName}`;
+                    exitEntry.appendChild(mainLine);
+                    
+                    const deployedLine = document.createElement("span");
+                    deployedLine.className = "exit-entry-deployed";
+                    const deployLabel = dep.actualDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                    deployedLine.textContent = `deployed ${deployLabel}`;
+                    exitEntry.appendChild(deployedLine);
+                    
+                    exitEntry.title = `${dep.strategy.name} (${dep.strategy.index}) — deployed ${deployLabel}, exits today`;
+                    cell.appendChild(exitEntry);
+                });
+            }
         }
         
         container.appendChild(cell);

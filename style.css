@@ -328,6 +328,10 @@ header {
     font-size: 1.05rem;
     color: var(--text-secondary);
     margin-bottom: 0.2rem;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 0.3rem;
 }
 
 .calendar-cell:hover .date-number {
@@ -917,4 +921,134 @@ header {
     color: var(--primary-color);
     border: 1px solid rgba(79, 70, 229, 0.18);
 }
+
+/* ─── Exit Date Visualization ────────────────────────────────────────────── */
+
+/* Strategy badge needs to be a column-flex to support the exit hint below */
+.strategy-badge {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.15rem;
+}
+
+/* Main badge text line */
+.badge-main-text {
+    display: block;
+    width: 100%;
+}
+
+/* Exit hint line inside each badge — amber, smaller, muted */
+.exit-hint {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 500;
+    color: rgba(251, 191, 36, 0.85);
+    letter-spacing: 0.01em;
+    line-height: 1;
+}
+
+.light-theme .exit-hint {
+    color: #b45309;
+}
+
+/* Exit dot count in the cell date header — amber indicator */
+.exit-dot-count {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    margin-left: auto;
+    cursor: default;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.light-theme .exit-dot-count {
+    color: #92400e;
+    background: rgba(245, 158, 11, 0.08);
+    border-color: rgba(245, 158, 11, 0.2);
+}
+
+/* Divider between deploy badges and exit entries in the same cell */
+.cell-section-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    width: 100%;
+    margin: 0.35rem 0 0.15rem;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(245, 158, 11, 0.7);
+    white-space: nowrap;
+}
+
+.cell-section-divider::before,
+.cell-section-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(245, 158, 11, 0.25);
+    border-radius: 1px;
+}
+
+.light-theme .cell-section-divider {
+    color: rgba(180, 83, 9, 0.7);
+}
+
+.light-theme .cell-section-divider::before,
+.light-theme .cell-section-divider::after {
+    background: rgba(180, 83, 9, 0.2);
+}
+
+/* Individual exit entry badges shown in cell body */
+.exit-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    width: 100%;
+    padding: 0.25rem 0.4rem;
+    border-radius: 5px;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    background: rgba(245, 158, 11, 0.07);
+    margin-top: 0.2rem;
+    cursor: default;
+    box-sizing: border-box;
+}
+
+.exit-entry-name {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #fbbf24;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.exit-entry-deployed {
+    font-size: 0.62rem;
+    font-weight: 400;
+    color: rgba(251, 191, 36, 0.65);
+    line-height: 1;
+}
+
+.light-theme .exit-entry {
+    border-color: rgba(180, 83, 9, 0.25);
+    background: rgba(245, 158, 11, 0.06);
+}
+
+.light-theme .exit-entry-name {
+    color: #b45309;
+}
+
+.light-theme .exit-entry-deployed {
+    color: rgba(180, 83, 9, 0.6);
+}
+
 
