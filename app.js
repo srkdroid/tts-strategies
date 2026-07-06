@@ -222,7 +222,7 @@ function renderCalendar(containerId, year, month, deployments, activeFilters) {
             
             // Filter according to active filters
             const filteredDeployments = dayDeployments.filter(dep => {
-                const matchesIndex = activeFilters.index === "all" || dep.strategy.index === activeFilters.index;
+                const matchesIndex = activeFilters.index === "all" || dep.strategy.index.startsWith(activeFilters.index);
                 const matchesType = activeFilters.type === "all" || dep.strategy.sheet === activeFilters.type;
                 return matchesIndex && matchesType;
             });
