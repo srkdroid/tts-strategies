@@ -211,8 +211,7 @@
                     
                     document.getElementById('auth-token-display').innerText = data.token;
                     // Bot link populated dynamically. Uses generic bot name or placeholder.
-                    // Replace "TTSStrategiesBot" with your registered Telegram Bot username.
-                    const botUsername = "TTSStrategiesBot"; 
+                    const botUsername = data.botUsername || "TTSStrategiesBot"; 
                     document.getElementById('telegram-bot-link').href = `https://t.me/${botUsername}?start=${data.token}`;
                     
                     // Show simulation button if database is offline or explicitly requested

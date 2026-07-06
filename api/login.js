@@ -159,6 +159,8 @@ module.exports = async (req, res) => {
             // Generate a secure 6-digit random token
             const token = Math.floor(100000 + Math.random() * 900000).toString();
 
+            const botUsername = process.env.TELEGRAM_BOT_USERNAME || 'TTSStrategiesBot';
+
             try {
                 // Save in Vercel KV with 5 minutes (300s) TTL
                 await queryKV(['SET', `auth_token:${token}`, JSON.stringify({ phone: cleanPhone, verified: false }), 'EX', '300']);
@@ -168,11 +170,12 @@ module.exports = async (req, res) => {
                     success: true, 
                     token, 
                     local_simulation_required: true,
+                    botUsername,
                     message: 'Database unconnected. Local simulation button is available.' 
                 });
             }
 
-            return res.status(200).json({ success: true, token });
+            return res.status(200).json({ success: true, token, botUsername });
 
         } catch (error) {
             console.error('Auth request error:', error);
