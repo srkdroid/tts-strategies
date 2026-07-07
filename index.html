@@ -67,8 +67,8 @@
             </div>
             <!-- View Mode Toggle -->
             <div class="view-mode-toggle" style="display: flex; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); padding: 2px; border-radius: 9999px;">
-                <button id="mode-calendar-btn" class="toggle-btn active" onclick="switchViewMode('calendar')" style="background: var(--primary-color); border: none; color: #fff; padding: 0.4rem 1rem; border-radius: 9999px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem; transition: background-color 0.2s;">📅 Calendar</button>
-                <button id="mode-flow-btn" class="toggle-btn" onclick="switchViewMode('flow')" style="background: transparent; border: none; color: var(--text-secondary); padding: 0.4rem 1rem; border-radius: 9999px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem; transition: background-color 0.2s, color 0.2s;">📊 Capital Flow</button>
+                <button id="mode-calendar-btn" class="toggle-btn" onclick="switchViewMode('calendar')" style="background: transparent; border: none; color: var(--text-secondary); padding: 0.4rem 1rem; border-radius: 9999px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem; transition: background-color 0.2s, color 0.2s;">📅 Calendar</button>
+                <button id="mode-flow-btn" class="toggle-btn active" onclick="switchViewMode('flow')" style="background: var(--primary-color); border: none; color: #fff; padding: 0.4rem 1rem; border-radius: 9999px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem; transition: background-color 0.2s;">📊 Capital Flow</button>
             </div>
         </section>
 
@@ -97,7 +97,7 @@
         </section>
 
         <!-- Calendars Grid -->
-        <main class="calendars-grid" id="calendar-view-container">
+        <main class="calendars-grid" id="calendar-view-container" style="display: none;">
             <!-- July 2026 (Current Month) -->
             <article class="month-container">
                 <div class="month-header-row">
@@ -133,7 +133,7 @@
         </main>
 
         <!-- Capital Flow Timeline Grid -->
-        <main class="calendars-grid" id="capital-flow-view-container" style="display: none;">
+        <main class="calendars-grid" id="capital-flow-view-container">
             <article class="month-container" style="max-width: 100%;">
                 <div class="month-header-row">
                     <h2 class="month-title" id="flow-month-title">July 2026 (Capital Flow)</h2>

@@ -426,7 +426,7 @@ let activeFilters = {
     view: "both"
 };
 
-let currentFlowViewMode = "calendar";
+let currentFlowViewMode = "flow";
 let currentFlowYear = 2026;
 let currentFlowMonth = 6; // July (0-indexed: 6 is July)
 
@@ -1369,9 +1369,9 @@ function switchViewMode(mode) {
         flowBtn.style.color = "#fff";
         calendarBtn.style.background = "transparent";
         calendarBtn.style.color = "var(--text-secondary)";
-        
-        renderCapitalFlow();
     }
+    
+    updateCalendars();
 }
 
 // Navigate Capital Flow months
