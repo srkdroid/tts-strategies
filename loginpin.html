@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login with PIN - TTS Strategy Calendar</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .login-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 90vh;
+        }
+        
+        .login-card {
+            background: rgba(30, 41, 59, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(16px);
+            padding: 2.5rem;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            animation: fadeIn 0.4s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { transform: translateY(15px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .login-card h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #fbbf24, #f59e0b, #d97706);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .login-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-group input {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #fff;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .form-group input:focus {
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
+        }
+        
+        .login-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #fff;
+            border: none;
+            padding: 0.9rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, filter 0.2s;
+            margin-top: 1rem;
+            text-align: center;
+            display: block;
+            text-decoration: none;
+            box-sizing: border-box;
+        }
+        
+        .login-btn:hover {
+            filter: brightness(1.1);
+        }
+        
+        .login-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .error-box {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 0.8rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+            display: none;
+            animation: shake 0.3s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .switch-link {
+            display: block;
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .switch-link:hover {
+            color: #f59e0b;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container login-wrapper">
+        <div class="login-card">
+            <h2>PIN Portal</h2>
+            <p>Enter your registered phone number and 6-digit PIN to authenticate</p>
+            
+            <!-- Error feedback -->
+            <div id="error-message" class="error-box"></div>
+            
+            <form id="login-pin-form">
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="text" id="phone" placeholder="e.g. 9876543210" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="pin">6-Digit PIN</label>
+                    <input type="password" id="pin" placeholder="Enter your PIN" maxlength="6" pattern="\d{6}" required>
+                </div>
+                
+                <button type="submit" class="login-btn" id="submit-btn">Login with PIN</button>
+            </form>
+
+            <a href="login.html" class="switch-link">💬 Authenticate via Telegram instead</a>
+        </div>
+    </div>
+    
+    <script>
+        // Check if already logged in
+        async function checkSession() {
+            try {
+                const response = await fetch('/api/data');
+                if (response.ok) {
+                    window.location.href = '/index.html';
+                }
+            } catch (err) {
+                console.warn("Session check offline");
+            }
+        }
+
+        document.getElementById('login-pin-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const phone = document.getElementById('phone').value;
+            const pin = document.getElementById('pin').value;
+            const errorBox = document.getElementById('error-message');
+            const submitBtn = document.getElementById('submit-btn');
+            
+            errorBox.style.display = 'none';
+            submitBtn.innerText = 'Logging in...';
+            submitBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/login-pin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ phone, pin })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    window.location.href = '/index.html';
+                } else {
+                    errorBox.innerText = data.error || 'Authentication failed. Invalid details.';
+                    errorBox.style.display = 'block';
+                    submitBtn.innerText = 'Login with PIN';
+                    submitBtn.disabled = false;
+                }
+            } catch (err) {
+                console.error('Login error:', err);
+                errorBox.innerText = 'Network error. Please try again.';
+                errorBox.style.display = 'block';
+                submitBtn.innerText = 'Login with PIN';
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Initialize Theme if preference exists
+        const currentTheme = localStorage.getItem("theme");
+        if (currentTheme === "light") {
+            document.body.classList.add("light-theme");
+        }
+
+        checkSession();
+    </script>
+</body>
+</html>

@@ -35,6 +35,7 @@ const server = http.createServer((req, res) => {
             // Route to appropriate serverless function file
             let apiFile = '';
             if (pathname === '/api/login') apiFile = './api/login.js';
+            else if (pathname === '/api/login-pin') apiFile = './api/login-pin.js';
             else if (pathname === '/api/data') apiFile = './api/data.js';
             else if (pathname === '/api/admin/login') apiFile = './api/admin/login.js';
             else if (pathname === '/api/admin/get') apiFile = './api/admin/get.js';

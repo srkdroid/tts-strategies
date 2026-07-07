@@ -26,6 +26,26 @@ function generateToken(phone) {
     return Buffer.from(JSON.stringify({ data, signature })).toString('base64');
 }
 
+async function logAuthEvent(phone, method) {
+    const timestamp = new Date().toISOString();
+    const logEntry = { phone, method, timestamp };
+    try {
+        await queryKV(['LPUSH', 'auth_audit_logs', JSON.stringify(logEntry)]);
+        await queryKV(['LTRIM', 'auth_audit_logs', '0', '999']);
+    } catch (e) {
+        const logsPath = path.join(process.cwd(), 'auth_logs.json');
+        let logs = [];
+        if (fs.existsSync(logsPath)) {
+            try {
+                logs = JSON.parse(fs.readFileSync(logsPath, 'utf8'));
+            } catch (err) {}
+        }
+        logs.unshift(logEntry);
+        if (logs.length > 100) logs = logs.slice(0, 100);
+        fs.writeFileSync(logsPath, JSON.stringify(logs, null, 4), 'utf8');
+    }
+}
+
 async function queryKV(command) {
     const url = process.env.KV_REST_API_URL;
     const token = process.env.KV_REST_API_TOKEN;
@@ -116,6 +136,9 @@ module.exports = async (req, res) => {
                 // Cleanup the token from KV
                 await queryKV(['DEL', `auth_token:${token}`]);
 
+                // Log successful login
+                await logAuthEvent(session.phone, 'telegram');
+
                 res.setHeader('Set-Cookie', [
                     `session_token=${sessionCookie}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${30 * 24 * 60 * 60}`
                 ]);
@@ -149,6 +172,7 @@ module.exports = async (req, res) => {
             // A. Local simulation bypass for local offline testing
             if (simulate_local) {
                 const sessionCookie = generateToken(cleanPhone);
+                await logAuthEvent(cleanPhone, 'telegram');
                 res.setHeader('Set-Cookie', [
                     `session_token=${sessionCookie}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${30 * 24 * 60 * 60}`
                 ]);

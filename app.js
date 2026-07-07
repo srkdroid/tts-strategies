@@ -359,36 +359,7 @@ function renderCalendar(containerId, year, month, deployments, activeFilters) {
                     showStrategyDetails(dep);
                 });
                 
-                if (isAdminMode) {
-                    const wrapper = document.createElement("div");
-                    wrapper.className = "strategy-badge-wrapper";
-                    badge.style.flexGrow = "1";
-                    wrapper.appendChild(badge);
-                    
-                    const editBtn = document.createElement("button");
-                    editBtn.className = "badge-btn";
-                    editBtn.innerHTML = "✏️";
-                    editBtn.title = "Edit Strategy";
-                    editBtn.addEventListener("click", (e) => {
-                        e.stopPropagation();
-                        openEditStrategyModal(dep.strategy);
-                    });
-                    wrapper.appendChild(editBtn);
-
-                    const deleteBtn = document.createElement("button");
-                    deleteBtn.className = "badge-btn";
-                    deleteBtn.innerHTML = "🗑️";
-                    deleteBtn.title = "Delete Strategy";
-                    deleteBtn.addEventListener("click", (e) => {
-                        e.stopPropagation();
-                        deleteStrategy(dep.strategy.id);
-                    });
-                    wrapper.appendChild(deleteBtn);
-
-                    cell.appendChild(wrapper);
-                } else {
-                    cell.appendChild(badge);
-                }
+                cell.appendChild(badge);
             });
             
             // Exit dot: find filtered deployments whose exitDate falls on this day
@@ -460,6 +431,7 @@ let allCalculatedDeployments = [];
 let strategiesData = []; // Loaded dynamically from secure API
 let isAdminMode = false;
 let whitelistData = {};
+let auditLogsData = [];
 let activeDbTab = "users";
 
 // Initialize Dashboard
@@ -487,8 +459,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         isAdminMode = !!resJson.isAdmin;
         if (isAdminMode) {
             document.getElementById("admin-bar").style.display = "flex";
-            document.getElementById("add-strategy-btn").style.display = "block";
-            document.getElementById("modal-admin-actions").style.display = "flex";
             document.getElementById("admin-user-info").innerText = `Logged in as Admin (${resJson.userPhone})`;
         } else {
             const userLogoutBtn = document.getElementById("user-logout-btn");
@@ -716,26 +686,7 @@ function showStrategyDetails(dep) {
         gapUpRow.style.display = "none";
     }
     
-    if (isAdminMode) {
-        const editBtn = document.getElementById("modal-edit-btn");
-        const deleteBtn = document.getElementById("modal-delete-btn");
-        
-        const newEditBtn = editBtn.cloneNode(true);
-        const newDeleteBtn = deleteBtn.cloneNode(true);
-        editBtn.parentNode.replaceChild(newEditBtn, editBtn);
-        deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
-        
-        newEditBtn.addEventListener("click", () => {
-            hideModal();
-            openEditStrategyModal(strategy);
-        });
-        
-        newDeleteBtn.addEventListener("click", () => {
-            hideModal();
-            deleteStrategy(strategy.id);
-        });
-    }
-
+    // Detail modal edit/delete actions removed from calendar details context
     modal.style.display = "block";
 }
 
@@ -921,9 +872,19 @@ function switchDbTab(tab) {
     activeDbTab = tab;
     document.getElementById("tab-users-btn").classList.toggle("active", tab === 'users');
     document.getElementById("tab-holidays-btn").classList.toggle("active", tab === 'holidays');
+    document.getElementById("tab-strategies-btn").classList.toggle("active", tab === 'strategies');
+    document.getElementById("tab-logs-btn").classList.toggle("active", tab === 'logs');
     
     document.getElementById("tab-users-content").style.display = tab === 'users' ? 'flex' : 'none';
     document.getElementById("tab-holidays-content").style.display = tab === 'holidays' ? 'flex' : 'none';
+    document.getElementById("tab-strategies-content").style.display = tab === 'strategies' ? 'flex' : 'none';
+    document.getElementById("tab-logs-content").style.display = tab === 'logs' ? 'flex' : 'none';
+    
+    if (tab === 'logs') {
+        renderAuditLogsTable();
+    } else if (tab === 'strategies') {
+        renderStrategiesTable();
+    }
 }
 
 async function fetchAdminDbData() {
@@ -932,10 +893,203 @@ async function fetchAdminDbData() {
         if (!response.ok) return;
         const resJson = await response.json();
         whitelistData = resJson.whitelist || {};
+        auditLogsData = resJson.auditLogs || [];
+        if (resJson.strategies) {
+            strategiesData = resJson.strategies;
+        }
         renderWhitelistTable();
         renderHolidaysTable();
+        renderAuditLogsTable();
+        renderStrategiesTable();
     } catch (e) {
         console.error("Failed to fetch DB details:", e);
+    }
+}
+
+// Render Strategies Table
+function renderStrategiesTable() {
+    const tbody = document.getElementById("strategies-table-body");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    
+    if (!strategiesData || strategiesData.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 5;
+        td.style.textAlign = "center";
+        td.style.color = "var(--text-secondary)";
+        td.innerText = "No strategies found.";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+    }
+    
+    const sorted = [...strategiesData].sort((a, b) => a.name.localeCompare(b.name));
+    
+    sorted.forEach(strat => {
+        const tr = document.createElement("tr");
+        
+        // Name
+        const tdName = document.createElement("td");
+        tdName.innerHTML = `<strong>${strat.name}</strong>`;
+        tr.appendChild(tdName);
+        
+        // Index
+        const tdIndex = document.createElement("td");
+        tdIndex.innerText = strat.index;
+        tr.appendChild(tdIndex);
+        
+        // Type / Sheet
+        const tdType = document.createElement("td");
+        const typeSpan = document.createElement("span");
+        typeSpan.className = `badge ${strat.sheet.toLowerCase()}`;
+        typeSpan.innerText = strat.sheet;
+        tdType.appendChild(typeSpan);
+        tr.appendChild(tdType);
+        
+        // Time
+        const tdTime = document.createElement("td");
+        tdTime.innerText = strat.time || "-";
+        tr.appendChild(tdTime);
+        
+        // Actions
+        const tdActions = document.createElement("td");
+        tdActions.style.display = "flex";
+        tdActions.style.gap = "0.5rem";
+        
+        const editBtn = document.createElement("button");
+        editBtn.className = "admin-btn edit";
+        editBtn.style.padding = "0.25rem 0.6rem";
+        editBtn.style.fontSize = "0.75rem";
+        editBtn.innerText = "✏️ Edit";
+        editBtn.addEventListener("click", () => {
+            closeDbManagementModal();
+            openEditStrategyModal(strat);
+        });
+        tdActions.appendChild(editBtn);
+        
+        const delBtn = document.createElement("button");
+        delBtn.className = "admin-btn logout";
+        delBtn.style.padding = "0.25rem 0.6rem";
+        delBtn.style.fontSize = "0.75rem";
+        delBtn.style.background = "rgba(239, 68, 68, 0.12)";
+        delBtn.style.borderColor = "rgba(239, 68, 68, 0.2)";
+        delBtn.style.color = "#fca5a5";
+        delBtn.innerText = "🗑️ Delete";
+        delBtn.addEventListener("click", () => {
+            deleteStrategy(strat.id);
+        });
+        tdActions.appendChild(delBtn);
+        
+        tr.appendChild(tdActions);
+        tbody.appendChild(tr);
+    });
+}
+
+// Render Audit Logs Table
+function renderAuditLogsTable() {
+    const tbody = document.getElementById("logs-table-body");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    
+    if (auditLogsData.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 3;
+        td.style.textAlign = "center";
+        td.style.color = "var(--text-secondary)";
+        td.innerText = "No log entries found.";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+    }
+    
+    auditLogsData.forEach(log => {
+        const tr = document.createElement("tr");
+        
+        // Format timestamp nicely
+        const tdTime = document.createElement("td");
+        const d = new Date(log.timestamp);
+        tdTime.innerText = isNaN(d.getTime()) ? log.timestamp : d.toLocaleString();
+        tr.appendChild(tdTime);
+        
+        const tdPhone = document.createElement("td");
+        tdPhone.innerHTML = `<strong>${log.phone}</strong>`;
+        tr.appendChild(tdPhone);
+        
+        const tdMethod = document.createElement("td");
+        const methodSpan = document.createElement("span");
+        methodSpan.style.padding = "0.2rem 0.5rem";
+        methodSpan.style.borderRadius = "4px";
+        methodSpan.style.fontSize = "0.75rem";
+        methodSpan.style.fontWeight = "600";
+        
+        if (log.method === 'pin') {
+            methodSpan.innerText = "PIN Login";
+            methodSpan.style.background = "rgba(245, 158, 11, 0.15)";
+            methodSpan.style.color = "#f59e0b";
+            methodSpan.style.border = "1px solid rgba(245, 158, 11, 0.3)";
+        } else {
+            methodSpan.innerText = "Telegram OTP";
+            methodSpan.style.background = "rgba(59, 130, 246, 0.15)";
+            methodSpan.style.color = "#3b82f6";
+            methodSpan.style.border = "1px solid rgba(59, 130, 246, 0.3)";
+        }
+        tdMethod.appendChild(methodSpan);
+        tr.appendChild(tdMethod);
+        
+        tbody.appendChild(tr);
+    });
+}
+
+// Refresh Auth Logs
+async function refreshAuthLogs() {
+    const refreshBtn = document.querySelector("#tab-logs-content .admin-btn.edit");
+    if (refreshBtn) {
+        refreshBtn.innerText = "Refreshing...";
+        refreshBtn.disabled = true;
+    }
+    await fetchAdminDbData();
+    if (refreshBtn) {
+        refreshBtn.innerText = "🔄 Refresh Logs";
+        refreshBtn.disabled = false;
+    }
+}
+
+// Clear Auth Logs
+async function clearAuthLogs() {
+    if (!confirm("Are you sure you want to permanently clear all authentication audit logs? This action cannot be undone.")) {
+        return;
+    }
+    
+    const clearBtn = document.querySelector("#tab-logs-content .admin-btn.logout");
+    if (clearBtn) {
+        clearBtn.innerText = "Clearing...";
+        clearBtn.disabled = true;
+    }
+    
+    try {
+        const response = await fetch('/api/admin/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'clear_logs' })
+        });
+        
+        const data = await response.json();
+        if (response.ok && data.success) {
+            showToast("Audit logs cleared successfully!");
+            await fetchAdminDbData();
+        } else {
+            showToast(data.error || "Failed to clear audit logs", true);
+        }
+    } catch (e) {
+        console.error("Failed to clear logs:", e);
+        showToast("Network error clearing logs", true);
+    } finally {
+        if (clearBtn) {
+            clearBtn.innerText = "🗑️ Clear Logs";
+            clearBtn.disabled = false;
+        }
     }
 }
 

@@ -76,7 +76,7 @@ module.exports = async (req, res) => {
             return res.status(400).json({ error: 'Action is required' });
         }
         
-        if (action !== 'sync_local' && data === undefined) {
+        if (action !== 'sync_local' && action !== 'clear_logs' && data === undefined) {
             return res.status(400).json({ error: 'Data is required for this action' });
         }
 
@@ -144,6 +144,17 @@ module.exports = async (req, res) => {
                 // HDEL whitelist phone
                 await queryKV(['HDEL', 'whitelist', data.phone.trim()]);
                 return res.status(200).json({ success: true, message: `User ${data.phone} deleted successfully from KV` });
+            } 
+            
+            else if (action === 'clear_logs') {
+                try {
+                    await queryKV(['DEL', 'auth_audit_logs']);
+                } catch (dbErr) {
+                    console.warn("DB offline during logs clear, proceeding with local fallback file reset.");
+                }
+                const logsPath = path.join(process.cwd(), 'auth_logs.json');
+                fs.writeFileSync(logsPath, '[]', 'utf8');
+                return res.status(200).json({ success: true, message: 'Logs cleared successfully' });
             } 
             
             else {

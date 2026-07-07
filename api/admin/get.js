@@ -135,11 +135,35 @@ module.exports = async (req, res) => {
             }
         }
 
+        let auditLogs = [];
+        try {
+            const logsRes = await queryKV(['LRANGE', 'auth_audit_logs', '0', '99']);
+            if (logsRes && Array.isArray(logsRes)) {
+                auditLogs = logsRes.map(item => {
+                    try {
+                        return typeof item === 'string' ? JSON.parse(item) : item;
+                    } catch (e) {
+                        return { error: 'Failed to parse log entry', raw: item };
+                    }
+                });
+            }
+        } catch (dbErr) {
+            const logsPath = path.join(process.cwd(), 'auth_logs.json');
+            if (fs.existsSync(logsPath)) {
+                try {
+                    auditLogs = JSON.parse(fs.readFileSync(logsPath, 'utf8'));
+                } catch (e) {
+                    console.error("Failed to parse local auth logs:", e);
+                }
+            }
+        }
+
         return res.status(200).json({
             dbStatus,
             strategies: strategies || [],
             holidays: holidays || {},
-            whitelist: whitelist || {}
+            whitelist: whitelist || {},
+            auditLogs: auditLogs
         });
 
     } catch (error) {
