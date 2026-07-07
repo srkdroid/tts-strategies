@@ -1145,13 +1145,27 @@ function renderWhitelistTable() {
         tr.appendChild(tdStatus);
         
         const tdAction = document.createElement("td");
+        tdAction.style.display = "flex";
+        tdAction.style.gap = "0.5rem";
+        
         const delBtn = document.createElement("button");
         delBtn.className = "admin-btn logout";
         delBtn.style.padding = "0.25rem 0.6rem";
         delBtn.style.fontSize = "0.75rem";
+        delBtn.style.margin = "0";
         delBtn.innerText = "Remove";
         delBtn.addEventListener("click", () => deleteUser(phone));
         tdAction.appendChild(delBtn);
+        
+        const regenBtn = document.createElement("button");
+        regenBtn.className = "admin-btn edit";
+        regenBtn.style.padding = "0.25rem 0.6rem";
+        regenBtn.style.fontSize = "0.75rem";
+        regenBtn.style.margin = "0";
+        regenBtn.innerText = "🔄 Regen PIN";
+        regenBtn.addEventListener("click", () => regenerateUserPin(phone));
+        tdAction.appendChild(regenBtn);
+        
         tr.appendChild(tdAction);
         
         tbody.appendChild(tr);
@@ -1208,6 +1222,32 @@ async function deleteUser(phone) {
         }
     } catch (e) {
         showToast("Error removing user", true);
+    }
+}
+
+async function regenerateUserPin(phone) {
+    if (!confirm(`Are you sure you want to regenerate the access PIN for user "${phone}"?`)) return;
+    
+    const newPin = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    try {
+        const response = await fetch('/api/admin/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'save_user',
+                data: { phone, pin: newPin }
+            })
+        });
+        if (response.ok) {
+            showToast(`PIN regenerated successfully!\nNew PIN: ${newPin}`);
+            await fetchAdminDbData();
+        } else {
+            const err = await response.json();
+            showToast(err.error || "Failed to regenerate PIN", true);
+        }
+    } catch (e) {
+        showToast("Error regenerating PIN", true);
     }
 }
 

@@ -162,6 +162,36 @@ module.exports = async (req, res) => {
             }
         } catch (dbErr) {
             if (dbErr.message === "KV_DATABASE_UNCONNECTED") {
+                const whitelistPath = path.join(process.cwd(), 'whitelist.json');
+                
+                if (action === 'save_user') {
+                    let whitelist = {};
+                    if (fs.existsSync(whitelistPath)) {
+                        try {
+                            whitelist = JSON.parse(fs.readFileSync(whitelistPath, 'utf8'));
+                        } catch (e) {
+                            whitelist = {};
+                        }
+                    }
+                    whitelist[data.phone.trim()] = data.pin.trim();
+                    fs.writeFileSync(whitelistPath, JSON.stringify(whitelist, null, 2), 'utf8');
+                    return res.status(200).json({ success: true, message: `User ${data.phone} saved successfully to local file (KV offline)` });
+                }
+                
+                if (action === 'delete_user') {
+                    let whitelist = {};
+                    if (fs.existsSync(whitelistPath)) {
+                        try {
+                            whitelist = JSON.parse(fs.readFileSync(whitelistPath, 'utf8'));
+                        } catch (e) {
+                            whitelist = {};
+                        }
+                    }
+                    delete whitelist[data.phone.trim()];
+                    fs.writeFileSync(whitelistPath, JSON.stringify(whitelist, null, 2), 'utf8');
+                    return res.status(200).json({ success: true, message: `User ${data.phone} deleted successfully from local file (KV offline)` });
+                }
+                
                 return res.status(400).json({ 
                     error: 'Database is not connected to your Vercel project. Please link a Vercel KV database in your Vercel settings to enable editing.' 
                 });
