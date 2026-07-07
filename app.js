@@ -1109,7 +1109,31 @@ function renderWhitelistTable() {
         tr.appendChild(tdPhone);
         
         const tdStatus = document.createElement("td");
-        tdStatus.innerText = "Registered (PIN available)";
+        tdStatus.style.fontFamily = "monospace";
+        tdStatus.style.fontSize = "0.95rem";
+        tdStatus.style.letterSpacing = "0.05em";
+        
+        const pinSpan = document.createElement("span");
+        pinSpan.innerText = "••••••";
+        pinSpan.style.marginRight = "0.5rem";
+        tdStatus.appendChild(pinSpan);
+        
+        const toggleBtn = document.createElement("button");
+        toggleBtn.className = "admin-btn edit";
+        toggleBtn.style.padding = "0.15rem 0.4rem";
+        toggleBtn.style.fontSize = "0.7rem";
+        toggleBtn.style.margin = "0";
+        toggleBtn.innerText = "👁️ Show";
+        toggleBtn.addEventListener("click", () => {
+            if (pinSpan.innerText === "••••••") {
+                pinSpan.innerText = pin;
+                toggleBtn.innerText = "🔒 Hide";
+            } else {
+                pinSpan.innerText = "••••••";
+                toggleBtn.innerText = "👁️ Show";
+            }
+        });
+        tdStatus.appendChild(toggleBtn);
         tr.appendChild(tdStatus);
         
         const tdAction = document.createElement("td");
