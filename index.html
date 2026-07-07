@@ -64,6 +64,12 @@
                         <option value="exit">Exits Only</option>
                     </select>
                 </div>
+            </div>
+            <!-- View Mode Toggle -->
+            <div class="view-mode-toggle" style="display: flex; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); padding: 2px; border-radius: 9999px;">
+                <button id="mode-calendar-btn" class="toggle-btn active" onclick="switchViewMode('calendar')" style="background: var(--primary-color); border: none; color: #fff; padding: 0.4rem 1rem; border-radius: 9999px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem; transition: background-color 0.2s;">📅 Calendar</button>
+                <button id="mode-flow-btn" class="toggle-btn" onclick="switchViewMode('flow')" style="background: transparent; border: none; color: var(--text-secondary); padding: 0.4rem 1rem; border-radius: 9999px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem; transition: background-color 0.2s, color 0.2s;">📊 Capital Flow</button>
+            </div>
         </section>
 
         <!-- Legend Block -->
@@ -91,7 +97,7 @@
         </section>
 
         <!-- Calendars Grid -->
-        <main class="calendars-grid">
+        <main class="calendars-grid" id="calendar-view-container">
             <!-- July 2026 (Current Month) -->
             <article class="month-container">
                 <div class="month-header-row">
@@ -122,6 +128,25 @@
                 </div>
                 <div class="calendar-scroll-wrapper">
                     <div class="calendar-grid" id="calendar-june"></div>
+                </div>
+            </article>
+        </main>
+
+        <!-- Capital Flow Timeline Grid -->
+        <main class="calendars-grid" id="capital-flow-view-container" style="display: none;">
+            <article class="month-container" style="max-width: 100%;">
+                <div class="month-header-row">
+                    <h2 class="month-title" id="flow-month-title">July 2026 (Capital Flow)</h2>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <button onclick="navigateFlowMonth(-1)" class="admin-btn edit" style="margin:0; padding: 0.4rem 0.8rem; font-size: 0.8rem;">◀ Prev Month</button>
+                        <button onclick="navigateFlowMonth(1)" class="admin-btn edit" style="margin:0; padding: 0.4rem 0.8rem; font-size: 0.8rem;">Next Month ▶</button>
+                    </div>
+                </div>
+                
+                <div class="flow-chart-wrapper">
+                    <div class="flow-chart-grid" id="capital-flow-grid" style="display: grid; min-width: 900px; padding: 1rem; box-sizing: border-box; gap: 0.4rem;">
+                        <!-- JS populated -->
+                    </div>
                 </div>
             </article>
         </main>

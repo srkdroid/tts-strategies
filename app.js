@@ -426,6 +426,10 @@ let activeFilters = {
     view: "both"
 };
 
+let currentFlowViewMode = "calendar";
+let currentFlowYear = 2026;
+let currentFlowMonth = 6; // July (0-indexed: 6 is July)
+
 // Global deployments cache
 let allCalculatedDeployments = [];
 let strategiesData = []; // Loaded dynamically from secure API
@@ -519,10 +523,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 function updateCalendars() {
-    // Render June (Month 5), July (Month 6), August (Month 7) 2026
-    renderCalendar("calendar-june", 2026, 5, allCalculatedDeployments, activeFilters);
-    renderCalendar("calendar-july", 2026, 6, allCalculatedDeployments, activeFilters);
-    renderCalendar("calendar-august", 2026, 7, allCalculatedDeployments, activeFilters);
+    if (currentFlowViewMode === "calendar") {
+        // Render June (Month 5), July (Month 6), August (Month 7) 2026
+        renderCalendar("calendar-june", 2026, 5, allCalculatedDeployments, activeFilters);
+        renderCalendar("calendar-july", 2026, 6, allCalculatedDeployments, activeFilters);
+        renderCalendar("calendar-august", 2026, 7, allCalculatedDeployments, activeFilters);
+    } else {
+        renderCapitalFlow();
+    }
 }
 
 function showStrategyDetails(dep) {
@@ -1334,4 +1342,281 @@ async function logoutUser() {
     }
     document.cookie = 'session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     window.location.reload();
+}
+
+/* ─── Capital Flow Timeline View Helpers ──────────────────────────────────── */
+
+// Switch view mode between calendar and Capital Flow
+function switchViewMode(mode) {
+    currentFlowViewMode = mode;
+    
+    document.getElementById("mode-calendar-btn").classList.toggle("active", mode === "calendar");
+    document.getElementById("mode-flow-btn").classList.toggle("active", mode === "flow");
+    
+    document.getElementById("calendar-view-container").style.display = mode === "calendar" ? "grid" : "none";
+    document.getElementById("capital-flow-view-container").style.display = mode === "flow" ? "grid" : "none";
+    
+    const calendarBtn = document.getElementById("mode-calendar-btn");
+    const flowBtn = document.getElementById("mode-flow-btn");
+    
+    if (mode === "calendar") {
+        calendarBtn.style.background = "var(--primary-color)";
+        calendarBtn.style.color = "#fff";
+        flowBtn.style.background = "transparent";
+        flowBtn.style.color = "var(--text-secondary)";
+    } else {
+        flowBtn.style.background = "var(--primary-color)";
+        flowBtn.style.color = "#fff";
+        calendarBtn.style.background = "transparent";
+        calendarBtn.style.color = "var(--text-secondary)";
+        
+        renderCapitalFlow();
+    }
+}
+
+// Navigate Capital Flow months
+function navigateFlowMonth(dir) {
+    currentFlowMonth += dir;
+    if (currentFlowMonth > 11) {
+        currentFlowMonth = 0;
+        currentFlowYear += 1;
+    } else if (currentFlowMonth < 0) {
+        currentFlowMonth = 11;
+        currentFlowYear -= 1;
+    }
+    renderCapitalFlow();
+}
+
+// Helper to get start symbol shape
+function getStartSymbol(sheet, time) {
+    const isSolid = !time || time.startsWith("15:16");
+    if (sheet === "Monthly") {
+        return isSolid ? "■" : "□";
+    } else if (sheet === "BiWkly") {
+        return isSolid ? "●" : "○";
+    } else {
+        return isSolid ? "▲" : "△";
+    }
+}
+
+// Render the Capital Flow Timeline view
+function renderCapitalFlow() {
+    const grid = document.getElementById("capital-flow-grid");
+    if (!grid) return;
+    grid.innerHTML = "";
+    
+    const year = currentFlowYear;
+    const month = currentFlowMonth;
+    
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    document.getElementById("flow-month-title").innerText = `${monthNames[month]} ${year} (Capital Flow)`;
+    
+    const monthStart = new Date(year, month, 1);
+    const monthEnd = new Date(year, month + 1, 0);
+    
+    const today = new Date();
+    
+    // Extract valid trading days
+    const tradingDays = [];
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        const dayOfWeek = date.getDay();
+        const dateStr = formatDateString(date);
+        
+        // Skip weekends
+        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+        
+        // Skip holidays
+        const isHoliday = marketHolidays2026 && marketHolidays2026[dateStr];
+        if (isHoliday) continue;
+        
+        tradingDays.push(date);
+    }
+    
+    if (tradingDays.length === 0) {
+        grid.style.gridTemplateColumns = "1fr";
+        grid.innerHTML = "<div style='text-align:center; padding: 2.5rem; color: var(--text-secondary);'>No trading days in this month.</div>";
+        return;
+    }
+    
+    // Set grid columns: 40px Category + 180px Strategy Details + N trading days
+    grid.style.gridTemplateColumns = `40px 180px repeat(${tradingDays.length}, minmax(0, 1fr))`;
+    
+    // Header row: sticky corner + days
+    const cornerCell = document.createElement("div");
+    cornerCell.className = "flow-header-cell sticky-corner";
+    cornerCell.innerText = "Strategy / Index";
+    cornerCell.style.gridColumn = "1 / 3";
+    grid.appendChild(cornerCell);
+    
+    tradingDays.forEach(date => {
+        const cell = document.createElement("div");
+        
+        const isToday = date.getDate() === today.getDate() &&
+                        date.getMonth() === today.getMonth() &&
+                        date.getFullYear() === today.getFullYear();
+        cell.className = `flow-header-cell${isToday ? ' today' : ''}`;
+        
+        const daySpan = document.createElement("span");
+        daySpan.className = "flow-header-day";
+        daySpan.innerText = date.toLocaleDateString("en-US", { weekday: "short" });
+        
+        const dateSpan = document.createElement("span");
+        dateSpan.className = "flow-header-date";
+        dateSpan.innerText = date.getDate();
+        
+        cell.appendChild(daySpan);
+        cell.appendChild(dateSpan);
+        grid.appendChild(cell);
+    });
+    
+    // Filter strategies
+    const filteredStrategies = strategiesData.filter(strat => {
+        const matchesIndex = activeFilters.index === "all" || strat.index.startsWith(activeFilters.index);
+        const matchesType = activeFilters.type === "all" || strat.sheet === activeFilters.type;
+        return matchesIndex && matchesType;
+    });
+    
+    if (filteredStrategies.length === 0) {
+        const noResults = document.createElement("div");
+        noResults.style.gridColumn = `1 / span ${tradingDays.length + 2}`;
+        noResults.style.textAlign = "center";
+        noResults.style.padding = "2.5rem";
+        noResults.style.color = "var(--text-secondary)";
+        noResults.innerText = "No strategies match the active filters.";
+        grid.appendChild(noResults);
+        return;
+    }
+    
+    // Group strategies by category
+    const categoriesOrder = ["Monthly", "BiWkly", "STBT"];
+    const grouped = { Monthly: [], BiWkly: [], STBT: [] };
+    
+    filteredStrategies.forEach(strat => {
+        if (grouped[strat.sheet]) {
+            grouped[strat.sheet].push(strat);
+        }
+    });
+    
+    let currentRowGridIndex = 2; // offset header row
+    
+    categoriesOrder.forEach(cat => {
+        const strats = grouped[cat];
+        if (!strats || strats.length === 0) return;
+        
+        const groupSize = strats.length;
+        const startRow = currentRowGridIndex;
+        const endRow = startRow + groupSize;
+        
+        // Render Vertical Category Header spanning all rows in this group
+        const catCell = document.createElement("div");
+        catCell.className = `flow-category-header ${cat.toLowerCase()}`;
+        catCell.style.gridColumn = "1";
+        catCell.style.gridRow = `${startRow} / ${endRow}`;
+        
+        let displayLabel = cat;
+        if (cat === "BiWkly") displayLabel = "Bi-Weekly";
+        catCell.innerText = displayLabel;
+        grid.appendChild(catCell);
+        
+        // Render each strategy row in this group
+        strats.forEach(strat => {
+            const rowIdx = currentRowGridIndex;
+            
+            // Strategy Details Card
+            const infoCard = document.createElement("div");
+            infoCard.className = "flow-strategy-info";
+            infoCard.style.gridColumn = "2";
+            infoCard.style.gridRow = `${rowIdx}`;
+            
+            infoCard.innerHTML = `
+                <div class="flow-strat-name-row">
+                    <span class="flow-strat-name" title="${strat.name}">${strat.name}</span>
+                </div>
+                <div class="flow-strat-meta">
+                    <span>${strat.index}</span>
+                    <span>${strat.time ? strat.time.slice(0, 5) : "-"}</span>
+                </div>
+            `;
+            grid.appendChild(infoCard);
+            
+            // Render slots
+            tradingDays.forEach((date, dayColIndex) => {
+                const dayCell = document.createElement("div");
+                const isToday = date.getDate() === today.getDate() &&
+                                date.getMonth() === today.getMonth() &&
+                                date.getFullYear() === today.getFullYear();
+                dayCell.className = `flow-day-cell${isToday ? ' today' : ''}`;
+                dayCell.style.gridColumn = `${dayColIndex + 3}`;
+                dayCell.style.gridRow = `${rowIdx}`;
+                grid.appendChild(dayCell);
+            });
+            
+            // Filter deployments for this strategy in month range
+            const strategyDeployments = allCalculatedDeployments.filter(dep => {
+                if (dep.strategy.id !== strat.id) return false;
+                
+                const overlaps = dep.actualDate <= monthEnd && dep.exitDate >= monthStart;
+                if (!overlaps) return false;
+                
+                if (activeFilters.view === "deploy") {
+                    return dep.actualDate >= monthStart && dep.actualDate <= monthEnd;
+                }
+                if (activeFilters.view === "exit") {
+                    return dep.exitDate >= monthStart && dep.exitDate <= monthEnd;
+                }
+                return true;
+            });
+            
+            // Draw bars
+            strategyDeployments.forEach(dep => {
+                let startIdx = tradingDays.findIndex(d => formatDateString(d) === formatDateString(dep.actualDate));
+                let endIdx = tradingDays.findIndex(d => formatDateString(d) === formatDateString(dep.exitDate));
+                
+                const finalStartIdx = startIdx !== -1 ? startIdx : 0;
+                const finalEndIdx = endIdx !== -1 ? endIdx : tradingDays.length - 1;
+                
+                const startCol = finalStartIdx + 3;
+                const endCol = finalEndIdx + 4;
+                
+                const barContainer = document.createElement("div");
+                barContainer.className = "flow-bar-container";
+                barContainer.style.gridColumn = `${startCol} / ${endCol}`;
+                barContainer.style.gridRow = `${rowIdx}`;
+                
+                const bar = document.createElement("div");
+                bar.className = `flow-bar ${strat.sheet.toLowerCase()}`;
+                
+                if (startIdx !== -1) {
+                    const startSymbol = document.createElement("span");
+                    startSymbol.className = "flow-bar-start";
+                    startSymbol.innerText = getStartSymbol(strat.sheet, strat.time);
+                    bar.appendChild(startSymbol);
+                }
+                
+                if (endIdx !== -1) {
+                    const endSymbol = document.createElement("span");
+                    endSymbol.className = "flow-bar-end";
+                    endSymbol.innerText = "↩";
+                    bar.appendChild(endSymbol);
+                }
+                
+                barContainer.appendChild(bar);
+                
+                const deployLabel = dep.actualDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                const exitLabel = dep.exitDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                barContainer.title = `${strat.name} (${strat.index})\nDeployed: ${deployLabel}\nExit: ${exitLabel}`;
+                
+                barContainer.addEventListener("click", () => {
+                    showStrategyDetails(dep);
+                });
+                
+                grid.appendChild(barContainer);
+            });
+            
+            currentRowGridIndex++;
+        });
+    });
 }
