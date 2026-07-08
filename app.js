@@ -310,7 +310,8 @@ function renderCalendar(containerId, year, month, deployments, activeFilters) {
             const filteredDeployments = showDeploys ? dayDeployments.filter(dep => {
                 const matchesIndex = activeFilters.index === "all" || dep.strategy.index.startsWith(activeFilters.index);
                 const matchesType = activeFilters.type === "all" || dep.strategy.sheet === activeFilters.type;
-                return matchesIndex && matchesType;
+                const matchesPortfolio = !activeFilters.portfolioOnly || starredStrategies.has(dep.strategy.id);
+                return matchesIndex && matchesType && matchesPortfolio;
             }) : [];
             
             filteredDeployments.forEach(dep => {
@@ -368,7 +369,8 @@ function renderCalendar(containerId, year, month, deployments, activeFilters) {
                 if (!dep.exitDate) return false;
                 const matchesIndex = activeFilters.index === "all" || dep.strategy.index.startsWith(activeFilters.index);
                 const matchesType = activeFilters.type === "all" || dep.strategy.sheet === activeFilters.type;
-                return matchesIndex && matchesType && formatDateString(dep.exitDate) === dateStr;
+                const matchesPortfolio = !activeFilters.portfolioOnly || starredStrategies.has(dep.strategy.id);
+                return matchesIndex && matchesType && matchesPortfolio && formatDateString(dep.exitDate) === dateStr;
             }) : [];
             
             if (exitingToday.length > 0) {
@@ -423,8 +425,47 @@ function renderCalendar(containerId, year, month, deployments, activeFilters) {
 let activeFilters = {
     index: "all",
     type: "all",
-    view: "both"
+    view: "both",
+    portfolioOnly: false
 };
+
+let starredStrategies = new Set();
+
+function loadStarredStrategies() {
+    try {
+        const stored = localStorage.getItem('my_deployed_strategies');
+        if (stored) {
+            starredStrategies = new Set(JSON.parse(stored));
+        }
+    } catch (e) {
+        console.error("Failed to load portfolio strategies", e);
+    }
+}
+
+function saveStarredStrategies() {
+    try {
+        localStorage.setItem('my_deployed_strategies', JSON.stringify(Array.from(starredStrategies)));
+    } catch (e) {
+        console.error("Failed to save portfolio strategies", e);
+    }
+}
+
+function toggleStrategyStar(strategyId) {
+    if (starredStrategies.has(strategyId)) {
+        starredStrategies.delete(strategyId);
+        showToast("Removed from My Portfolio");
+    } else {
+        starredStrategies.add(strategyId);
+        showToast("Added to My Portfolio");
+    }
+    saveStarredStrategies();
+    updateCalendars();
+}
+
+function togglePortfolioFilter(checked) {
+    activeFilters.portfolioOnly = checked;
+    updateCalendars();
+}
 
 let currentFlowViewMode = "flow";
 let currentFlowYear = 2026;
@@ -440,6 +481,7 @@ let activeDbTab = "users";
 
 // Initialize Dashboard
 document.addEventListener("DOMContentLoaded", async () => {
+    loadStarredStrategies();
     // Set current date in header
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     const todayStr = new Date().toLocaleDateString('en-US', options);
@@ -692,6 +734,29 @@ function showStrategyDetails(dep) {
         document.getElementById("modal-gapup").innerText = strategy.exit.gap_up;
     } else {
         gapUpRow.style.display = "none";
+    }
+    
+    // Setup Portfolio Star Button
+    const pBtn = document.getElementById("modal-portfolio-btn");
+    if (pBtn) {
+        const updatePBtn = () => {
+            const isStarred = starredStrategies.has(strategy.id);
+            pBtn.innerHTML = isStarred ? "★ In Portfolio" : "☆ Add to Portfolio";
+            if (isStarred) {
+                pBtn.style.background = "rgba(245, 158, 11, 0.15)";
+                pBtn.style.borderColor = "rgba(245, 158, 11, 0.4)";
+                pBtn.style.color = "#f59e0b";
+            } else {
+                pBtn.style.background = "rgba(255, 255, 255, 0.05)";
+                pBtn.style.borderColor = "var(--border-color)";
+                pBtn.style.color = "var(--text-primary)";
+            }
+        };
+        updatePBtn();
+        pBtn.onclick = () => {
+            toggleStrategyStar(strategy.id);
+            updatePBtn();
+        };
     }
     
     // Detail modal edit/delete actions removed from calendar details context
@@ -1603,7 +1668,8 @@ function renderCapitalFlow() {
     const filteredStrategies = strategiesData.filter(strat => {
         const matchesIndex = activeFilters.index === "all" || strat.index.startsWith(activeFilters.index);
         const matchesType = activeFilters.type === "all" || strat.sheet === activeFilters.type;
-        return matchesIndex && matchesType;
+        const matchesPortfolio = !activeFilters.portfolioOnly || starredStrategies.has(strat.id);
+        return matchesIndex && matchesType && matchesPortfolio;
     });
     
     if (filteredStrategies.length === 0) {
@@ -1658,8 +1724,10 @@ function renderCapitalFlow() {
             infoCard.style.gridColumn = "2";
             infoCard.style.gridRow = `${rowIdx}`;
             
+            const isStarred = starredStrategies.has(strat.id);
             infoCard.innerHTML = `
-                <div class="flow-strat-name-row">
+                <div class="flow-strat-name-row" style="display: flex; align-items: center; gap: 0.3rem;">
+                    <span class="flow-strat-star ${isStarred ? 'active' : ''}" onclick="event.stopPropagation(); toggleStrategyStar('${strat.id}')" title="${isStarred ? 'Remove from My Portfolio' : 'Add to My Portfolio'}">${isStarred ? '★' : '☆'}</span>
                     <span class="flow-strat-name" title="${strat.name}">${strat.name}</span>
                 </div>
                 <div class="flow-strat-meta">
