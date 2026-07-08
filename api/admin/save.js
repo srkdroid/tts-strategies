@@ -81,7 +81,49 @@ module.exports = async (req, res) => {
         }
 
         try {
-            if (action === 'sync_local') {
+            if (action === 'sync_strategies') {
+                const strategiesPath = path.join(process.cwd(), 'strategies.js');
+                if (fs.existsSync(strategiesPath)) {
+                    const content = fs.readFileSync(strategiesPath, 'utf8');
+                    const cleanJson = content
+                        .replace('// Options Trading Strategies Data', '')
+                        .replace('// Generated dynamically from Excel parsed data', '')
+                        .replace('const strategiesData = ', '')
+                        .trim();
+                    const cleaned = cleanJson.endsWith(';') ? cleanJson.slice(0, -1) : cleanJson;
+                    await queryKV(['SET', 'strategies', cleaned]);
+                }
+                return res.status(200).json({ success: true, message: 'Successfully synced strategies from codebase file to KV' });
+            }
+
+            else if (action === 'sync_holidays') {
+                const holPath = path.join(process.cwd(), 'holidays.js');
+                if (fs.existsSync(holPath)) {
+                    const content = fs.readFileSync(holPath, 'utf8');
+                    const match = content.match(/(?:const|let)\s+marketHolidays2026\s*=\s*(\{[\s\S]*?\});/);
+                    if (match) {
+                        await queryKV(['SET', 'holidays', match[1]]);
+                    }
+                }
+                return res.status(200).json({ success: true, message: 'Successfully synced holidays from codebase file to KV' });
+            }
+
+            else if (action === 'sync_whitelist') {
+                const whitelistPath = path.join(process.cwd(), 'whitelist.json');
+                if (fs.existsSync(whitelistPath)) {
+                    const whitelist = JSON.parse(fs.readFileSync(whitelistPath, 'utf8'));
+                    const hmsetCmd = ["HMSET", "whitelist"];
+                    Object.entries(whitelist).forEach(([phone, pin]) => {
+                        hmsetCmd.push(phone, pin.toString());
+                    });
+                    if (hmsetCmd.length > 2) {
+                        await queryKV(hmsetCmd);
+                    }
+                }
+                return res.status(200).json({ success: true, message: 'Successfully synced whitelist from codebase file to KV' });
+            }
+
+            else if (action === 'sync_local') {
                 const strategiesPath = path.join(process.cwd(), 'strategies.js');
                 if (fs.existsSync(strategiesPath)) {
                     const content = fs.readFileSync(strategiesPath, 'utf8');
@@ -162,6 +204,10 @@ module.exports = async (req, res) => {
             }
         } catch (dbErr) {
             if (dbErr.message === "KV_DATABASE_UNCONNECTED") {
+                if (action === 'sync_whitelist' || action === 'sync_strategies' || action === 'sync_holidays' || action === 'sync_local') {
+                    return res.status(200).json({ success: true, message: 'Local files are already matching codebase (KV offline)' });
+                }
+                
                 const whitelistPath = path.join(process.cwd(), 'whitelist.json');
                 
                 if (action === 'save_user') {

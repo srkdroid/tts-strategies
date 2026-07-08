@@ -16,7 +16,6 @@
             </div>
             <div class="admin-bar-right">
                 <button onclick="openDbManagementModal()" class="admin-btn edit">📂 Manage DB (Users & Holidays)</button>
-                <button onclick="syncLocalCodebase()" class="admin-btn sync">🔄 Sync Codebase Files</button>
                 <button onclick="logoutAdmin()" class="admin-btn logout">🚪 Admin Logout</button>
             </div>
         </div>
@@ -417,8 +416,10 @@
                     <div style="flex-grow: 1;">
                         <input type="text" id="user-search-input" placeholder="🔍 Search phone numbers..." oninput="filterUsersList()" style="width: 100%; padding: 0.6rem 1rem; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: #fff;">
                     </div>
-                    <div>
+                    <div style="display: flex; gap: 0.5rem;">
                         <button onclick="openAddUserForm()" class="admin-btn add" style="margin:0;">Add User</button>
+                        <button onclick="syncWhitelist()" class="admin-btn sync" style="margin:0; padding: 0.4rem 0.8rem; font-size: 0.8rem;" title="Import whitelisted users from codebase whitelist.json file">🔄 Sync from Codebase</button>
+                        <button onclick="exportWhitelist()" class="admin-btn edit" style="margin:0; padding: 0.4rem 0.8rem; font-size: 0.8rem;" title="Download active whitelist.json database backup">📥 Export JSON</button>
                     </div>
                 </div>
 
@@ -449,8 +450,10 @@
                         <label for="new-holiday-name">Holiday Name</label>
                         <input type="text" id="new-holiday-name" placeholder="e.g. Muharram" style="padding: 0.6rem; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: #fff; display: block; width: 100%; box-sizing: border-box; height: 38px;">
                     </div>
-                    <div>
+                    <div style="display: flex; gap: 0.5rem;">
                         <button onclick="addNewHoliday()" class="admin-btn add" style="margin: 0; height: 38px;">➕ Add Holiday</button>
+                        <button onclick="syncHolidays()" class="admin-btn sync" style="margin: 0; height: 38px; padding: 0.4rem 0.8rem; font-size: 0.8rem;" title="Import holidays from codebase holidays.js file">🔄 Sync from Codebase</button>
+                        <button onclick="exportHolidays()" class="admin-btn edit" style="margin: 0; height: 38px; padding: 0.4rem 0.8rem; font-size: 0.8rem;" title="Download active holidays.js database backup">📥 Export JS</button>
                     </div>
                 </div>
 
@@ -474,7 +477,11 @@
             <div id="tab-strategies-content" class="admin-tab-content" style="display: none; flex-direction: column; flex-grow: 1; overflow: hidden;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem; align-items: center;">
                     <span style="font-size: 0.85rem; color: var(--text-secondary);">Manage Options Trading Strategies</span>
-                    <button onclick="closeDbManagementModal(); openAddStrategyModal()" class="admin-btn add" style="margin: 0; padding: 0.4rem 0.8rem; font-size: 0.8rem;">➕ Add Strategy</button>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button onclick="closeDbManagementModal(); openAddStrategyModal()" class="admin-btn add" style="margin: 0; padding: 0.4rem 0.8rem; font-size: 0.8rem;">➕ Add Strategy</button>
+                        <button onclick="syncStrategies()" class="admin-btn sync" style="margin: 0; padding: 0.4rem 0.8rem; font-size: 0.8rem;" title="Import strategies from codebase strategies.js file">🔄 Sync from Codebase</button>
+                        <button onclick="exportStrategies()" class="admin-btn edit" style="margin: 0; padding: 0.4rem 0.8rem; font-size: 0.8rem;" title="Download active strategies.js database backup">📥 Export JS</button>
+                    </div>
                 </div>
 
                 <div class="table-scroll-container" style="flex-grow: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 10px;">

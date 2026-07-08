@@ -1344,24 +1344,111 @@ async function deleteHoliday(dateStr) {
     }
 }
 
-async function syncLocalCodebase() {
-    if (!confirm("Are you sure you want to overwrite Vercel KV strategies and holidays with the local codebase files? Any direct changes made in the web UI will be overwritten.")) return;
+async function syncWhitelist() {
+    if (!confirm("Are you sure you want to overwrite Vercel KV whitelist with the codebase whitelist.json file? Any direct edits in the web UI will be overwritten.")) return;
     try {
         const response = await fetch('/api/admin/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'sync_local' })
+            body: JSON.stringify({ action: 'sync_whitelist' })
         });
         const resJson = await response.json();
         if (response.ok && resJson.success) {
-            showToast("Successfully synced from codebase files!");
-            window.location.reload();
+            showToast("Whitelist successfully synced from codebase!");
+            await fetchAdminDbData();
         } else {
             showToast(resJson.error || "Sync failed", true);
         }
     } catch (err) {
         showToast("Failed to connect to save API", true);
     }
+}
+
+async function syncHolidays() {
+    if (!confirm("Are you sure you want to overwrite Vercel KV holidays with the codebase holidays.js file? Any direct edits in the web UI will be overwritten.")) return;
+    try {
+        const response = await fetch('/api/admin/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'sync_holidays' })
+        });
+        const resJson = await response.json();
+        if (response.ok && resJson.success) {
+            showToast("Holidays successfully synced from codebase!");
+            await fetchAdminDbData();
+        } else {
+            showToast(resJson.error || "Sync failed", true);
+        }
+    } catch (err) {
+        showToast("Failed to connect to save API", true);
+    }
+}
+
+async function syncStrategies() {
+    if (!confirm("Are you sure you want to overwrite Vercel KV strategies with the codebase strategies.js file? Any direct edits in the web UI will be overwritten.")) return;
+    try {
+        const response = await fetch('/api/admin/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'sync_strategies' })
+        });
+        const resJson = await response.json();
+        if (response.ok && resJson.success) {
+            showToast("Strategies successfully synced from codebase!");
+            await fetchAdminDbData();
+        } else {
+            showToast(resJson.error || "Sync failed", true);
+        }
+    } catch (err) {
+        showToast("Failed to connect to save API", true);
+    }
+}
+
+function exportWhitelist() {
+    if (!whitelistData) {
+        showToast("No whitelist data available to export", true);
+        return;
+    }
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(whitelistData, null, 4));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", "whitelist.json");
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    showToast("whitelist.json exported successfully!");
+}
+
+function exportHolidays() {
+    if (!marketHolidays2026) {
+        showToast("No holiday data available to export", true);
+        return;
+    }
+    const jsContent = `const marketHolidays2026 = ${JSON.stringify(marketHolidays2026, null, 4)};\n\nif (typeof module !== 'undefined') {\n    module.exports = marketHolidays2026;\n}\n`;
+    const dataStr = "data:text/javascript;charset=utf-8," + encodeURIComponent(jsContent);
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", "holidays.js");
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    showToast("holidays.js exported successfully!");
+}
+
+function exportStrategies() {
+    if (!strategiesData) {
+        showToast("No strategy data available to export", true);
+        return;
+    }
+    const jsContent = `// Options Trading Strategies Data\n// Generated dynamically from Excel parsed data\nconst strategiesData = ${JSON.stringify(strategiesData, null, 4)};\n\nif (typeof module !== 'undefined') {\n    module.exports = strategiesData;\n}\n`;
+    const dataStr = "data:text/javascript;charset=utf-8," + encodeURIComponent(jsContent);
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", "strategies.js");
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    showToast("strategies.js exported successfully!");
 }
 
 async function logoutAdmin() {
