@@ -65,6 +65,11 @@ module.exports = async (req, res) => {
             return res.status(401).json({ error: 'Unauthorized. Admin session required.' });
         }
 
+        // Prevent browser/CDN caching of dynamic DB data
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+
         let strategies = null;
         let holidays = null;
         let whitelist = null;

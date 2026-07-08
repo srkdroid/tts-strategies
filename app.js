@@ -962,7 +962,7 @@ function switchDbTab(tab) {
 
 async function fetchAdminDbData() {
     try {
-        const response = await fetch('/api/admin/get');
+        const response = await fetch(`/api/admin/get?_t=${Date.now()}`);
         if (!response.ok) return;
         const resJson = await response.json();
         whitelistData = resJson.whitelist || {};
