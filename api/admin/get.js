@@ -79,13 +79,31 @@ module.exports = async (req, res) => {
             // Fetch strategies from KV
             const stratRes = await queryKV(['GET', 'strategies']);
             if (stratRes) {
-                strategies = JSON.parse(stratRes);
+                try {
+                    strategies = JSON.parse(stratRes);
+                } catch (parseErr) {
+                    console.error("Failed to parse strategies from Redis (corrupted). Deleting key:", parseErr);
+                    try {
+                        await queryKV(['DEL', 'strategies']);
+                    } catch (delErr) {
+                        console.error("Failed to delete corrupted strategies key:", delErr);
+                    }
+                }
             }
             
             // Fetch holidays from KV
             const holRes = await queryKV(['GET', 'holidays']);
             if (holRes) {
-                holidays = JSON.parse(holRes);
+                try {
+                    holidays = JSON.parse(holRes);
+                } catch (parseErr) {
+                    console.error("Failed to parse holidays from Redis (corrupted). Deleting key:", parseErr);
+                    try {
+                        await queryKV(['DEL', 'holidays']);
+                    } catch (delErr) {
+                        console.error("Failed to delete corrupted holidays key:", delErr);
+                    }
+                }
             }
 
             // Fetch whitelist hash from KV

@@ -132,16 +132,38 @@ module.exports = async (req, res) => {
             // Fetch strategies from KV
             const stratRes = await queryKV(['GET', 'strategies']);
             if (stratRes) {
-                strategiesData = JSON.parse(stratRes);
-            } else {
+                try {
+                    strategiesData = JSON.parse(stratRes);
+                } catch (parseErr) {
+                    console.error("Failed to parse strategies from Redis (corrupted). Deleting key for automatic migration fallback:", parseErr);
+                    try {
+                        await queryKV(['DEL', 'strategies']);
+                    } catch (delErr) {
+                        console.error("Failed to delete corrupted strategies key:", delErr);
+                    }
+                }
+            } 
+            
+            if (!strategiesData) {
                 strategiesData = await runStrategiesMigration();
             }
 
             // Fetch holidays from KV
             const holRes = await queryKV(['GET', 'holidays']);
             if (holRes) {
-                holidaysData = JSON.parse(holRes);
-            } else {
+                try {
+                    holidaysData = JSON.parse(holRes);
+                } catch (parseErr) {
+                    console.error("Failed to parse holidays from Redis (corrupted). Deleting key for automatic migration fallback:", parseErr);
+                    try {
+                        await queryKV(['DEL', 'holidays']);
+                    } catch (delErr) {
+                        console.error("Failed to delete corrupted holidays key:", delErr);
+                    }
+                }
+            } 
+            
+            if (!holidaysData) {
                 holidaysData = await runHolidaysMigration();
             }
         } catch (dbErr) {
