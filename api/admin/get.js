@@ -105,18 +105,14 @@ module.exports = async (req, res) => {
             }
         }
 
-        // Fallbacks: If database is unconnected, erroring, or empty, return local files' contents
         if (!strategies) {
             const stratPath = path.join(process.cwd(), 'strategies.js');
             if (fs.existsSync(stratPath)) {
                 const content = fs.readFileSync(stratPath, 'utf8');
-                const cleanJson = content
-                    .replace('// Options Trading Strategies Data', '')
-                    .replace('// Generated dynamically from Excel parsed data', '')
-                    .replace('const strategiesData = ', '')
-                    .trim();
-                const cleaned = cleanJson.endsWith(';') ? cleanJson.slice(0, -1) : cleanJson;
-                strategies = JSON.parse(cleaned);
+                const match = content.match(/(?:const|let)?\s*strategiesData\s*=\s*(\[[\s\S]*?\])\s*;?/);
+                if (match) {
+                    strategies = JSON.parse(match[1]);
+                }
             }
         }
 

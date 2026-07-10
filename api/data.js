@@ -81,15 +81,12 @@ async function runStrategiesMigration() {
         const strategiesPath = path.join(process.cwd(), 'strategies.js');
         if (fs.existsSync(strategiesPath)) {
             const content = fs.readFileSync(strategiesPath, 'utf8');
-            const cleanJson = content
-                .replace('// Options Trading Strategies Data', '')
-                .replace('// Generated dynamically from Excel parsed data', '')
-                .replace('const strategiesData = ', '')
-                .trim();
-            const cleaned = cleanJson.endsWith(';') ? cleanJson.slice(0, -1) : cleanJson;
-            await queryKV(['SET', 'strategies', cleaned]);
-            console.log("Migration: strategies.js imported to Vercel KV");
-            return JSON.parse(cleaned);
+            const match = content.match(/(?:const|let)?\s*strategiesData\s*=\s*(\[[\s\S]*?\])\s*;?/);
+            if (match) {
+                await queryKV(['SET', 'strategies', match[1]]);
+                console.log("Migration: strategies.js imported to Vercel KV");
+                return JSON.parse(match[1]);
+            }
         }
     } catch (e) {
         console.error("Strategies migration failed:", e);
@@ -157,13 +154,10 @@ module.exports = async (req, res) => {
             const strategiesPath = path.join(process.cwd(), 'strategies.js');
             if (fs.existsSync(strategiesPath)) {
                 const content = fs.readFileSync(strategiesPath, 'utf8');
-                const cleanJson = content
-                    .replace('// Options Trading Strategies Data', '')
-                    .replace('// Generated dynamically from Excel parsed data', '')
-                    .replace('const strategiesData = ', '')
-                    .trim();
-                const cleaned = cleanJson.endsWith(';') ? cleanJson.slice(0, -1) : cleanJson;
-                strategiesData = JSON.parse(cleaned);
+                const match = content.match(/(?:const|let)?\s*strategiesData\s*=\s*(\[[\s\S]*?\])\s*;?/);
+                if (match) {
+                    strategiesData = JSON.parse(match[1]);
+                }
             }
         }
 

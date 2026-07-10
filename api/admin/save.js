@@ -86,13 +86,10 @@ module.exports = async (req, res) => {
                 const strategiesPath = path.join(process.cwd(), 'strategies.js');
                 if (fs.existsSync(strategiesPath)) {
                     const content = fs.readFileSync(strategiesPath, 'utf8');
-                    const cleanJson = content
-                        .replace('// Options Trading Strategies Data', '')
-                        .replace('// Generated dynamically from Excel parsed data', '')
-                        .replace('const strategiesData = ', '')
-                        .trim();
-                    const cleaned = cleanJson.endsWith(';') ? cleanJson.slice(0, -1) : cleanJson;
-                    await queryKV(['SET', 'strategies', cleaned]);
+                    const match = content.match(/(?:const|let)?\s*strategiesData\s*=\s*(\[[\s\S]*?\])\s*;?/);
+                    if (match) {
+                        await queryKV(['SET', 'strategies', match[1]]);
+                    }
                 }
                 return res.status(200).json({ success: true, message: 'Successfully synced strategies from codebase file to KV' });
             }
@@ -128,13 +125,10 @@ module.exports = async (req, res) => {
                 const strategiesPath = path.join(process.cwd(), 'strategies.js');
                 if (fs.existsSync(strategiesPath)) {
                     const content = fs.readFileSync(strategiesPath, 'utf8');
-                    const cleanJson = content
-                        .replace('// Options Trading Strategies Data', '')
-                        .replace('// Generated dynamically from Excel parsed data', '')
-                        .replace('const strategiesData = ', '')
-                        .trim();
-                    const cleaned = cleanJson.endsWith(';') ? cleanJson.slice(0, -1) : cleanJson;
-                    await queryKV(['SET', 'strategies', cleaned]);
+                    const match = content.match(/(?:const|let)?\s*strategiesData\s*=\s*(\[[\s\S]*?\])\s*;?/);
+                    if (match) {
+                        await queryKV(['SET', 'strategies', match[1]]);
+                    }
                 }
                 const holPath = path.join(process.cwd(), 'holidays.js');
                 if (fs.existsSync(holPath)) {
