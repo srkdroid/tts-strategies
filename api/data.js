@@ -81,7 +81,7 @@ async function runStrategiesMigration() {
         const strategiesPath = path.join(process.cwd(), 'strategies.js');
         if (fs.existsSync(strategiesPath)) {
             const content = fs.readFileSync(strategiesPath, 'utf8');
-            const match = content.match(/(?:const|let)?\s*strategiesData\s*=\s*(\[[\s\S]*?\])\s*;?/);
+            const match = content.match(/(?:const|let)?\s*strategiesData\s*=\s*(\[[\s\S]*\])\s*;?/);
             if (match) {
                 await queryKV(['SET', 'strategies', match[1]]);
                 console.log("Migration: strategies.js imported to Vercel KV");
@@ -176,7 +176,7 @@ module.exports = async (req, res) => {
             const strategiesPath = path.join(process.cwd(), 'strategies.js');
             if (fs.existsSync(strategiesPath)) {
                 const content = fs.readFileSync(strategiesPath, 'utf8');
-                const match = content.match(/(?:const|let)?\s*strategiesData\s*=\s*(\[[\s\S]*?\])\s*;?/);
+                const match = content.match(/(?:const|let)?\s*strategiesData\s*=\s*(\[[\s\S]*\])\s*;?/);
                 if (match) {
                     strategiesData = JSON.parse(match[1]);
                 }

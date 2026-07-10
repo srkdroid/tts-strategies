@@ -127,7 +127,7 @@ module.exports = async (req, res) => {
             const stratPath = path.join(process.cwd(), 'strategies.js');
             if (fs.existsSync(stratPath)) {
                 const content = fs.readFileSync(stratPath, 'utf8');
-                const match = content.match(/(?:const|let)?\s*strategiesData\s*=\s*(\[[\s\S]*?\])\s*;?/);
+                const match = content.match(/(?:const|let)?\s*strategiesData\s*=\s*(\[[\s\S]*\])\s*;?/);
                 if (match) {
                     strategies = JSON.parse(match[1]);
                 }
