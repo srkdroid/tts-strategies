@@ -76,7 +76,8 @@ module.exports = async (req, res) => {
             return res.status(400).json({ error: 'Action is required' });
         }
         
-        if (action !== 'sync_local' && action !== 'clear_logs' && data === undefined) {
+        const actionsWithoutData = ['sync_local', 'sync_strategies', 'sync_holidays', 'sync_whitelist', 'clear_logs'];
+        if (!actionsWithoutData.includes(action) && data === undefined) {
             return res.status(400).json({ error: 'Data is required for this action' });
         }
 
