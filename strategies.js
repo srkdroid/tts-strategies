@@ -1,6 +1,5 @@
 // Options Trading Strategies Data
 // Generated dynamically from Excel parsed data
-
 const strategiesData = [
     {
         "id": "monthly-batman",
@@ -145,21 +144,23 @@ const strategiesData = [
         "strike_example": {
             "ATM": 25000,
             "CE": [
-                "25300 (Buy 1)",
-                "25600 (Sell 3)",
-                "25900 (Buy 2)"
+                "1 ATM + 300 (Leg)",
+                "3 ATM + 600 (Leg)",
+                "2 ATM + 900 (Leg)"
             ]
         },
         "conditions": {
             "credit_range": "0.5% (Credit) to +1.6% (Credit)",
             "refine_credit": "If credit > 1.6%, shift all legs 100 points OTM until credit condition met\nIf credit < 0.5%, then skip that month",
-            "refine_blue_line": "If as per DTE, deploy Fri is holiday then deploy on following week Fri"
+            "refine_blue_line": "If as per DTE, deploy Fri is holiday then deploy on following week Fri",
+            "position_delta": ""
         },
         "exit": {
-            "target": "3.0 % Profit",
-            "sl": "3.0 % Loss",
-            "market_move": null,
-            "duration": "Max till 3rd Fri of Expiry month"
+            "target": "2 % Profit",
+            "sl": "2.5 % Loss",
+            "market_move": "Market crosses selling leg",
+            "duration": "Max till 3rd Fri of Expiry month",
+            "gap_up": ""
         }
     },
     {
@@ -447,7 +448,7 @@ const strategiesData = [
         "id": "stbt-matrix-calendar-4",
         "sheet": "STBT",
         "name": "Matrix Calendar",
-        "index": "Nifty (Expiry Tue)",
+        "index": "Nifty",
         "expiry": "Bi-Weekly - STBT",
         "dte": "11 DTE",
         "day": "Fri",
@@ -455,30 +456,32 @@ const strategiesData = [
         "type": "CE Only",
         "setup": {
             "CE": [
-                "Sell 4  delta 0.23 (21-Apr Exp)",
-                "Buy 3  Sell Strike + 500 (21-Apr Exp)",
-                "Buy 2  Monthly same strike as Sell (28-Apr)"
+                "Sell 4  delta 0.23 ",
+                "Buy 3  Sell Strike + 500",
+                "Buy 2  Monthly same strike as Sell"
             ]
         },
         "strike_example": {
-            "ATM": 25000,
+            "ATM": 24200,
             "CE": [
-                "4 Sell 0.23 delta (say 25500 @ 70) 21-Apr",
-                "3 Buy 26000 21-Apr",
-                "2 Buy 25500 28-Apr"
+                "Deployment Date - 10-Jul",
+                "4  Sell delta 0.23  (21JUL 24500 CE) only if premium is more than Rs. 70",
+                "3  Buy sell Strike + 500 (21JUL 25000 CE)",
+                "2  Buy monthly same strike as Sell (28JUL 24500 CE)"
             ]
         },
         "conditions": {
             "credit_range": "Sell strike min 400 point from ATM",
             "refine_credit": "Sell Premium min 70 Rs",
-            "position_delta": "For Last wk of month, Buy hedge of following month"
+            "refine_blue_line": "",
+            "position_delta": "For Last week of month, Buy hedge of following month"
         },
         "exit": {
             "target": "1 % Profit",
             "sl": "1 % Loss",
-            "market_move": null,
+            "market_move": "",
             "duration": "Next day trading sessions, Mon 3:15",
-            "gap_up": null
+            "gap_up": ""
         }
     },
     {
@@ -560,3 +563,7 @@ const strategiesData = [
         }
     }
 ];
+
+if (typeof module !== 'undefined') {
+    module.exports = strategiesData;
+}
