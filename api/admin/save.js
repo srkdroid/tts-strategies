@@ -2,7 +2,10 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-const SECRET = 'TTS_STRATEGIES_ADMIN_SECURE_KEY_2026';
+const SECRET = process.env.ADMIN_JWT_SECRET || (process.env.NODE_ENV !== 'production' && !process.env.VERCEL ? 'TTS_STRATEGIES_ADMIN_SECURE_KEY_2026' : undefined);
+if (!SECRET) {
+    throw new Error("ADMIN_JWT_SECRET environment variable is missing");
+}
 
 function verifyAdminToken(token) {
     try {

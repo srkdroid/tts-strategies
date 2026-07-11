@@ -2,7 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const SECRET = 'TTS_STRATEGIES_SECURE_KEY_2026_JULY'; // Same key for signing session cookie
+const SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' && !process.env.VERCEL ? 'TTS_STRATEGIES_SECURE_KEY_2026_JULY' : undefined);
+if (!SECRET) {
+    throw new Error("JWT_SECRET environment variable is missing");
+}
 
 function normalizePhoneNumber(phone) {
     if (!phone) return "";

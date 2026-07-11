@@ -1,7 +1,13 @@
 const crypto = require('crypto');
 
-const SECRET = 'TTS_STRATEGIES_ADMIN_SECURE_KEY_2026';
-const ADMIN_PASS = process.env.ADMIN_PASSWORD || 'admin123'; // Users should set ADMIN_PASSWORD env var on Vercel
+const SECRET = process.env.ADMIN_JWT_SECRET || (process.env.NODE_ENV !== 'production' && !process.env.VERCEL ? 'TTS_STRATEGIES_ADMIN_SECURE_KEY_2026' : undefined);
+if (!SECRET) {
+    throw new Error("ADMIN_JWT_SECRET environment variable is missing");
+}
+const ADMIN_PASS = process.env.ADMIN_PASSWORD || (process.env.NODE_ENV !== 'production' && !process.env.VERCEL ? 'admin123' : undefined);
+if (!ADMIN_PASS) {
+    throw new Error("ADMIN_PASSWORD environment variable is missing");
+}
 
 function generateAdminToken() {
     const expires = Date.now() + 2 * 60 * 60 * 1000; // 2 hours admin session

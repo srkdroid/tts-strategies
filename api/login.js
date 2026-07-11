@@ -2,7 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const SECRET = 'TTS_STRATEGIES_SECURE_KEY_2026_JULY'; // Secret key for cookie signing
+const SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' && !process.env.VERCEL ? 'TTS_STRATEGIES_SECURE_KEY_2026_JULY' : undefined);
+if (!SECRET) {
+    throw new Error("JWT_SECRET environment variable is missing");
+}
 
 function normalizePhoneNumber(phone) {
     if (!phone) return "";
@@ -169,8 +172,12 @@ module.exports = async (req, res) => {
                 return res.status(401).json({ error: 'Phone number not registered. Access denied.' });
             }
 
-            // A. Local simulation bypass for local offline testing
+            // A. Local simulation bypass for local offline testing (disabled in production)
             if (simulate_local) {
+                const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+                if (isProduction) {
+                    return res.status(403).json({ error: 'Local simulation bypass is disabled in production.' });
+                }
                 const sessionCookie = generateToken(cleanPhone);
                 await logAuthEvent(cleanPhone, 'telegram');
                 res.setHeader('Set-Cookie', [

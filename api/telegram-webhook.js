@@ -181,6 +181,6 @@ module.exports = async (req, res) => {
 
     } catch (error) {
         console.error('Webhook error:', error);
-        return res.status(200).json({ success: true, error: error.message }); // Always return 200 to Telegram to prevent retries
+        return res.status(200).json({ success: true, error: 'Internal server error' }); // Always return 200 to Telegram to prevent retries
     }
 };
