@@ -1815,3 +1815,4 @@ function renderCapitalFlow() {
         });
     });
 }
+// Reverted PDF generation feature
