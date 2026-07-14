@@ -529,8 +529,8 @@
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th>Timestamp</th>
-                                <th>Phone Number</th>
+                                <th onclick="toggleLogsSort('timestamp')" style="cursor: pointer; user-select: none;">Timestamp <span id="sort-icon-timestamp" style="font-size: 0.7rem; opacity: 0.8;"></span></th>
+                                <th onclick="toggleLogsSort('phone')" style="cursor: pointer; user-select: none;">Phone Number <span id="sort-icon-phone" style="font-size: 0.7rem; opacity: 0.8;"></span></th>
                                 <th>Auth Method</th>
                             </tr>
                         </thead>

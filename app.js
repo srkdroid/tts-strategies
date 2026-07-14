@@ -477,6 +477,8 @@ let strategiesData = []; // Loaded dynamically from secure API
 let isAdminMode = false;
 let whitelistData = {};
 let auditLogsData = [];
+let logsSortKey = null;
+let logsSortDirection = 'asc';
 let activeDbTab = "users";
 
 // Initialize Dashboard
@@ -967,6 +969,10 @@ async function fetchAdminDbData() {
         const resJson = await response.json();
         whitelistData = resJson.whitelist || {};
         auditLogsData = resJson.auditLogs || [];
+        if (logsSortKey) {
+            applyLogsSort();
+            updateLogsSortIcons();
+        }
         if (resJson.strategies) {
             strategiesData = resJson.strategies;
         }
@@ -1113,6 +1119,55 @@ function renderAuditLogsTable() {
         
         tbody.appendChild(tr);
     });
+}
+
+// Reusable sorting helper for Auth Audit Logs
+function applyLogsSort() {
+    if (!logsSortKey) return;
+    auditLogsData.sort((a, b) => {
+        let valA = a[logsSortKey] || '';
+        let valB = b[logsSortKey] || '';
+        
+        if (logsSortKey === 'timestamp') {
+            valA = new Date(valA).getTime() || 0;
+            valB = new Date(valB).getTime() || 0;
+        } else {
+            valA = valA.toString().toLowerCase();
+            valB = valB.toString().toLowerCase();
+        }
+        
+        if (valA < valB) return logsSortDirection === 'asc' ? -1 : 1;
+        if (valA > valB) return logsSortDirection === 'asc' ? 1 : -1;
+        return 0;
+    });
+}
+
+// Update UI headers to display sorting direction arrows
+function updateLogsSortIcons() {
+    const timeIcon = document.getElementById("sort-icon-timestamp");
+    const phoneIcon = document.getElementById("sort-icon-phone");
+    
+    if (timeIcon) timeIcon.innerText = "";
+    if (phoneIcon) phoneIcon.innerText = "";
+    
+    if (logsSortKey === 'timestamp' && timeIcon) {
+        timeIcon.innerText = logsSortDirection === 'asc' ? ' 🔼' : ' 🔽';
+    } else if (logsSortKey === 'phone' && phoneIcon) {
+        phoneIcon.innerText = logsSortDirection === 'asc' ? ' 🔼' : ' 🔽';
+    }
+}
+
+// Toggle sort key and trigger re-render
+function toggleLogsSort(key) {
+    if (logsSortKey === key) {
+        logsSortDirection = logsSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        logsSortKey = key;
+        logsSortDirection = 'asc';
+    }
+    applyLogsSort();
+    updateLogsSortIcons();
+    renderAuditLogsTable();
 }
 
 // Refresh Auth Logs
