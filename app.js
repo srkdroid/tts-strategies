@@ -142,6 +142,10 @@ function calculateDeploymentsForRange(startDate, endDate) {
                     // Monday, 8 days before Nifty weekly expiry
                     nominalDate = new Date(expiry.actual.getTime());
                     nominalDate.setDate(nominalDate.getDate() - 8);
+                } else if (strategy.name === "Blaze BF (Nifty)") {
+                    // Monday, 8 days before Nifty weekly expiry (8 DTE)
+                    nominalDate = new Date(expiry.actual.getTime());
+                    nominalDate.setDate(nominalDate.getDate() - 8);
                 }
             } else if (strategy.sheet === "Monthly") {
                 // Monthly strategies only apply to Monthly Expiries
