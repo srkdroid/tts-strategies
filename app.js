@@ -21,6 +21,7 @@ const EXIT_RULES = {
     "biweekly-bwb-2":               { type: "next_weekday", weekday: 4 },
     "biweekly-broken-wing-3":       { type: "next_weekday", weekday: 2 },
     "biweekly-hni-4":               { type: "next_weekday", weekday: 5 },
+    "biweekly-blazeBF-1":           { type: "next_weekday", weekday: 5 },
     "stbt-nifty-3d-ladder-2":       { type: "next_weekday", weekday: 5 },
     "stbt-ce-dominator-3":          { type: "next_weekday", weekday: 1 },
     "stbt-matrix-calendar-4":       { type: "next_weekday", weekday: 1 },
