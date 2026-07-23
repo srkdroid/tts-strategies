@@ -366,6 +366,46 @@ const strategiesData = [
             "duration": "Max till next Fri 3:00 pm"
         }
     },
+
+    {
+        "id": "biweekly-blazeBF-1",
+        "sheet": "BiWkly",
+        "name": "Blaze BF (Nifty)",
+        "index": "Nifty (Expiry Tue)",
+        "expiry": "Bi Weekly",
+        "dte": "8 DTE",
+        "day": "Monday",
+        "time": "15:16:00",
+        "type": "PE Only",
+        "setup": {
+            "PE": [
+                "Buy 1  ATM-200",
+                "Sell 3  ATM-600",
+                "Buy 2  ATM-1000"
+            ],
+            "notes": "1) pick only multiple of 100 strikes; since it is biweekly; if ATM is 23050; consider it as 23000; Don't trade if Tuesday is holiday "
+        },
+        "strike_example": {
+            "ATM": 23100,
+            "PE": [
+                "22900",
+                "22700",
+                "22300"
+            ],
+            "notes": null
+        },
+        "conditions": {
+            "credit_range": "-0.5 % (Debit) to +0.6 % (Credit)",
+            "refine_credit": "If Credit > 0.6% then shift all legs by 100 points further OTM, till condition met. Do not take trade if debit is > 0.5%"
+        },
+        "exit": {
+            "target": "1.0 % Profit",
+            "sl": "1.0 % Loss",
+            "market_move": "Market crosses 1st buy leg strike on Tuesday",
+            "duration": "Max till next Fri 3:00 pm"
+        }
+    },
+
     {
         "id": "stbt-nifty-3d-ladder-2",
         "sheet": "STBT",
