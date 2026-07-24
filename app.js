@@ -10,8 +10,24 @@ const indexSpotPrices = {
     "Fin Nifty (Expiry Tue)": 25000
 };
 
-// Fallback exit rules for backward compatibility (rules now embedded in strategy objects)
-const EXIT_RULES = {};
+// Machine-readable fallback exit rules for backward compatibility
+const EXIT_RULES = {
+    "monthly-batman":               { type: "day_of_expiry_month", day: 7 },
+    "monthly-no-brainer-nifty":     { type: "day_of_expiry_month", day: 21 },
+    "monthly-no-brainer-banknifty": { type: "before_expiry", days: 1 },
+    "monthly-hni-nifty":            { type: "nth_weekday_of_expiry_month", weekday: 5, n: 3 },
+    "monthly-autopilot-finnifty":   { type: "next_weekday", weekday: 4 },
+    "monthly-double-decker":        { type: "day_of_expiry_month", day: 12 },
+    "biweekly-bwb-2":               { type: "next_weekday", weekday: 4 },
+    "biweekly-broken-wing-3":       { type: "next_weekday", weekday: 2 },
+    "biweekly-hni-4":               { type: "next_weekday", weekday: 5 },
+    "biweekly-blazeBF-1":           { type: "next_weekday", weekday: 5 },
+    "stbt-nifty-3d-ladder-2":       { type: "next_weekday", weekday: 5 },
+    "stbt-ce-dominator-3":          { type: "next_weekday", weekday: 1 },
+    "stbt-matrix-calendar-4":       { type: "next_weekday", weekday: 1 },
+    "stbt-sensex-no-brainer-5":     { type: "next_weekday", weekday: 1 },
+    "stbt-fin-nifty-2d-ladder-6":   { type: "next_weekday", weekday: 1 }
+};
 
 // Calculate the max exit date for a deployment given its exit rule
 function calculateExitDate(deployDate, expiryDate, exitRule) {
@@ -116,13 +132,62 @@ function calculateDeploymentsForRange(startDate, endDate) {
                     }
                 }
             } else {
-                // Fallback for legacy strategies without deploy_rule field
-                if (strategy.sheet === "BiWkly" || strategy.sheet === "STBT") {
-                    nominalDate = new Date(expiry.actual.getTime());
-                    nominalDate.setDate(nominalDate.getDate() - 5);
+                // Fallback for legacy database strategies without deploy_rule field
+                if (strategy.sheet === "STBT") {
+                    if (strategy.name === "Nifty 3D Ladder") {
+                        nominalDate = new Date(expiry.actual.getTime());
+                        nominalDate.setDate(nominalDate.getDate() - 5);
+                    } else if (strategy.name === "CE Dominator") {
+                        nominalDate = new Date(expiry.actual.getTime());
+                        nominalDate.setDate(nominalDate.getDate() - 4);
+                    } else if (strategy.name === "Fin Nifty 2D Ladder") {
+                        if (expiry.isMonthly) {
+                            nominalDate = new Date(expiry.actual.getTime());
+                            nominalDate.setDate(nominalDate.getDate() - 4);
+                        }
+                    } else if (strategy.name === "Sensex No brainer") {
+                        nominalDate = new Date(expiry.actual.getTime());
+                        nominalDate.setDate(nominalDate.getDate() - 6);
+                    } else if (strategy.name === "Matrix Calendar") {
+                        nominalDate = new Date(expiry.actual.getTime());
+                        nominalDate.setDate(nominalDate.getDate() - 11);
+                    } else {
+                        nominalDate = new Date(expiry.actual.getTime());
+                        nominalDate.setDate(nominalDate.getDate() - 5);
+                    }
+                } else if (strategy.sheet === "BiWkly") {
+                    if (strategy.name === "BWB") {
+                        nominalDate = new Date(expiry.actual.getTime());
+                        nominalDate.setDate(nominalDate.getDate() - 12);
+                    } else if (strategy.name === "Broken Wing") {
+                        nominalDate = new Date(expiry.actual.getTime());
+                        nominalDate.setDate(nominalDate.getDate() - 7);
+                    } else if (strategy.name === "HNI" || strategy.name === "Blaze Butterfly" || strategy.name === "Blaze BF (Nifty)" || strategy.id === "biweekly-blazeBF-1") {
+                        nominalDate = new Date(expiry.actual.getTime());
+                        nominalDate.setDate(nominalDate.getDate() - 8);
+                    } else {
+                        nominalDate = new Date(expiry.actual.getTime());
+                        nominalDate.setDate(nominalDate.getDate() - 8);
+                    }
                 } else if (strategy.sheet === "Monthly" && expiry.isMonthly) {
-                    nominalDate = new Date(expiry.actual.getTime());
-                    nominalDate.setDate(nominalDate.getDate() - 12);
+                    if (strategy.name === "Batman 1:3:2" || strategy.name === "Double Decker" || strategy.name === "HNI (Nifty)" || strategy.name === "No Brainer (Nifty)") {
+                        let expMonth = expiry.actual.getMonth();
+                        let expYear = expiry.actual.getFullYear();
+                        let dTemp = new Date(expYear, expMonth - 1, 1);
+                        while (dTemp.getMonth() === (expMonth - 1 + 12) % 12) {
+                            if (dTemp.getDay() === 5) {
+                                let diff = Math.round((expiry.actual - dTemp) / (1000 * 60 * 60 * 24));
+                                if (diff >= 29 && diff <= 44) {
+                                    nominalDate = new Date(dTemp.getTime());
+                                    break;
+                                }
+                            }
+                            dTemp.setDate(dTemp.getDate() + 1);
+                        }
+                    } else {
+                        nominalDate = new Date(expiry.actual.getTime());
+                        nominalDate.setDate(nominalDate.getDate() - 12);
+                    }
                 }
             }
             
