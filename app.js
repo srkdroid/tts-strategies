@@ -569,7 +569,11 @@ function updateCalendars() {
         renderCalendar("calendar-july", 2026, 6, allCalculatedDeployments, activeFilters);
         renderCalendar("calendar-august", 2026, 7, allCalculatedDeployments, activeFilters);
     } else {
-        renderCapitalFlow();// Helper to dynamically calculate and format concrete strike labels (e.g. "Buy 1 25200 CE")
+        renderCapitalFlow();
+    }
+}
+
+// Helper to dynamically calculate and format concrete strike labels (e.g. "Buy 1 25200 CE")
 function generateConcreteStrikeText(legStr, side, atmPrice) {
     if (!legStr) return legStr;
     const atm = atmPrice || 25000;
@@ -726,7 +730,6 @@ function showStrategyDetails(dep) {
             note.innerHTML = `*Note:* ${strategy.strike_example.notes}`;
             strikeExampleContainer.appendChild(note);
         }
-    }      }
     }
     
     // Conditions
