@@ -627,10 +627,10 @@ function showStrategyDetails(dep) {
     updateModalStarState(strategy.id);
     
     // Setup Legs
-    const legsContainer = document.getElementById("modal-setup-legs");
+    const legsContainer = document.getElementById("modal-legs-list");
     legsContainer.innerHTML = "";
     
-    const strikeExampleContainer = document.getElementById("modal-strike-example");
+    const strikeExampleContainer = document.getElementById("modal-strikes-list");
     strikeExampleContainer.innerHTML = "";
     
     const atmPrice = (strategy.strike_example && strategy.strike_example.ATM) ? strategy.strike_example.ATM : 25000;
