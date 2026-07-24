@@ -370,7 +370,7 @@ const strategiesData = [
     {
         "id": "biweekly-blazeBF-1",
         "sheet": "BiWkly",
-        "name": "Blaze BF (Nifty)",
+        "name": "Blaze Butterfly",
         "index": "Nifty (Expiry Tue)",
         "expiry": "Bi Weekly",
         "dte": "8 DTE",
