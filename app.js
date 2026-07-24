@@ -790,7 +790,7 @@ function showStrategyDetails(dep) {
     }
     
     // Detail modal edit/delete actions removed from calendar details context
-    modal.style.display = "block";
+    modal.style.display = "flex";
 }
 
 function hideModal() {
@@ -1619,7 +1619,7 @@ async function logoutAdmin() {
         console.warn("Server logout failed, attempting local cookie overwrite fallback", e);
     }
     document.cookie = 'admin_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-    window.location.reload();
+    window.location.href = '/admin.html';
 }
 
 async function logoutUser() {
@@ -1629,7 +1629,7 @@ async function logoutUser() {
         console.warn("Server logout failed, attempting local cookie overwrite fallback", e);
     }
     document.cookie = 'session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-    window.location.reload();
+    window.location.href = '/login.html';
 }
 
 /* ─── Capital Flow Timeline View Helpers ──────────────────────────────────── */
@@ -1831,6 +1831,12 @@ function renderCapitalFlow() {
                     <span>${strat.time ? strat.time.slice(0, 5) : "-"}</span>
                 </div>
             `;
+            infoCard.style.cursor = "pointer";
+            infoCard.addEventListener("click", () => {
+                const stratDeps = allCalculatedDeployments.filter(d => d.strategy.id === strat.id);
+                const targetDep = stratDeps.length > 0 ? stratDeps[0] : { strategy: strat, actualDate: new Date(), expiryDate: new Date(), nominalDate: new Date(), shifted: false };
+                showStrategyDetails(targetDep);
+            });
             grid.appendChild(infoCard);
             
             // Render slots
