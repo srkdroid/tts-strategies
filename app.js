@@ -623,9 +623,6 @@ function showStrategyDetails(dep) {
         document.getElementById("modal-holiday-notice").style.display = "none";
     }
     
-    // Star state
-    updateModalStarState(strategy.id);
-    
     // Setup Legs
     const legsContainer = document.getElementById("modal-legs-list");
     legsContainer.innerHTML = "";
