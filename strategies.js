@@ -1,5 +1,4 @@
-// Options Trading Strategies Data
-// Generated dynamically from Excel parsed data
+// Options Strategies Master Data
 const strategiesData = [
     {
         "id": "monthly-batman",
@@ -46,6 +45,15 @@ const strategiesData = [
             "sl": "2.5 % Loss",
             "market_move": null,
             "duration": "10 to 15 days from deployment, \nHold max till 7th of month"
+        },
+        "deploy_rule": {
+            "type": "preceding_month_friday",
+            "dte_min": 39,
+            "dte_max": 44
+        },
+        "exit_rule": {
+            "type": "day_of_expiry_month",
+            "day": 7
         }
     },
     {
@@ -83,6 +91,15 @@ const strategiesData = [
             "sl": "3.0 % Loss",
             "market_move": "Market crosses sell leg strike",
             "duration": "a) if profit is 2% before 10th; (by end of day, if 1.8 or 1.9 then book)\nb) If by end of day, if profit is about 2.3, then exit do not wait for overnight (for 0.1 or 0.2)\nc) Hold max till 21st of month"
+        },
+        "deploy_rule": {
+            "type": "preceding_month_friday",
+            "dte_min": 29,
+            "dte_max": 34
+        },
+        "exit_rule": {
+            "type": "day_of_expiry_month",
+            "day": 21
         }
     },
     {
@@ -121,6 +138,15 @@ const strategiesData = [
             "sl": "1.0 % Loss",
             "market_move": null,
             "duration": "Max till 1 day before Expiry"
+        },
+        "deploy_rule": {
+            "type": "expiry_offset",
+            "offset_days": -12,
+            "monthly_only": true
+        },
+        "exit_rule": {
+            "type": "before_expiry",
+            "days": 1
         }
     },
     {
@@ -161,6 +187,16 @@ const strategiesData = [
             "market_move": "Market crosses selling leg",
             "duration": "Max till 3rd Fri of Expiry month",
             "gap_up": ""
+        },
+        "deploy_rule": {
+            "type": "preceding_month_friday",
+            "dte_min": 39,
+            "dte_max": 44
+        },
+        "exit_rule": {
+            "type": "nth_weekday_of_expiry_month",
+            "weekday": 5,
+            "n": 3
         }
     },
     {
@@ -199,6 +235,15 @@ const strategiesData = [
             "sl": "2.0 % Loss",
             "market_move": "Market crosses 1st Buy leg strike\nMax till next Thurday",
             "duration": "Max till next Thursday"
+        },
+        "deploy_rule": {
+            "type": "expiry_offset",
+            "offset_days": -12,
+            "monthly_only": true
+        },
+        "exit_rule": {
+            "type": "next_weekday",
+            "weekday": 4
         }
     },
     {
@@ -250,6 +295,15 @@ const strategiesData = [
             "sl": "3 % Loss",
             "market_move": null,
             "duration": "max till 12th of Expiry month"
+        },
+        "deploy_rule": {
+            "type": "preceding_month_friday",
+            "dte_min": 39,
+            "dte_max": 43
+        },
+        "exit_rule": {
+            "type": "day_of_expiry_month",
+            "day": 12
         }
     },
     {
@@ -288,6 +342,15 @@ const strategiesData = [
             "sl": "1.5 % Loss",
             "market_move": "Market crosses 1st Buy leg strike",
             "duration": "Max till next Thur morning 9:30 am"
+        },
+        "deploy_rule": {
+            "type": "expiry_offset",
+            "offset_days": -12,
+            "monthly_only": false
+        },
+        "exit_rule": {
+            "type": "next_weekday",
+            "weekday": 4
         }
     },
     {
@@ -326,6 +389,15 @@ const strategiesData = [
             "sl": "1.0 % Loss",
             "market_move": "Market crosses sell leg strike",
             "duration": "Max 3 trading sessions, Tue 3:15"
+        },
+        "deploy_rule": {
+            "type": "expiry_offset",
+            "offset_days": -7,
+            "monthly_only": false
+        },
+        "exit_rule": {
+            "type": "next_weekday",
+            "weekday": 2
         }
     },
     {
@@ -364,9 +436,17 @@ const strategiesData = [
             "sl": "1.0 % Loss",
             "market_move": "Market crosses 1st Sell leg strike",
             "duration": "Max till next Fri 3:00 pm"
+        },
+        "deploy_rule": {
+            "type": "expiry_offset",
+            "offset_days": -8,
+            "monthly_only": false
+        },
+        "exit_rule": {
+            "type": "next_weekday",
+            "weekday": 5
         }
     },
-
     {
         "id": "biweekly-blazeBF-1",
         "sheet": "BiWkly",
@@ -403,9 +483,17 @@ const strategiesData = [
             "sl": "1.0 % Loss",
             "market_move": "Market crosses 1st buy leg strike on Tuesday",
             "duration": "Max till next Fri 3:00 pm"
+        },
+        "deploy_rule": {
+            "type": "expiry_offset",
+            "offset_days": -8,
+            "monthly_only": false
+        },
+        "exit_rule": {
+            "type": "next_weekday",
+            "weekday": 5
         }
     },
-
     {
         "id": "stbt-nifty-3d-ladder-2",
         "sheet": "STBT",
@@ -444,6 +532,15 @@ const strategiesData = [
             "market_move": "Market crosses 1st Buy leg strike",
             "duration": "Next day trading sessions, Fri 3:15",
             "gap_up": null
+        },
+        "deploy_rule": {
+            "type": "expiry_offset",
+            "offset_days": -5,
+            "monthly_only": false
+        },
+        "exit_rule": {
+            "type": "next_weekday",
+            "weekday": 5
         }
     },
     {
@@ -482,6 +579,15 @@ const strategiesData = [
             "market_move": "Market crosses Sell leg strike",
             "duration": "Next day trading sessions, Mon 3:15",
             "gap_up": null
+        },
+        "deploy_rule": {
+            "type": "expiry_offset",
+            "offset_days": -4,
+            "monthly_only": false
+        },
+        "exit_rule": {
+            "type": "next_weekday",
+            "weekday": 1
         }
     },
     {
@@ -522,6 +628,15 @@ const strategiesData = [
             "market_move": "",
             "duration": "Next day trading sessions, Mon 3:15",
             "gap_up": ""
+        },
+        "deploy_rule": {
+            "type": "expiry_offset",
+            "offset_days": -11,
+            "monthly_only": false
+        },
+        "exit_rule": {
+            "type": "next_weekday",
+            "weekday": 1
         }
     },
     {
@@ -560,6 +675,15 @@ const strategiesData = [
             "market_move": null,
             "duration": "Next day trading sessions, Mon 3:15",
             "gap_up": null
+        },
+        "deploy_rule": {
+            "type": "expiry_offset",
+            "offset_days": -6,
+            "monthly_only": false
+        },
+        "exit_rule": {
+            "type": "next_weekday",
+            "weekday": 1
         }
     },
     {
@@ -600,10 +724,19 @@ const strategiesData = [
             "market_move": null,
             "duration": "Next day trading sessions, Mon 3:15",
             "gap_up": "If next day opens with Gap up of 140+ points, then exit at open whatever P/L"
+        },
+        "deploy_rule": {
+            "type": "expiry_offset",
+            "offset_days": -4,
+            "monthly_only": true
+        },
+        "exit_rule": {
+            "type": "next_weekday",
+            "weekday": 1
         }
     }
 ];
 
-if (typeof module !== 'undefined') {
+if (typeof module !== 'undefined' && module.exports) {
     module.exports = strategiesData;
 }

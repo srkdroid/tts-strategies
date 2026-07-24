@@ -10,24 +10,8 @@ const indexSpotPrices = {
     "Fin Nifty (Expiry Tue)": 25000
 };
 
-// Machine-readable exit rules keyed by strategy ID
-const EXIT_RULES = {
-    "monthly-batman":               { type: "day_of_expiry_month", day: 7 },
-    "monthly-no-brainer-nifty":     { type: "day_of_expiry_month", day: 21 },
-    "monthly-no-brainer-banknifty": { type: "before_expiry", days: 1 },
-    "monthly-hni-nifty":            { type: "nth_weekday_of_expiry_month", weekday: 5, n: 3 },
-    "monthly-autopilot-finnifty":   { type: "next_weekday", weekday: 4 },
-    "monthly-double-decker":        { type: "day_of_expiry_month", day: 12 },
-    "biweekly-bwb-2":               { type: "next_weekday", weekday: 4 },
-    "biweekly-broken-wing-3":       { type: "next_weekday", weekday: 2 },
-    "biweekly-hni-4":               { type: "next_weekday", weekday: 5 },
-    "biweekly-blazeBF-1":           { type: "next_weekday", weekday: 5 },
-    "stbt-nifty-3d-ladder-2":       { type: "next_weekday", weekday: 5 },
-    "stbt-ce-dominator-3":          { type: "next_weekday", weekday: 1 },
-    "stbt-matrix-calendar-4":       { type: "next_weekday", weekday: 1 },
-    "stbt-sensex-no-brainer-5":     { type: "next_weekday", weekday: 1 },
-    "stbt-fin-nifty-2d-ladder-6":   { type: "next_weekday", weekday: 1 }
-};
+// Fallback exit rules for backward compatibility (rules now embedded in strategy objects)
+const EXIT_RULES = {};
 
 // Calculate the max exit date for a deployment given its exit rule
 function calculateExitDate(deployDate, expiryDate, exitRule) {
@@ -106,97 +90,39 @@ function calculateDeploymentsForRange(startDate, endDate) {
             let nominalDate = null;
             let expiryLabel = formatDateString(expiry.actual);
             
-            if (strategy.sheet === "STBT") {
-                if (strategy.name === "Nifty 3D Ladder") {
-                    // Thursday before Nifty weekly expiry (Tuesday) = E - 5 days
-                    nominalDate = new Date(expiry.actual.getTime());
-                    nominalDate.setDate(nominalDate.getDate() - 5);
-                } else if (strategy.name === "CE Dominator") {
-                    // Friday before Nifty weekly expiry = E - 4 days
-                    nominalDate = new Date(expiry.actual.getTime());
-                    nominalDate.setDate(nominalDate.getDate() - 4);
-                } else if (strategy.name === "Fin Nifty 2D Ladder") {
-                    // Only deploy on Monthly Expiries (E - 4 days)
-                    if (expiry.isMonthly) {
+            // Data-driven deployment date resolution
+            const rule = strategy.deploy_rule;
+            if (rule) {
+                if (rule.type === "expiry_offset") {
+                    if (!rule.monthly_only || expiry.isMonthly) {
                         nominalDate = new Date(expiry.actual.getTime());
-                        nominalDate.setDate(nominalDate.getDate() - 4);
+                        nominalDate.setDate(nominalDate.getDate() + rule.offset_days);
                     }
-                } else if (strategy.name === "Sensex No brainer") {
-                    // Friday before Sensex weekly expiry = E - 6 days
-                    nominalDate = new Date(expiry.actual.getTime());
-                    nominalDate.setDate(nominalDate.getDate() - 6);
-                } else if (strategy.name === "Matrix Calendar") {
-                    // Friday (11 DTE) before Nifty weekly expiry (Tuesday) = E - 11 days
-                    nominalDate = new Date(expiry.actual.getTime());
-                    nominalDate.setDate(nominalDate.getDate() - 11);
-                }
-            } else if (strategy.sheet === "BiWkly") {
-                if (strategy.name === "BWB") {
-                    // Thursday, 12 days before Nifty weekly expiry
-                    nominalDate = new Date(expiry.actual.getTime());
-                    nominalDate.setDate(nominalDate.getDate() - 12);
-                } else if (strategy.name === "Broken Wing") {
-                    // Thursday, 7 days before Sensex weekly expiry
-                    nominalDate = new Date(expiry.actual.getTime());
-                    nominalDate.setDate(nominalDate.getDate() - 7);
-                } else if (strategy.name === "HNI") {
-                    // Monday, 8 days before Nifty weekly expiry
-                    nominalDate = new Date(expiry.actual.getTime());
-                    nominalDate.setDate(nominalDate.getDate() - 8);
-                } else if (strategy.name === "Blaze Butterfly" || strategy.name === "Blaze BF (Nifty)") {
-                    // Monday, 8 days before Nifty weekly expiry (8 DTE)
-                    nominalDate = new Date(expiry.actual.getTime());
-                    nominalDate.setDate(nominalDate.getDate() - 8);
-                }
-            } else if (strategy.sheet === "Monthly") {
-                // Monthly strategies only apply to Monthly Expiries
-                if (expiry.isMonthly) {
-                    if (strategy.name === "Batman 1:3:2" || strategy.name === "Double Decker" || strategy.name === "HNI (Nifty)") {
-                        // Fridays 39-44 days before NEXT month's monthly expiry
-                        // To find this, we check if the expiry is indeed the monthly expiry of next month
-                        // Let's find the Friday in the preceding month.
+                } else if (rule.type === "preceding_month_friday") {
+                    if (expiry.isMonthly) {
                         let expMonth = expiry.actual.getMonth();
                         let expYear = expiry.actual.getFullYear();
-                        
-                        // We check Fridays in the month preceding the expiry month
                         let dTemp = new Date(expYear, expMonth - 1, 1);
                         while (dTemp.getMonth() === (expMonth - 1 + 12) % 12) {
                             if (dTemp.getDay() === 5) { // Friday
                                 let diff = Math.round((expiry.actual - dTemp) / (1000 * 60 * 60 * 24));
-                                let dteMin = strategy.name === "Double Decker" ? 39 : 39;
-                                let dteMax = strategy.name === "Double Decker" ? 43 : 44;
-                                if (diff >= dteMin && diff <= dteMax) {
+                                if (diff >= rule.dte_min && diff <= rule.dte_max) {
                                     nominalDate = new Date(dTemp.getTime());
                                     break;
                                 }
                             }
                             dTemp.setDate(dTemp.getDate() + 1);
                         }
-                    } else if (strategy.name === "No Brainer (Nifty)") {
-                        // Friday 29-34 days before NEXT month's monthly expiry
-                        let expMonth = expiry.actual.getMonth();
-                        let expYear = expiry.actual.getFullYear();
-                        
-                        let dTemp = new Date(expYear, expMonth - 1, 1);
-                        while (dTemp.getMonth() === (expMonth - 1 + 12) % 12) {
-                            if (dTemp.getDay() === 5) {
-                                let diff = Math.round((expiry.actual - dTemp) / (1000 * 60 * 60 * 24));
-                                if (diff >= 29 && diff <= 34) {
-                                    nominalDate = new Date(dTemp.getTime());
-                                    break;
-                                }
-                            }
-                            dTemp.setDate(dTemp.getDate() + 1);
-                        }
-                    } else if (strategy.name === "No Brainer (Bank Nifty)") {
-                        // Thursday 12 days before CURRENT month's monthly expiry
-                        nominalDate = new Date(expiry.actual.getTime());
-                        nominalDate.setDate(nominalDate.getDate() - 12);
-                    } else if (strategy.name === "Auto-Pilot") {
-                        // Thursday 12 days before monthly expiry
-                        nominalDate = new Date(expiry.actual.getTime());
-                        nominalDate.setDate(nominalDate.getDate() - 12);
                     }
+                }
+            } else {
+                // Fallback for legacy strategies without deploy_rule field
+                if (strategy.sheet === "BiWkly" || strategy.sheet === "STBT") {
+                    nominalDate = new Date(expiry.actual.getTime());
+                    nominalDate.setDate(nominalDate.getDate() - 5);
+                } else if (strategy.sheet === "Monthly" && expiry.isMonthly) {
+                    nominalDate = new Date(expiry.actual.getTime());
+                    nominalDate.setDate(nominalDate.getDate() - 12);
                 }
             }
             
@@ -213,7 +139,7 @@ function calculateDeploymentsForRange(startDate, endDate) {
                 
                 // Only include if actual date is within our June-August 2026 range
                 if (actualDeploymentDate >= startDate && actualDeploymentDate <= endDate) {
-                    const exitRule = EXIT_RULES[strategy.id] || null;
+                    const exitRule = strategy.exit_rule || EXIT_RULES[strategy.id] || null;
                     const exitDate = calculateExitDate(actualDeploymentDate, expiry.actual, exitRule);
                     deployments.push({
                         strategy: strategy,
@@ -862,6 +788,17 @@ async function saveStrategyForm(event) {
         strike_example.PE = setup.PE.map(leg => `${leg.split(' ').slice(1).join(' ')} (Leg)`);
     }
 
+    const existingStrat = id ? strategiesData.find(s => s.id === id) : null;
+    const deploy_rule = (existingStrat && existingStrat.deploy_rule) ? existingStrat.deploy_rule : {
+        type: "expiry_offset",
+        offset_days: dte.includes("8 DTE") ? -8 : (dte.includes("12 DTE") ? -12 : -5),
+        monthly_only: sheet === "Monthly"
+    };
+    const exit_rule = (existingStrat && existingStrat.exit_rule) ? existingStrat.exit_rule : {
+        type: "next_weekday",
+        weekday: 5
+    };
+
     const updatedStrat = {
         id: id || `strat_${Date.now()}`,
         sheet,
@@ -875,7 +812,9 @@ async function saveStrategyForm(event) {
         setup,
         strike_example,
         conditions: { credit_range, refine_credit, refine_blue_line, position_delta },
-        exit: { target, sl, market_move, duration, gap_up }
+        exit: { target, sl, market_move, duration, gap_up },
+        deploy_rule,
+        exit_rule
     };
     
     if (id) {
