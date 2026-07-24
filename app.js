@@ -569,8 +569,29 @@ function updateCalendars() {
         renderCalendar("calendar-july", 2026, 6, allCalculatedDeployments, activeFilters);
         renderCalendar("calendar-august", 2026, 7, allCalculatedDeployments, activeFilters);
     } else {
-        renderCapitalFlow();
+        renderCapitalFlow();// Helper to dynamically calculate and format concrete strike labels (e.g. "Buy 1 25200 CE")
+function generateConcreteStrikeText(legStr, side, atmPrice) {
+    if (!legStr) return legStr;
+    const atm = atmPrice || 25000;
+    
+    // Parse setup leg strings like "Buy 1 ATM+200", "Sell 3 ATM-600", "Buy 2 ATM-1000", "Buy 1 ATM"
+    const match = legStr.match(/^(Buy|Sell)\s+(\d+)\s+ATM\s*([+-]\s*\d+)?/i);
+    if (match) {
+        const action = match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
+        const qty = match[2];
+        const offsetStr = match[3] ? match[3].replace(/\s+/g, '') : '0';
+        const offset = parseInt(offsetStr, 10) || 0;
+        const strike = atm + offset;
+        return `${action} ${qty} ${strike} ${side}`;
     }
+    
+    // Parse numerical strike inputs like "25200" or "25200 CE"
+    const numMatch = legStr.trim().match(/^(\d+)(\s+(CE|PE))?$/i);
+    if (numMatch) {
+        return `${numMatch[1]} ${side}`;
+    }
+    
+    return legStr;
 }
 
 function showStrategyDetails(dep) {
@@ -598,16 +619,20 @@ function showStrategyDetails(dep) {
         document.getElementById("modal-holiday-notice").style.display = "none";
     }
     
-    // Setup Legs and Strikes
-    const legsContainer = document.getElementById("modal-legs-list");
+    // Star state
+    updateModalStarState(strategy.id);
+    
+    // Setup Legs
+    const legsContainer = document.getElementById("modal-setup-legs");
     legsContainer.innerHTML = "";
     
-    const strikeExampleContainer = document.getElementById("modal-strikes-list");
+    const strikeExampleContainer = document.getElementById("modal-strike-example");
     strikeExampleContainer.innerHTML = "";
     
-    // If double sided PE & CE
-    if (strategy.type === "PE & CE") {
-        // Legs
+    const atmPrice = (strategy.strike_example && strategy.strike_example.ATM) ? strategy.strike_example.ATM : 25000;
+    
+    if (strategy.type === "Both (CE & PE)" || strategy.type.includes("Both")) {
+        // Double Sided
         const peTitle = document.createElement("h5");
         peTitle.innerText = "PE Legs";
         peTitle.style.color = "#ef4444";
@@ -634,17 +659,18 @@ function showStrategyDetails(dep) {
         
         // Strike Examples
         const strikeTitle = document.createElement("p");
-        strikeTitle.innerHTML = `<strong>Strike Example (ATM = ${strategy.strike_example.ATM})</strong>`;
+        strikeTitle.innerHTML = `<strong>Strike Example (ATM = ${atmPrice})</strong>`;
         strikeExampleContainer.appendChild(strikeTitle);
         
         const peStrikesTitle = document.createElement("h5");
         peStrikesTitle.innerText = "PE Strikes";
         strikeExampleContainer.appendChild(peStrikesTitle);
         
-        strategy.strike_example.PE.forEach(st => {
+        const peSource = (strategy.setup && strategy.setup.PE) ? strategy.setup.PE : strategy.strike_example.PE;
+        peSource.forEach(st => {
             const li = document.createElement("div");
             li.className = "leg-item pe-side";
-            li.innerText = st;
+            li.innerText = generateConcreteStrikeText(st, "PE", atmPrice);
             strikeExampleContainer.appendChild(li);
         });
         
@@ -652,10 +678,11 @@ function showStrategyDetails(dep) {
         ceStrikesTitle.innerText = "CE Strikes";
         strikeExampleContainer.appendChild(ceStrikesTitle);
         
-        strategy.strike_example.CE.forEach(st => {
+        const ceSource = (strategy.setup && strategy.setup.CE) ? strategy.setup.CE : strategy.strike_example.CE;
+        ceSource.forEach(st => {
             const li = document.createElement("div");
             li.className = "leg-item ce-side";
-            li.innerText = st;
+            li.innerText = generateConcreteStrikeText(st, "CE", atmPrice);
             strikeExampleContainer.appendChild(li);
         });
     } else {
@@ -682,22 +709,24 @@ function showStrategyDetails(dep) {
         
         // Strike Examples
         const strikeTitle = document.createElement("p");
-        strikeTitle.innerHTML = `<strong>Strike Example (ATM = ${strategy.strike_example.ATM})</strong>`;
+        strikeTitle.innerHTML = `<strong>Strike Example (ATM = ${atmPrice})</strong>`;
         strikeExampleContainer.appendChild(strikeTitle);
         
-        strategy.strike_example[side].forEach(st => {
+        const sideSource = (strategy.setup && strategy.setup[side]) ? strategy.setup[side] : strategy.strike_example[side];
+        sideSource.forEach(st => {
             const li = document.createElement("div");
             li.className = `leg-item ${side.toLowerCase()}-side`;
-            li.innerText = st;
+            li.innerText = generateConcreteStrikeText(st, side, atmPrice);
             strikeExampleContainer.appendChild(li);
         });
         
-        if (strategy.strike_example.notes) {
+        if (strategy.strike_example && strategy.strike_example.notes) {
             const note = document.createElement("p");
             note.className = "setup-note";
             note.innerHTML = `*Note:* ${strategy.strike_example.notes}`;
             strikeExampleContainer.appendChild(note);
         }
+    }      }
     }
     
     // Conditions
@@ -847,10 +876,10 @@ async function saveStrategyForm(event) {
     
     const strike_example = { ATM: 25000 };
     if (setup.CE) {
-        strike_example.CE = setup.CE.map(leg => `${leg.split(' ').slice(1).join(' ')} (Leg)`);
+        strike_example.CE = setup.CE.map(leg => generateConcreteStrikeText(leg, "CE", 25000));
     }
     if (setup.PE) {
-        strike_example.PE = setup.PE.map(leg => `${leg.split(' ').slice(1).join(' ')} (Leg)`);
+        strike_example.PE = setup.PE.map(leg => generateConcreteStrikeText(leg, "PE", 25000));
     }
 
     const existingStrat = id ? strategiesData.find(s => s.id === id) : null;

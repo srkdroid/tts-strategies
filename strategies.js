@@ -24,15 +24,16 @@ const strategiesData = [
         },
         "strike_example": {
             "ATM": 25000,
-            "PE": [
-                "24600 (Buy 1)",
-                "24400 (Sell 3)",
-                "23600 (Buy 2)"
-            ],
+            "notes": null,
             "CE": [
-                "25400 (Buy 1)",
-                "25600 (Sell 3)",
-                "26400 (Buy 2)"
+                "Buy 1 25400 CE",
+                "Sell 3 25600 CE",
+                "Buy 2 26400 CE"
+            ],
+            "PE": [
+                "Buy 1 24600 PE",
+                "Sell 3 24400 PE",
+                "Buy 2 23600 PE"
             ]
         },
         "conditions": {
@@ -76,10 +77,11 @@ const strategiesData = [
         },
         "strike_example": {
             "ATM": 25000,
+            "notes": null,
             "CE": [
-                "25300 (Buy 1)",
-                "25600 (Sell 2)",
-                "26600 (Buy 1)"
+                "Buy 1 25300 CE",
+                "Sell 2 25600 CE",
+                "Buy 1 26600 CE"
             ]
         },
         "conditions": {
@@ -124,9 +126,9 @@ const strategiesData = [
             "ATM": 56000,
             "notes": "If ATM is 55800, consider 56000 as ATM",
             "CE": [
-                "57000 (Buy 1)",
-                "57500 (Sell 2)",
-                "59500 (Buy 1)"
+                "Buy 1 57000 CE",
+                "Sell 2 57500 CE",
+                "Buy 1 59500 CE"
             ]
         },
         "conditions": {
@@ -169,10 +171,11 @@ const strategiesData = [
         },
         "strike_example": {
             "ATM": 25000,
+            "notes": null,
             "CE": [
-                "1 ATM + 300 (Leg)",
-                "3 ATM + 600 (Leg)",
-                "2 ATM + 900 (Leg)"
+                "Buy 1 25300 CE",
+                "Sell 3 25600 CE",
+                "Buy 2 25900 CE"
             ]
         },
         "conditions": {
@@ -219,10 +222,11 @@ const strategiesData = [
         },
         "strike_example": {
             "ATM": 25000,
+            "notes": null,
             "CE": [
-                "25300 (Buy 1)",
-                "25600 (Sell 2)",
-                "26600 (Buy 1)"
+                "Buy 1 25300 CE",
+                "Sell 2 25600 CE",
+                "Buy 1 26600 CE"
             ]
         },
         "conditions": {
@@ -272,17 +276,18 @@ const strategiesData = [
         },
         "strike_example": {
             "ATM": 25000,
-            "PE": [
-                "24600 (Buy 1)",
-                "24400 (Sell 1)",
-                "24100 (Sell 2)",
-                "23400 (Buy 2)"
-            ],
+            "notes": null,
             "CE": [
-                "25400 (Buy 1)",
-                "25600 (Sell 1)",
-                "25900 (Sell 2)",
-                "26600 (Buy 2)"
+                "Buy 1 25400 CE",
+                "Sell 1 25600 CE",
+                "Sell 2 25900 CE",
+                "Buy 2 26600 CE"
+            ],
+            "PE": [
+                "Buy 1 24600 PE",
+                "Sell 1 24400 PE",
+                "Sell 2 24100 PE",
+                "Buy 2 23400 PE"
             ]
         },
         "conditions": {
@@ -326,12 +331,12 @@ const strategiesData = [
         },
         "strike_example": {
             "ATM": 25000,
+            "notes": null,
             "PE": [
-                "24800",
-                "24600",
-                "24200"
-            ],
-            "notes": null
+                "Buy 1 24800 PE",
+                "Sell 2 24600 PE",
+                "Buy 1 24200 PE"
+            ]
         },
         "conditions": {
             "credit_range": "-0.4 % (Debit) to +0.5 % (Credit)",
@@ -373,12 +378,12 @@ const strategiesData = [
         },
         "strike_example": {
             "ATM": 87000,
+            "notes": "2) if ATM is not at multiple of 500 then consider next closest multiple of 500 as ATM",
             "PE": [
-                "86500",
-                "86000",
-                "85000"
-            ],
-            "notes": "2) if ATM is not at multiple of 500 then consider next closest multiple of 500 as ATM"
+                "Buy 1 86500 PE",
+                "Sell 2 86000 PE",
+                "Buy 1 85000 PE"
+            ]
         },
         "conditions": {
             "credit_range": "-0.3 % (Debit) to +0.5 % (Credit)",
@@ -420,12 +425,12 @@ const strategiesData = [
         },
         "strike_example": {
             "ATM": 25000,
+            "notes": null,
             "CE": [
-                "25200",
-                "25400",
-                "25600"
-            ],
-            "notes": null
+                "Buy 1 25200 CE",
+                "Sell 3 25400 CE",
+                "Buy 2 25600 CE"
+            ]
         },
         "conditions": {
             "credit_range": "-0.5 % (Debit) to +0.6 % (Credit)",
@@ -467,12 +472,12 @@ const strategiesData = [
         },
         "strike_example": {
             "ATM": 23100,
+            "notes": null,
             "PE": [
-                "22900",
-                "22700",
-                "22300"
-            ],
-            "notes": null
+                "Buy 1 22900 PE",
+                "Sell 3 22500 PE",
+                "Buy 2 22100 PE"
+            ]
         },
         "conditions": {
             "credit_range": "-0.5 % (Debit) to +0.6 % (Credit)",
@@ -514,11 +519,12 @@ const strategiesData = [
         },
         "strike_example": {
             "ATM": 25000,
+            "notes": null,
             "CE": [
-                "1 Buy 25150",
-                "1 Sell 25250",
-                "1 Sell 25300",
-                "1 Buy 26000"
+                "Buy 1 25150 CE",
+                "Sell 1 25250 CE",
+                "Sell 1 25300 CE",
+                "Buy 1 26000 CE"
             ]
         },
         "conditions": {
@@ -562,10 +568,11 @@ const strategiesData = [
         },
         "strike_example": {
             "ATM": 25000,
+            "notes": null,
             "CE": [
-                "1 Buy 25100",
-                "3 Sell 25200",
-                "2 Buy 25300"
+                "Buy 1 25100 CE",
+                "Sell 3 25200 CE",
+                "Buy 2 25300 CE"
             ]
         },
         "conditions": {
@@ -609,11 +616,11 @@ const strategiesData = [
         },
         "strike_example": {
             "ATM": 24200,
+            "notes": null,
             "CE": [
-                "Deployment Date - 10-Jul",
-                "4  Sell delta 0.23  (21JUL 24500 CE) only if premium is more than Rs. 70",
-                "3  Buy sell Strike + 500 (21JUL 25000 CE)",
-                "2  Buy monthly same strike as Sell (28JUL 24500 CE)"
+                "Sell 4  delta 0.23 ",
+                "Buy 3  Sell Strike + 500",
+                "Buy 2  Monthly same strike as Sell"
             ]
         },
         "conditions": {
@@ -658,10 +665,11 @@ const strategiesData = [
         },
         "strike_example": {
             "ATM": 85000,
+            "notes": null,
             "CE": [
-                "1 Buy 85500",
-                "2 Sell 86000",
-                "1 Buy 88000"
+                "Buy 1 85500 CE",
+                "Sell 2 86000 CE",
+                "Buy 1 88000 CE"
             ]
         },
         "conditions": {
@@ -706,11 +714,12 @@ const strategiesData = [
         },
         "strike_example": {
             "ATM": 25000,
+            "notes": null,
             "CE": [
-                "1 Buy 25150",
-                "1 Sell 25250",
-                "1 Sell 25300",
-                "1 Buy 26000"
+                "Buy 1 25150 CE",
+                "Sell 1 25250 CE",
+                "Sell 1 25300 CE",
+                "Buy 1 26000 CE"
             ]
         },
         "conditions": {
