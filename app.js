@@ -1907,6 +1907,7 @@ function switchViewMode(mode) {
     const calendarBtn = document.getElementById("mode-calendar-btn");
     const flowBtn = document.getElementById("mode-flow-btn");
     const notesBtn = document.getElementById("mode-notes-btn");
+    const headerNotesBtn = document.getElementById("header-notes-btn");
 
     if (calendarBtn) calendarBtn.classList.toggle("active", mode === "calendar");
     if (flowBtn) flowBtn.classList.toggle("active", mode === "flow");
@@ -1928,15 +1929,29 @@ function switchViewMode(mode) {
         }
     });
 
+    if (headerNotesBtn) {
+        if (mode === "notes") {
+            headerNotesBtn.style.background = "var(--primary-color)";
+            headerNotesBtn.style.color = "#fff";
+            headerNotesBtn.style.borderColor = "var(--primary-color)";
+        } else {
+            headerNotesBtn.style.background = "rgba(59, 130, 246, 0.15)";
+            headerNotesBtn.style.color = "#93c5fd";
+            headerNotesBtn.style.borderColor = "rgba(59, 130, 246, 0.4)";
+        }
+    }
+
     if (mode === "calendar" && calendarBtn) {
         calendarBtn.style.background = "var(--primary-color)";
         calendarBtn.style.color = "#fff";
     } else if (mode === "flow" && flowBtn) {
         flowBtn.style.background = "var(--primary-color)";
         flowBtn.style.color = "#fff";
-    } else if (mode === "notes" && notesBtn) {
-        notesBtn.style.background = "var(--primary-color)";
-        notesBtn.style.color = "#fff";
+    } else if (mode === "notes") {
+        if (notesBtn) {
+            notesBtn.style.background = "var(--primary-color)";
+            notesBtn.style.color = "#fff";
+        }
         if (typeof fetchNotesData === 'function') {
             fetchNotesData();
         }
