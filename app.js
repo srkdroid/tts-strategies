@@ -559,7 +559,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     allCalculatedDeployments = calculateDeploymentsForRange(startDate, endDate);
     
-    // Setup Filter Listeners
+    // Render initial view
+    updateCalendars();
+    
+    // Fetch Notes Data
+    if (typeof fetchNotesData === 'function') {
+        fetchNotesData();
+    }
     document.getElementById("filter-index").addEventListener("change", (e) => {
         activeFilters.index = e.target.value;
         updateCalendars();
@@ -1887,32 +1893,50 @@ async function logoutUser() {
 
 /* ─── Capital Flow Timeline View Helpers ──────────────────────────────────── */
 
-// Switch view mode between calendar and Capital Flow
 function switchViewMode(mode) {
     currentFlowViewMode = mode;
     
-    document.getElementById("mode-calendar-btn").classList.toggle("active", mode === "calendar");
-    document.getElementById("mode-flow-btn").classList.toggle("active", mode === "flow");
-    
-    document.getElementById("calendar-view-container").style.display = mode === "calendar" ? "grid" : "none";
-    document.getElementById("capital-flow-view-container").style.display = mode === "flow" ? "grid" : "none";
-    
     const calendarBtn = document.getElementById("mode-calendar-btn");
     const flowBtn = document.getElementById("mode-flow-btn");
+    const notesBtn = document.getElementById("mode-notes-btn");
+
+    if (calendarBtn) calendarBtn.classList.toggle("active", mode === "calendar");
+    if (flowBtn) flowBtn.classList.toggle("active", mode === "flow");
+    if (notesBtn) notesBtn.classList.toggle("active", mode === "notes");
     
-    if (mode === "calendar") {
+    const calContainer = document.getElementById("calendar-view-container");
+    const flowContainer = document.getElementById("capital-flow-view-container");
+    const notesContainer = document.getElementById("notes-view-container");
+
+    if (calContainer) calContainer.style.display = mode === "calendar" ? "grid" : "none";
+    if (flowContainer) flowContainer.style.display = mode === "flow" ? "grid" : "none";
+    if (notesContainer) notesContainer.style.display = mode === "notes" ? "block" : "none";
+    
+    // Reset toggle button styles
+    [calendarBtn, flowBtn, notesBtn].forEach(btn => {
+        if (btn) {
+            btn.style.background = "transparent";
+            btn.style.color = "var(--text-secondary)";
+        }
+    });
+
+    if (mode === "calendar" && calendarBtn) {
         calendarBtn.style.background = "var(--primary-color)";
         calendarBtn.style.color = "#fff";
-        flowBtn.style.background = "transparent";
-        flowBtn.style.color = "var(--text-secondary)";
-    } else {
+    } else if (mode === "flow" && flowBtn) {
         flowBtn.style.background = "var(--primary-color)";
         flowBtn.style.color = "#fff";
-        calendarBtn.style.background = "transparent";
-        calendarBtn.style.color = "var(--text-secondary)";
+    } else if (mode === "notes" && notesBtn) {
+        notesBtn.style.background = "var(--primary-color)";
+        notesBtn.style.color = "#fff";
+        if (typeof fetchNotesData === 'function') {
+            fetchNotesData();
+        }
     }
     
-    updateCalendars();
+    if (mode !== "notes") {
+        updateCalendars();
+    }
 }
 
 // Navigate Capital Flow months

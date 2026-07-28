@@ -163,6 +163,38 @@ module.exports = async (req, res) => {
                 return res.status(200).json({ success: true, message: 'Strategies saved successfully to KV' });
             } 
             
+            else if (action === 'save_notes_all') {
+                await queryKV(['SET', 'notes', JSON.stringify(data)]);
+                return res.status(200).json({ success: true, message: 'Notes saved successfully to KV' });
+            }
+
+            else if (action === 'save_note') {
+                let currentNotes = [];
+                const kvNotes = await queryKV(['GET', 'notes']);
+                if (kvNotes) {
+                    try { currentNotes = JSON.parse(kvNotes); } catch(e) {}
+                }
+                const existingIdx = currentNotes.findIndex(n => n.id === data.id);
+                if (existingIdx !== -1) {
+                    currentNotes[existingIdx] = data;
+                } else {
+                    currentNotes.push(data);
+                }
+                await queryKV(['SET', 'notes', JSON.stringify(currentNotes)]);
+                return res.status(200).json({ success: true, message: 'Note saved successfully', notes: currentNotes });
+            }
+
+            else if (action === 'delete_note') {
+                let currentNotes = [];
+                const kvNotes = await queryKV(['GET', 'notes']);
+                if (kvNotes) {
+                    try { currentNotes = JSON.parse(kvNotes); } catch(e) {}
+                }
+                currentNotes = currentNotes.filter(n => n.id !== data.id);
+                await queryKV(['SET', 'notes', JSON.stringify(currentNotes)]);
+                return res.status(200).json({ success: true, message: 'Note deleted successfully', notes: currentNotes });
+            }
+
             else if (action === 'save_holidays') {
                 await queryKV(['SET', 'holidays', JSON.stringify(data)]);
                 return res.status(200).json({ success: true, message: 'Holidays saved successfully to KV' });
