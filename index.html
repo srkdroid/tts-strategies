@@ -38,8 +38,8 @@
         </header>
 
         <!-- Filters Section -->
-        <section class="filters-bar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <section class="filters-bar" style="display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: nowrap;">
+            <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: nowrap;">
                 <div class="filter-group">
                     <label for="filter-index">Index</label>
                     <select id="filter-index">
@@ -67,8 +67,8 @@
                         <option value="exit">Exits Only</option>
                     </select>
                 </div>
-                <div class="filter-group" style="display: flex; align-items: center; justify-content: center; height: 38px; margin-top: 1.2rem; gap: 0.3rem;">
-                    <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; user-select: none; margin: 0; font-weight: 600; color: var(--text-primary); font-size: 0.85rem;">
+                <div class="filter-group" style="display: flex; align-items: center; justify-content: center; height: 38px; gap: 0.3rem;">
+                    <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; user-select: none; margin: 0; font-weight: 600; color: var(--text-primary); font-size: 0.85rem; white-space: nowrap;">
                         <input type="checkbox" id="filter-portfolio" onchange="togglePortfolioFilter(this.checked)" style="width: 1.15rem; height: 1.15rem; border-radius: 4px; border: 1px solid var(--border-color); accent-color: var(--primary-color); cursor: pointer; vertical-align: middle;">
                         ⭐ My Portfolio
                     </label>
@@ -78,11 +78,10 @@
                     </div>
                 </div>
             </div>
-            <!-- View Mode Toggle -->
-            <div class="view-mode-toggle" style="display: flex; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); padding: 2px; border-radius: 9999px;">
+            <!-- View Mode Toggle (Calendar & Capital Flow) -->
+            <div class="view-mode-toggle" style="display: flex; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); padding: 2px; border-radius: 9999px; flex-shrink: 0;">
                 <button id="mode-calendar-btn" class="toggle-btn" onclick="switchViewMode('calendar')" style="background: transparent; border: none; color: var(--text-secondary); padding: 0.4rem 1rem; border-radius: 9999px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem; transition: background-color 0.2s, color 0.2s;">📅 Calendar</button>
                 <button id="mode-flow-btn" class="toggle-btn active" onclick="switchViewMode('flow')" style="background: var(--primary-color); border: none; color: #fff; padding: 0.4rem 1rem; border-radius: 9999px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem; transition: background-color 0.2s;">📊 Capital Flow</button>
-                <button id="mode-notes-btn" class="toggle-btn" onclick="switchViewMode('notes')" style="background: transparent; border: none; color: var(--text-secondary); padding: 0.4rem 1rem; border-radius: 9999px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem; transition: background-color 0.2s, color 0.2s;">📖 Strategy Notes</button>
             </div>
         </section>
 
