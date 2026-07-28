@@ -1141,33 +1141,35 @@ header {
 }
 
 .flow-category-header.monthly {
-    background: rgba(59, 130, 246, 0.12);
-    color: #60a5fa;
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
 }
 
-.flow-category-header.biwkly {
-    background: rgba(16, 185, 129, 0.12);
-    color: #34d399;
+.flow-category-header.biwkly,
+.flow-category-header.biweekly {
+    background: rgba(59, 130, 246, 0.15);
+    color: #93c5fd;
 }
 
 .flow-category-header.stbt {
-    background: rgba(245, 158, 11, 0.12);
-    color: #fbbf24;
+    background: rgba(16, 185, 129, 0.15);
+    color: #6ee7b7;
 }
 
 .light-theme .flow-category-header.monthly {
-    background: rgba(59, 130, 246, 0.06);
+    background: rgba(168, 85, 247, 0.08);
+    color: #7e22ce;
+}
+
+.light-theme .flow-category-header.biwkly,
+.light-theme .flow-category-header.biweekly {
+    background: rgba(59, 130, 246, 0.08);
     color: #1d4ed8;
 }
 
-.light-theme .flow-category-header.biwkly {
-    background: rgba(16, 185, 129, 0.06);
-    color: #047857;
-}
-
 .light-theme .flow-category-header.stbt {
-    background: rgba(245, 158, 11, 0.06);
-    color: #b45309;
+    background: rgba(16, 185, 129, 0.08);
+    color: #047857;
 }
 
 
@@ -1187,21 +1189,22 @@ header {
 }
 
 .flow-strat-code.monthly {
-    background: rgba(59, 130, 246, 0.15);
-    color: #3b82f6;
-    border: 1px solid rgba(59, 130, 246, 0.25);
+    background: rgba(168, 85, 247, 0.15);
+    color: #d8b4fe;
+    border: 1px solid rgba(168, 85, 247, 0.3);
 }
 
-.flow-strat-code.biweekly {
-    background: rgba(16, 185, 129, 0.15);
-    color: #10b981;
-    border: 1px solid rgba(16, 185, 129, 0.25);
+.flow-strat-code.biweekly,
+.flow-strat-code.biwkly {
+    background: rgba(59, 130, 246, 0.15);
+    color: #93c5fd;
+    border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
 .flow-strat-code.stbt {
-    background: rgba(245, 158, 11, 0.15);
-    color: #f59e0b;
-    border: 1px solid rgba(245, 158, 11, 0.25);
+    background: rgba(16, 185, 129, 0.15);
+    color: #6ee7b7;
+    border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .flow-strat-name {
@@ -1323,18 +1326,19 @@ header {
 }
 
 .flow-bar.monthly {
+    background: #a855f7;
+    box-shadow: 0 0 8px rgba(168, 85, 247, 0.45);
+}
+
+.flow-bar.biweekly,
+.flow-bar.biwkly {
     background: #3b82f6;
     box-shadow: 0 0 8px rgba(59, 130, 246, 0.45);
 }
 
-.flow-bar.biwkly {
+.flow-bar.stbt {
     background: #10b981;
     box-shadow: 0 0 8px rgba(16, 185, 129, 0.45);
-}
-
-.flow-bar.stbt {
-    background: #f59e0b;
-    box-shadow: 0 0 8px rgba(245, 158, 11, 0.45);
 }
 
 /* Start indicator shape on top of the bar */
