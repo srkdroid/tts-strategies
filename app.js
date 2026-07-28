@@ -541,6 +541,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             marketHolidays2026 = resJson.holidays;
         }
         isAdminMode = !!resJson.isAdmin;
+        window.isAdminMode = isAdminMode;
         if (isAdminMode) {
             document.getElementById("admin-bar").style.display = "flex";
             document.getElementById("admin-user-info").innerText = `Logged in as Admin (${resJson.userPhone})`;

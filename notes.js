@@ -18,10 +18,13 @@ async function fetchNotesData() {
         }
         const resJson = await response.json();
         allNotes = resJson.notes || [];
+        if (typeof resJson.isAdmin !== 'undefined') {
+            window.isAdminMode = !!resJson.isAdmin;
+        }
         
         // Show admin controls if logged in as Admin
         const adminBtn = document.getElementById("admin-add-note-btn");
-        if (adminBtn) adminBtn.style.display = resJson.isAdmin ? "inline-flex" : "none";
+        if (adminBtn) adminBtn.style.display = window.isAdminMode ? "inline-flex" : "none";
         
         renderNotesSidebar();
         
@@ -158,7 +161,8 @@ function selectNote(noteId) {
     // Admin action buttons visibility
     const adminActions = document.getElementById("note-admin-actions");
     if (adminActions) {
-        adminActions.style.display = (window.isAdminMode) ? "flex" : "none";
+        const isAdmin = !!(window.isAdminMode || (typeof isAdminMode !== 'undefined' && isAdminMode));
+        adminActions.style.display = isAdmin ? "flex" : "none";
     }
 
     // Render Markdown using marked.js
