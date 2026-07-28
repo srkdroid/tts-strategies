@@ -571,27 +571,46 @@ function dispatchAdminTrade(mode) {
     const atmInput = document.getElementById("modal-atm-input");
     const currentAtm = atmInput ? parseInt(atmInput.value, 10) || 25000 : 25000;
     
+    // Helper to parse individual leg details
+    function parseLegDetails(st, side, activeAtm) {
+        const formatted = generateConcreteStrikeText(st, side, activeAtm);
+        const match = st.match(/^(Buy|Sell)\s+(\d+)\s+ATM\s*([+-]\s*\d+)?/i);
+        if (match) {
+            const action = match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
+            const qty = parseInt(match[2], 10);
+            const offsetStr = match[3] ? match[3].replace(/\s+/g, '') : '0';
+            const offset = parseInt(offsetStr, 10) || 0;
+            const strike = activeAtm + offset;
+            return {
+                side: side,
+                formula: st,
+                action: action,
+                quantity: qty,
+                calculated_strike: strike,
+                formatted: formatted
+            };
+        }
+        return { side: side, formula: st, formatted: formatted };
+    }
+
     // Build calculated legs
     const legs = [];
     if (strategy.type === "Both (CE & PE)" || strategy.type.includes("Both")) {
         if (strategy.setup.PE) {
             strategy.setup.PE.forEach(st => {
-                const formatted = generateConcreteStrikeText(st, "PE", currentAtm);
-                legs.push({ side: "PE", formula: st, formatted: formatted });
+                legs.push(parseLegDetails(st, "PE", currentAtm));
             });
         }
         if (strategy.setup.CE) {
             strategy.setup.CE.forEach(st => {
-                const formatted = generateConcreteStrikeText(st, "CE", currentAtm);
-                legs.push({ side: "CE", formula: st, formatted: formatted });
+                legs.push(parseLegDetails(st, "CE", currentAtm));
             });
         }
     } else {
         const side = strategy.type.split(" ")[0];
         const source = (strategy.setup && strategy.setup[side]) ? strategy.setup[side] : [];
         source.forEach(st => {
-            const formatted = generateConcreteStrikeText(st, side, currentAtm);
-            legs.push({ side: side, formula: st, formatted: formatted });
+            legs.push(parseLegDetails(st, side, currentAtm));
         });
     }
 
