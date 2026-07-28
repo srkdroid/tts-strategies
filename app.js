@@ -508,10 +508,12 @@ let activeDbTab = "users";
 // Initialize Dashboard
 document.addEventListener("DOMContentLoaded", async () => {
     loadStarredStrategies();
-    // Set current date in header
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    const todayStr = new Date().toLocaleDateString('en-US', options);
-    document.getElementById("current-time-display").innerText = `System Date: ${todayStr}`;
+    // Set current date in header (DD/MM/YYYY format)
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yyyy = now.getFullYear();
+    document.getElementById("current-time-display").innerText = `Date: ${dd}/${mm}/${yyyy}`;
     
     // Fetch secure strategies data
     try {
@@ -590,13 +592,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         const currentTheme = localStorage.getItem("theme");
         if (currentTheme === "light") {
             document.body.classList.add("light-theme");
-            themeBtn.innerText = "🌙 Dark Theme";
+            themeBtn.innerText = "🌙";
+            themeBtn.title = "Switch to Dark Theme";
+        } else {
+            themeBtn.innerText = "☀️";
+            themeBtn.title = "Switch to Light Theme";
         }
         themeBtn.addEventListener("click", () => {
             document.body.classList.toggle("light-theme");
             const isLight = document.body.classList.contains("light-theme");
             localStorage.setItem("theme", isLight ? "light" : "dark");
-            themeBtn.innerText = isLight ? "🌙 Dark Theme" : "☀️ Light Theme";
+            themeBtn.innerText = isLight ? "🌙" : "☀️";
+            themeBtn.title = isLight ? "Switch to Dark Theme" : "Switch to Light Theme";
         });
     }
 
