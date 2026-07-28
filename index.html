@@ -545,6 +545,7 @@
                     </div>
                     <div style="display: flex; gap: 0.5rem;">
                         <button onclick="openAddUserForm()" class="admin-btn add" style="margin:0;">Add User</button>
+                        <button onclick="syncWhatsAppGroup()" class="admin-btn edit" style="margin:0; padding: 0.4rem 0.8rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.18); border-color: rgba(16, 185, 129, 0.4); color: #6ee7b7;" title="Fetch participants from WhatsApp Group via OpenWA REST API and auto-sync whitelist">📱 Sync WhatsApp Group</button>
                         <button onclick="syncWhitelist()" class="admin-btn sync" style="margin:0; padding: 0.4rem 0.8rem; font-size: 0.8rem;" title="Import whitelisted users from codebase whitelist.json file">🔄 Sync from Codebase</button>
                         <button onclick="exportWhitelist()" class="admin-btn edit" style="margin:0; padding: 0.4rem 0.8rem; font-size: 0.8rem;" title="Download active whitelist.json database backup">📥 Export JSON</button>
                     </div>
@@ -570,25 +571,21 @@
             <div id="tab-holidays-content" class="admin-tab-content" style="display: none; flex-direction: column; flex-grow: 1; overflow: hidden;">
                 <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: flex-end;">
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label for="new-holiday-date">Date</label>
-                        <input type="date" id="new-holiday-date" style="padding: 0.6rem; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: #fff; width: 150px; display: block; box-sizing: border-box; height: 38px;">
+                        <label for="holiday-name-input">Holiday Name</label>
+                        <input type="text" id="holiday-name-input" placeholder="e.g. Independence Day">
                     </div>
-                    <div class="form-group" style="margin-bottom: 0; flex-grow: 1;">
-                        <label for="new-holiday-name">Holiday Name</label>
-                        <input type="text" id="new-holiday-name" placeholder="e.g. Muharram" style="padding: 0.6rem; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: #fff; display: block; width: 100%; box-sizing: border-box; height: 38px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="holiday-date-input">Holiday Date</label>
+                        <input type="date" id="holiday-date-input">
                     </div>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <button onclick="addNewHoliday()" class="admin-btn add" style="margin: 0; height: 38px;">➕ Add Holiday</button>
-                        <button onclick="syncHolidays()" class="admin-btn sync" style="margin: 0; height: 38px; padding: 0.4rem 0.8rem; font-size: 0.8rem;" title="Import holidays from codebase holidays.js file">🔄 Sync from Codebase</button>
-                        <button onclick="exportHolidays()" class="admin-btn edit" style="margin: 0; height: 38px; padding: 0.4rem 0.8rem; font-size: 0.8rem;" title="Download active holidays.js database backup">📥 Export JS</button>
-                    </div>
+                    <button onclick="addHolidayFromForm()" class="admin-btn add" style="margin:0;">Add Holiday</button>
                 </div>
 
-                <div class="table-scroll-container" style="flex-grow: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 10px; margin-top: 1rem;">
+                <div class="table-scroll-container" style="flex-grow: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 10px;">
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th>Date</th>
+                                <th>Date (YYYY-MM-DD)</th>
                                 <th>Holiday Name</th>
                                 <th>Actions</th>
                             </tr>
@@ -602,13 +599,9 @@
 
             <!-- Tab Content: Strategies -->
             <div id="tab-strategies-content" class="admin-tab-content" style="display: none; flex-direction: column; flex-grow: 1; overflow: hidden;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem; align-items: center;">
-                    <span style="font-size: 0.85rem; color: var(--text-secondary);">Manage Options Trading Strategies</span>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <button onclick="closeDbManagementModal(); openAddStrategyModal()" class="admin-btn add" style="margin: 0; padding: 0.4rem 0.8rem; font-size: 0.8rem;">➕ Add Strategy</button>
-                        <button onclick="syncStrategies()" class="admin-btn sync" style="margin: 0; padding: 0.4rem 0.8rem; font-size: 0.8rem;" title="Import strategies from codebase strategies.js file">🔄 Sync from Codebase</button>
-                        <button onclick="exportStrategies()" class="admin-btn edit" style="margin: 0; padding: 0.4rem 0.8rem; font-size: 0.8rem;" title="Download active strategies.js database backup">📥 Export JS</button>
-                    </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; align-items: center;">
+                    <span style="font-size: 0.85rem; color: var(--text-secondary);">Directly edit strategy parameters, deploy rules, and target exits.</span>
+                    <button onclick="openNewStrategyModal()" class="admin-btn add" style="margin:0;">+ Add New Strategy</button>
                 </div>
 
                 <div class="table-scroll-container" style="flex-grow: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 10px;">
@@ -660,7 +653,7 @@
                 <h3 style="margin: 0; color: #60a5fa;">External App & Webhook Configuration</h3>
                 <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">Configure the Webhook URL and External App URL used by the Admin Trade Dispatch buttons inside strategy detail modals.</p>
                 
-                <div class="form-group" style="margin-top: 1rem;">
+                <div class="form-group" style="margin-top: 0.5rem;">
                     <label for="admin-webhook-url-input">Webhook POST URL (e.g. n8n, Make, Custom API, Python broker bridge)</label>
                     <input type="url" id="admin-webhook-url-input" placeholder="https://your-api.com/trade-webhook" style="width: 100%; font-family: monospace;">
                 </div>
@@ -669,8 +662,93 @@
                     <label for="admin-app-url-input">External App Base URL (for opening URL with query params)</label>
                     <input type="url" id="admin-app-url-input" placeholder="https://your-trading-app.com/trade" style="width: 100%; font-family: monospace;">
                 </div>
+
+                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 0.5rem 0;">
+
+                <h3 style="margin: 0; color: #34d399;">WhatsApp Group OpenWA VPS Configuration</h3>
+                <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">Configure your OpenWA REST API server credentials for fetching WhatsApp group members and auto-syncing whitelisted users.</p>
+
+                <div class="form-group" style="margin-top: 0.5rem;">
+                    <label for="admin-openwa-url-input">OpenWA Base URL</label>
+                    <input type="url" id="admin-openwa-url-input" placeholder="https://openwa-api.duckdns.org/" value="https://openwa-api.duckdns.org/" style="width: 100%; font-family: monospace;">
+                </div>
+
+                <div class="form-group">
+                    <label for="admin-openwa-key-input">OpenWA API Key (X-API-Key)</label>
+                    <input type="password" id="admin-openwa-key-input" placeholder="Your OpenWA API Key" style="width: 100%; font-family: monospace;">
+                </div>
+
+                <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="admin-openwa-session-input">Session ID ({sessionId})</label>
+                        <input type="text" id="admin-openwa-session-input" placeholder="e.g. main-session" style="width: 100%; font-family: monospace;">
+                    </div>
+                    <div class="form-group">
+                        <label for="admin-openwa-group-input">WhatsApp Group ID ({groupId})</label>
+                        <input type="text" id="admin-openwa-group-input" placeholder="e.g. 120363021234567890@g.us" style="width: 100%; font-family: monospace;">
+                    </div>
+                </div>
                 
-                <button onclick="saveAdminDispatchSettings()" class="admin-btn add" style="align-self: flex-start; margin-top: 0.5rem;">💾 Save Dispatch Settings</button>
+                <button onclick="saveAdminDispatchSettings()" class="admin-btn add" style="align-self: flex-start; margin-top: 0.5rem;">💾 Save Dispatch & OpenWA Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WhatsApp Sync & Audit Results Modal -->
+    <div id="whatsapp-sync-modal" class="modal">
+        <div class="modal-content" style="max-width: 650px; max-height: 85vh; display: flex; flex-direction: column;">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 1.4rem;">📱</span>
+                    <div>
+                        <h2 style="margin: 0; font-size: 1.2rem;">WhatsApp Group Whitelist Audit</h2>
+                        <span id="wa-sync-group-name" style="font-size: 0.8rem; color: var(--text-secondary);">Group: -</span>
+                    </div>
+                </div>
+                <span class="close-btn" onclick="closeWhatsAppSyncModal()">&times;</span>
+            </div>
+            
+            <div style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 1.2rem; padding-right: 0.4rem;">
+                <!-- Overview Stats Bar -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; text-align: center;">
+                    <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 0.6rem;">
+                        <div style="font-size: 1.3rem; font-weight: 700; color: #34d399;" id="wa-stat-added">0</div>
+                        <div style="font-size: 0.72rem; color: var(--text-secondary);">🚀 Newly Auto-Added</div>
+                    </div>
+                    <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 0.6rem;">
+                        <div style="font-size: 1.3rem; font-weight: 700; color: #fbbf24;" id="wa-stat-missing">0</div>
+                        <div style="font-size: 0.72rem; color: var(--text-secondary);">⚠️ In App (Not in Group)</div>
+                    </div>
+                    <div style="background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 0.6rem;">
+                        <div style="font-size: 1.3rem; font-weight: 700; color: #60a5fa;" id="wa-stat-synced">0</div>
+                        <div style="font-size: 0.72rem; color: var(--text-secondary);">✅ Already Synced</div>
+                    </div>
+                </div>
+
+                <!-- Section 1: Newly Auto-Added Users -->
+                <div>
+                    <h3 style="margin: 0 0 0.5rem 0; font-size: 0.95rem; color: #34d399; display: flex; align-items: center; gap: 0.4rem;">
+                        <span>🚀 Newly Auto-Added to Whitelist</span>
+                    </h3>
+                    <div id="wa-added-container" style="max-height: 180px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px;">
+                        <!-- JS Populated -->
+                    </div>
+                </div>
+
+                <!-- Section 2: In App Whitelist but Missing in WhatsApp Group -->
+                <div>
+                    <h3 style="margin: 0 0 0.4rem 0; font-size: 0.95rem; color: #fbbf24; display: flex; align-items: center; gap: 0.4rem;">
+                        <span>⚠️ Whitelisted in App (Not Found in Group)</span>
+                    </h3>
+                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin: 0 0 0.5rem 0;">These numbers are preserved in your app whitelist for reference (no numbers were deleted).</p>
+                    <div id="wa-missing-container" style="max-height: 180px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px;">
+                        <!-- JS Populated -->
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 1rem; pt-3; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+                <button onclick="closeWhatsAppSyncModal()" class="admin-btn edit" style="margin: 0;">Done</button>
             </div>
         </div>
     </div>

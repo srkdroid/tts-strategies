@@ -732,18 +732,130 @@ function dispatchAdminTrade(mode) {
 function saveAdminDispatchSettings() {
     const webhookEl = document.getElementById("admin-webhook-url-input");
     const appEl = document.getElementById("admin-app-url-input");
-    const webhookUrl = webhookEl ? webhookEl.value.trim() : "";
-    const appUrl = appEl ? appEl.value.trim() : "";
-    localStorage.setItem("admin_webhook_url", webhookUrl);
-    localStorage.setItem("admin_app_url", appUrl);
-    showToast("💾 Admin Dispatch Settings saved successfully!");
+    const waUrlEl = document.getElementById("admin-openwa-url-input");
+    const waKeyEl = document.getElementById("admin-openwa-key-input");
+    const waSessionEl = document.getElementById("admin-openwa-session-input");
+    const waGroupEl = document.getElementById("admin-openwa-group-input");
+
+    localStorage.setItem("admin_webhook_url", webhookEl ? webhookEl.value.trim() : "");
+    localStorage.setItem("admin_app_url", appEl ? appEl.value.trim() : "");
+    localStorage.setItem("admin_openwa_url", waUrlEl ? waUrlEl.value.trim() : "");
+    localStorage.setItem("admin_openwa_key", waKeyEl ? waKeyEl.value.trim() : "");
+    localStorage.setItem("admin_openwa_session", waSessionEl ? waSessionEl.value.trim() : "");
+    localStorage.setItem("admin_openwa_group", waGroupEl ? waGroupEl.value.trim() : "");
+
+    showToast("💾 Admin Settings saved successfully!");
 }
 
 function loadAdminDispatchSettings() {
     const webhookInput = document.getElementById("admin-webhook-url-input");
     const appInput = document.getElementById("admin-app-url-input");
+    const waUrlInput = document.getElementById("admin-openwa-url-input");
+    const waKeyInput = document.getElementById("admin-openwa-key-input");
+    const waSessionInput = document.getElementById("admin-openwa-session-input");
+    const waGroupInput = document.getElementById("admin-openwa-group-input");
+
     if (webhookInput) webhookInput.value = localStorage.getItem("admin_webhook_url") || "";
     if (appInput) appInput.value = localStorage.getItem("admin_app_url") || "";
+    if (waUrlInput) waUrlInput.value = localStorage.getItem("admin_openwa_url") || "https://openwa-api.duckdns.org/";
+    if (waKeyInput) waKeyInput.value = localStorage.getItem("admin_openwa_key") || "";
+    if (waSessionInput) waSessionInput.value = localStorage.getItem("admin_openwa_session") || "";
+    if (waGroupInput) waGroupInput.value = localStorage.getItem("admin_openwa_group") || "";
+}
+
+async function syncWhatsAppGroup() {
+    const baseUrl = localStorage.getItem("admin_openwa_url") || "https://openwa-api.duckdns.org/";
+    const apiKey = localStorage.getItem("admin_openwa_key") || "";
+    const sessionId = localStorage.getItem("admin_openwa_session") || "";
+    const groupId = localStorage.getItem("admin_openwa_group") || "";
+
+    if (!sessionId || !groupId) {
+        switchDbTab('dispatch');
+        alert("⚠️ Please enter and save your OpenWA Session ID and Group ID in the Dispatch Settings tab first.");
+        return;
+    }
+
+    const btn = event ? event.target : null;
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "⏳ Syncing...";
+    }
+
+    try {
+        const response = await fetch('/api/admin/whatsapp-sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ baseUrl, apiKey, sessionId, groupId })
+        });
+
+        const resJson = await response.json();
+
+        if (!response.ok) {
+            alert(resJson.error || "WhatsApp Sync Failed");
+            return;
+        }
+
+        // Populate and open WhatsApp Sync Audit Results Modal
+        document.getElementById("wa-sync-group-name").innerText = `Group: ${resJson.groupName} (${resJson.totalParticipants} total members)`;
+        document.getElementById("wa-stat-added").innerText = resJson.newlyAddedCount;
+        document.getElementById("wa-stat-missing").innerText = resJson.missingInGroupCount;
+        document.getElementById("wa-stat-synced").innerText = resJson.alreadySyncedCount;
+
+        // Render Newly Added
+        const addedContainer = document.getElementById("wa-added-container");
+        addedContainer.innerHTML = "";
+        if (resJson.newlyAdded.length === 0) {
+            addedContainer.innerHTML = "<div style='padding: 0.8rem; font-size: 0.8rem; color: var(--text-secondary); text-align: center;'>No new users added (all group members already in whitelist).</div>";
+        } else {
+            const table = document.createElement("table");
+            table.className = "admin-table";
+            table.innerHTML = `<thead><tr><th>Phone Number</th><th>Generated PIN</th><th>Name</th></tr></thead>`;
+            const tbody = document.createElement("tbody");
+            resJson.newlyAdded.forEach(u => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `<td><strong>${u.phone}</strong></td><td style="font-family: monospace; color: #34d399; font-weight: 700;">${u.pin}</td><td>${u.name || '-'}</td>`;
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            addedContainer.appendChild(table);
+        }
+
+        // Render Missing in Group
+        const missingContainer = document.getElementById("wa-missing-container");
+        missingContainer.innerHTML = "";
+        if (resJson.missingInGroup.length === 0) {
+            missingContainer.innerHTML = "<div style='padding: 0.8rem; font-size: 0.8rem; color: var(--text-secondary); text-align: center;'>All whitelisted users are present in the WhatsApp group.</div>";
+        } else {
+            const table = document.createElement("table");
+            table.className = "admin-table";
+            table.innerHTML = `<thead><tr><th>Whitelisted Phone Number</th><th>Status</th></tr></thead>`;
+            const tbody = document.createElement("tbody");
+            resJson.missingInGroup.forEach(phone => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `<td><strong>${phone}</strong></td><td><span class="badge biweekly" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3);">App Whitelisted Only</span></td>`;
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            missingContainer.appendChild(table);
+        }
+
+        document.getElementById("whatsapp-sync-modal").style.display = "flex";
+        showToast(`📱 WhatsApp Group Synced! ${resJson.newlyAddedCount} users added to whitelist.`);
+
+    } catch (err) {
+        console.error("Sync error:", err);
+        alert("Network error executing WhatsApp Sync");
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = "📱 Sync WhatsApp Group";
+        }
+    }
+}
+
+function closeWhatsAppSyncModal() {
+    document.getElementById("whatsapp-sync-modal").style.display = "none";
+    fetchAdminDbData();
 }
 
 function updateCalendars() {
