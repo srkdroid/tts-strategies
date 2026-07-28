@@ -952,7 +952,7 @@ function showStrategyDetails(dep) {
     // Admin Only Trade Dispatch Card Control
     const adminDispatchCard = document.getElementById("modal-admin-dispatch-card");
     if (adminDispatchCard) {
-        const isAdmin = (document.cookie || "").includes("admin_token=") || (window.location.pathname.includes("admin"));
+        const isAdmin = isAdminMode || (document.cookie || "").includes("admin_token=") || (window.location.pathname.includes("admin"));
         adminDispatchCard.style.display = isAdmin ? "block" : "none";
     }
     
