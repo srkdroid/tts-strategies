@@ -101,16 +101,36 @@ module.exports = async (req, res) => {
         }
 
         let openwaResponse;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
         try {
-            openwaResponse = await fetch(openwaUrl, { method: 'GET', headers });
+            openwaResponse = await fetch(openwaUrl, { 
+                method: 'GET', 
+                headers,
+                signal: controller.signal 
+            });
         } catch (fetchErr) {
+            clearTimeout(timeoutId);
+            if (fetchErr.name === 'AbortError') {
+                return res.status(504).json({ error: `Connection timed out after 15 seconds connecting to OpenWA VPS (${cleanBase}). Please verify your OpenWA session is connected.` });
+            }
             return res.status(502).json({ error: `Failed to connect to OpenWA VPS at ${cleanBase}. Details: ${fetchErr.message}` });
         }
+        clearTimeout(timeoutId);
 
         if (!openwaResponse.ok) {
             const errText = await openwaResponse.text().catch(() => '');
+            let cleanErr = errText;
+            if (openwaResponse.status === 504) {
+                cleanErr = "504 Gateway Timeout — Nginx timed out waiting for OpenWA. Check if the session is connected and WhatsApp web is active.";
+            } else if (openwaResponse.status === 502) {
+                cleanErr = "502 Bad Gateway — OpenWA service on VPS is offline or restarting.";
+            } else if (errText.includes('<html')) {
+                cleanErr = errText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+            }
             return res.status(openwaResponse.status).json({ 
-                error: `OpenWA API error (${openwaResponse.status}): ${errText || openwaResponse.statusText}` 
+                error: `OpenWA Server Error (${openwaResponse.status}): ${cleanErr}` 
             });
         }
 
