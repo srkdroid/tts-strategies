@@ -1543,11 +1543,6 @@ function renderWhitelistTable() {
         countBadge.innerText = `👥 Whitelisted Users: ${totalCount}`;
     }
     
-    const tabCount = document.getElementById("users-tab-count-num");
-    if (tabCount) {
-        tabCount.innerText = totalCount;
-    }
-    
     const searchVal = document.getElementById("user-search-input") ? document.getElementById("user-search-input").value.toLowerCase().trim() : "";
     let visibleCount = 0;
     
