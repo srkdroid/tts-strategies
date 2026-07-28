@@ -29,6 +29,24 @@ const EXIT_RULES = {
     "stbt-fin-nifty-2d-ladder-6":   { type: "next_weekday", weekday: 1 }
 };
 
+const DEPLOY_RULES = {
+    "monthly-batman":               { type: "preceding_month_friday", dte_min: 39, dte_max: 44 },
+    "monthly-no-brainer-nifty":     { type: "preceding_month_friday", dte_min: 29, dte_max: 34 },
+    "monthly-no-brainer-banknifty": { type: "expiry_offset", offset_days: -12, monthly_only: true },
+    "monthly-hni-nifty":            { type: "preceding_month_friday", dte_min: 39, dte_max: 43 },
+    "monthly-autopilot-finnifty":   { type: "expiry_offset", offset_days: -12, monthly_only: true },
+    "monthly-double-decker":        { type: "preceding_month_friday", dte_min: 39, dte_max: 43 },
+    "biweekly-bwb-2":               { type: "expiry_offset", offset_days: -12 },
+    "biweekly-broken-wing-3":       { type: "expiry_offset", offset_days: -7 },
+    "biweekly-hni-4":               { type: "expiry_offset", offset_days: -8 },
+    "biweekly-blazeBF-1":           { type: "expiry_offset", offset_days: -8 },
+    "stbt-nifty-3d-ladder-2":       { type: "expiry_offset", offset_days: -5 },
+    "stbt-ce-dominator-3":          { type: "expiry_offset", offset_days: -4 },
+    "stbt-matrix-calendar-4":       { type: "expiry_offset", offset_days: -11 },
+    "stbt-sensex-no-brainer-5":     { type: "expiry_offset", offset_days: -6 },
+    "stbt-fin-nifty-2d-ladder-6":   { type: "expiry_offset", offset_days: -4, monthly_only: true }
+};
+
 // Calculate the max exit date for a deployment given its exit rule
 function calculateExitDate(deployDate, expiryDate, exitRule) {
     if (!exitRule) return null;
@@ -1078,16 +1096,30 @@ async function saveStrategyForm(event) {
         strike_example.PE = setup.PE.map(leg => generateConcreteStrikeText(leg, "PE", 25000));
     }
 
-    const existingStrat = id ? strategiesData.find(s => s.id === id) : null;
-    const deploy_rule = (existingStrat && existingStrat.deploy_rule) ? existingStrat.deploy_rule : {
-        type: "expiry_offset",
-        offset_days: dte.includes("8 DTE") ? -8 : (dte.includes("12 DTE") ? -12 : -5),
-        monthly_only: sheet === "Monthly"
-    };
-    const exit_rule = (existingStrat && existingStrat.exit_rule) ? existingStrat.exit_rule : {
-        type: "next_weekday",
-        weekday: 5
-    };
+    const existingStrat = id ? strategiesData.find(s => s.id === id || s.name === name) : strategiesData.find(s => s.name === name);
+    
+    // Normalize position type string
+    const normalizedType = type === "Both sides" ? "Both (CE & PE)" : type;
+
+    // Resolve deployment rule with master fallback
+    let deploy_rule = (existingStrat && existingStrat.deploy_rule) ? existingStrat.deploy_rule : null;
+    if (!deploy_rule && id && DEPLOY_RULES[id]) deploy_rule = DEPLOY_RULES[id];
+    if (!deploy_rule && existingStrat && DEPLOY_RULES[existingStrat.id]) deploy_rule = DEPLOY_RULES[existingStrat.id];
+    if (!deploy_rule) {
+        deploy_rule = {
+            type: "expiry_offset",
+            offset_days: dte.includes("8 DTE") ? -8 : (dte.includes("12 DTE") ? -12 : (dte.includes("39") ? -39 : -5)),
+            monthly_only: sheet === "Monthly"
+        };
+    }
+
+    // Resolve exit rule with master fallback
+    let exit_rule = (existingStrat && existingStrat.exit_rule) ? existingStrat.exit_rule : null;
+    if (!exit_rule && id && EXIT_RULES[id]) exit_rule = EXIT_RULES[id];
+    if (!exit_rule && existingStrat && EXIT_RULES[existingStrat.id]) exit_rule = EXIT_RULES[existingStrat.id];
+    if (!exit_rule) {
+        exit_rule = { type: "next_weekday", weekday: 5 };
+    }
 
     const updatedStrat = {
         id: id || `strat_${Date.now()}`,
@@ -1098,7 +1130,7 @@ async function saveStrategyForm(event) {
         dte,
         day,
         time,
-        type,
+        type: normalizedType,
         setup,
         strike_example,
         conditions: { credit_range, refine_credit, refine_blue_line, position_delta },
