@@ -117,6 +117,16 @@ function calculateDeploymentsForRange(startDate, endDate) {
     
     // Map each strategy to its nominal deployment dates
     strategiesData.forEach(strategy => {
+        // Auto-heal missing or corrupted rules (e.g. from legacy saves)
+        const masterDeploy = DEPLOY_RULES[strategy.id] || (strategy.name ? DEPLOY_RULES[Object.keys(DEPLOY_RULES).find(k => k && strategy.name.toLowerCase().includes(k.replace(/^(monthly|biweekly|stbt)-/, '').replace(/-\d+$/, '')))] : null);
+        if (masterDeploy && (!strategy.deploy_rule || (strategy.deploy_rule.type === 'expiry_offset' && strategy.deploy_rule.offset_days === -5 && (strategy.sheet === 'Monthly' || strategy.name.includes('Batman'))))) {
+            strategy.deploy_rule = masterDeploy;
+        }
+        const masterExit = EXIT_RULES[strategy.id] || (strategy.name ? EXIT_RULES[Object.keys(EXIT_RULES).find(k => k && strategy.name.toLowerCase().includes(k.replace(/^(monthly|biweekly|stbt)-/, '').replace(/-\d+$/, '')))] : null);
+        if (masterExit && (!strategy.exit_rule || (strategy.exit_rule.type === 'next_weekday' && strategy.exit_rule.weekday === 5 && strategy.sheet === 'Monthly'))) {
+            strategy.exit_rule = masterExit;
+        }
+
         const isSensex = strategy.index.includes("Sensex");
         const expiries = isSensex ? sensexExpiries : niftyExpiries;
         
@@ -515,6 +525,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
         const resJson = await response.json();
         strategiesData = resJson.strategies;
+        if (Array.isArray(strategiesData)) {
+            strategiesData.forEach(strat => {
+                const masterDeploy = DEPLOY_RULES[strat.id] || (strat.name ? DEPLOY_RULES[Object.keys(DEPLOY_RULES).find(k => k && strat.name.toLowerCase().includes(k.replace(/^(monthly|biweekly|stbt)-/, '').replace(/-\d+$/, '')))] : null);
+                if (masterDeploy && (!strat.deploy_rule || (strat.deploy_rule.type === 'expiry_offset' && strat.deploy_rule.offset_days === -5 && (strat.sheet === 'Monthly' || strat.name.includes('Batman'))))) {
+                    strat.deploy_rule = masterDeploy;
+                }
+                const masterExit = EXIT_RULES[strat.id] || (strat.name ? EXIT_RULES[Object.keys(EXIT_RULES).find(k => k && strat.name.toLowerCase().includes(k.replace(/^(monthly|biweekly|stbt)-/, '').replace(/-\d+$/, '')))] : null);
+                if (masterExit && (!strat.exit_rule || (strat.exit_rule.type === 'next_weekday' && strat.exit_rule.weekday === 5 && strat.sheet === 'Monthly'))) {
+                    strat.exit_rule = masterExit;
+                }
+            });
+        }
         if (resJson.holidays) {
             marketHolidays2026 = resJson.holidays;
         }
