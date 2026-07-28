@@ -595,7 +595,7 @@ function dispatchAdminTrade(mode) {
 
     // Build calculated legs
     const legs = [];
-    if (strategy.type === "Both (CE & PE)" || strategy.type.includes("Both")) {
+    if (strategy.type.includes("Both") || (strategy.setup.PE && strategy.setup.CE)) {
         if (strategy.setup.PE) {
             strategy.setup.PE.forEach(st => {
                 legs.push(parseLegDetails(st, "PE", currentAtm));
@@ -643,6 +643,10 @@ function dispatchAdminTrade(mode) {
             showToast("⚠️ Webhook URL not configured. Please set it in Admin DB Management -> Dispatch Settings tab.", true);
             return;
         }
+        try { new URL(webhookUrl); } catch (e) {
+            showToast("⚠️ Invalid Webhook URL format. Please check your URL in Dispatch Settings.", true);
+            return;
+        }
         fetch(webhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -663,13 +667,18 @@ function dispatchAdminTrade(mode) {
             return;
         }
         const fullUrl = `${appUrl}${appUrl.includes('?') ? '&' : '?'}data=${encodeURIComponent(JSON.stringify(payload))}`;
+        if (fullUrl.length > 2000) {
+            showToast("⚠️ URL is very long (" + fullUrl.length + " chars). Consider using Webhook or Copy JSON instead.", true);
+        }
         window.open(fullUrl, '_blank');
     }
 }
 
 function saveAdminDispatchSettings() {
-    const webhookUrl = document.getElementById("admin-webhook-url-input").value.trim();
-    const appUrl = document.getElementById("admin-app-url-input").value.trim();
+    const webhookEl = document.getElementById("admin-webhook-url-input");
+    const appEl = document.getElementById("admin-app-url-input");
+    const webhookUrl = webhookEl ? webhookEl.value.trim() : "";
+    const appUrl = appEl ? appEl.value.trim() : "";
     localStorage.setItem("admin_webhook_url", webhookUrl);
     localStorage.setItem("admin_app_url", appUrl);
     showToast("💾 Admin Dispatch Settings saved successfully!");
@@ -817,7 +826,7 @@ function showStrategyDetails(dep) {
     function renderStrikesForAtm(activeAtm) {
         strikeExampleContainer.innerHTML = "";
         
-        if (strategy.type === "Both (CE & PE)" || strategy.type.includes("Both")) {
+        if (strategy.type.includes("Both") || (strategy.setup.PE && strategy.setup.CE)) {
             const peStrikesTitle = document.createElement("h5");
             peStrikesTitle.innerText = "PE Strikes";
             strikeExampleContainer.appendChild(peStrikesTitle);
@@ -860,7 +869,7 @@ function showStrategyDetails(dep) {
         }
     }
 
-    if (strategy.type === "Both (CE & PE)" || strategy.type.includes("Both")) {
+    if (strategy.type.includes("Both") || (strategy.setup.PE && strategy.setup.CE)) {
         // Double Sided
         const peTitle = document.createElement("h5");
         peTitle.innerText = "PE Legs";
@@ -971,8 +980,7 @@ function showStrategyDetails(dep) {
     // Admin Only Trade Dispatch Card Control
     const adminDispatchCard = document.getElementById("modal-admin-dispatch-card");
     if (adminDispatchCard) {
-        const isAdmin = isAdminMode || (document.cookie || "").includes("admin_token=") || (window.location.pathname.includes("admin"));
-        adminDispatchCard.style.display = isAdmin ? "block" : "none";
+        adminDispatchCard.style.display = isAdminMode ? "block" : "none";
     }
     
     modal.style.display = "flex";
