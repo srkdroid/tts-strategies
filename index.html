@@ -13,9 +13,10 @@
     <div class="dashboard-container">
         <!-- Admin Bar -->
         <div id="admin-bar" class="admin-bar" style="display: none;">
-            <div class="admin-bar-left">
+            <div class="admin-bar-left" style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
                 <span class="admin-badge">🛠️ Admin Mode</span>
                 <span id="admin-user-info">Logged in as Admin</span>
+                <span id="admin-user-count-badge" class="badge" style="background: rgba(59, 130, 246, 0.18); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.35); padding: 0.2rem 0.6rem; border-radius: 9999px; font-size: 0.78rem;">👥 Whitelisted Users: ...</span>
             </div>
             <div class="admin-bar-right">
                 <button onclick="openDbManagementModal()" class="admin-btn edit">📂 Manage DB (Users & Holidays)</button>
@@ -528,7 +529,7 @@
             
             <!-- Modal Tabs Nav -->
             <div class="admin-tab-nav" style="display: flex; gap: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1.5rem;">
-                <button id="tab-users-btn" class="tab-nav-btn active" onclick="switchDbTab('users')">Whitelisted Users</button>
+                <button id="tab-users-btn" class="tab-nav-btn active" onclick="switchDbTab('users')">Whitelisted Users (<span id="users-tab-count-num">0</span>)</button>
                 <button id="tab-holidays-btn" class="tab-nav-btn" onclick="switchDbTab('holidays')">Market Holidays</button>
                 <button id="tab-strategies-btn" class="tab-nav-btn" onclick="switchDbTab('strategies')">Manage Strategies</button>
                 <button id="tab-logs-btn" class="tab-nav-btn" onclick="switchDbTab('logs')">Auth Audit Logs</button>
@@ -538,8 +539,9 @@
             <!-- Tab Content: Users -->
             <div id="tab-users-content" class="admin-tab-content" style="display: flex; flex-direction: column; flex-grow: 1; overflow: hidden;">
                 <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: flex-end;">
-                    <div style="flex-grow: 1;">
+                    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 0.3rem;">
                         <input type="text" id="user-search-input" placeholder="🔍 Search phone numbers..." oninput="filterUsersList()" style="width: 100%; padding: 0.6rem 1rem; border-radius: 8px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: #fff;">
+                        <span id="users-search-count-label" style="font-size: 0.75rem; color: var(--text-secondary); padding-left: 0.2rem;">Total: 0 whitelisted users</span>
                     </div>
                     <div style="display: flex; gap: 0.5rem;">
                         <button onclick="openAddUserForm()" class="admin-btn add" style="margin:0;">Add User</button>

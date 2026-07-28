@@ -547,6 +547,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (isAdminMode) {
             document.getElementById("admin-bar").style.display = "flex";
             document.getElementById("admin-user-info").innerText = `Logged in as Admin (${resJson.userPhone})`;
+            fetchAdminDbData();
         } else {
             const userLogoutBtn = document.getElementById("user-logout-btn");
             if (userLogoutBtn) userLogoutBtn.style.display = "block";
@@ -1531,12 +1532,28 @@ async function clearAuthLogs() {
 
 function renderWhitelistTable() {
     const tbody = document.getElementById("whitelist-table-body");
+    if (!tbody) return;
     tbody.innerHTML = "";
     
-    const searchVal = document.getElementById("user-search-input").value.toLowerCase().trim();
+    const entries = Object.entries(whitelistData || {});
+    const totalCount = entries.length;
     
-    Object.entries(whitelistData).forEach(([phone, pin]) => {
+    const countBadge = document.getElementById("admin-user-count-badge");
+    if (countBadge) {
+        countBadge.innerText = `👥 Whitelisted Users: ${totalCount}`;
+    }
+    
+    const tabCount = document.getElementById("users-tab-count-num");
+    if (tabCount) {
+        tabCount.innerText = totalCount;
+    }
+    
+    const searchVal = document.getElementById("user-search-input") ? document.getElementById("user-search-input").value.toLowerCase().trim() : "";
+    let visibleCount = 0;
+    
+    entries.forEach(([phone, pin]) => {
         if (searchVal && !phone.includes(searchVal)) return;
+        visibleCount++;
         
         const tr = document.createElement("tr");
         
@@ -1598,6 +1615,15 @@ function renderWhitelistTable() {
         
         tbody.appendChild(tr);
     });
+
+    const searchLabel = document.getElementById("users-search-count-label");
+    if (searchLabel) {
+        if (searchVal) {
+            searchLabel.innerText = `Showing ${visibleCount} of ${totalCount} users`;
+        } else {
+            searchLabel.innerText = `Total: ${totalCount} whitelisted users`;
+        }
+    }
 }
 
 function filterUsersList() {
