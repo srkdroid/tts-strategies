@@ -562,6 +562,107 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 });
 
+function dispatchAdminTrade(mode) {
+    if (!currentActiveModalDep) {
+        showToast("No active strategy deployment found.", true);
+        return;
+    }
+    const strategy = currentActiveModalDep.strategy;
+    const atmInput = document.getElementById("modal-atm-input");
+    const currentAtm = atmInput ? parseInt(atmInput.value, 10) || 25000 : 25000;
+    
+    // Build calculated legs
+    const legs = [];
+    if (strategy.type === "Both (CE & PE)" || strategy.type.includes("Both")) {
+        if (strategy.setup.PE) {
+            strategy.setup.PE.forEach(st => {
+                const formatted = generateConcreteStrikeText(st, "PE", currentAtm);
+                legs.push({ side: "PE", formula: st, formatted: formatted });
+            });
+        }
+        if (strategy.setup.CE) {
+            strategy.setup.CE.forEach(st => {
+                const formatted = generateConcreteStrikeText(st, "CE", currentAtm);
+                legs.push({ side: "CE", formula: st, formatted: formatted });
+            });
+        }
+    } else {
+        const side = strategy.type.split(" ")[0];
+        const source = (strategy.setup && strategy.setup[side]) ? strategy.setup[side] : [];
+        source.forEach(st => {
+            const formatted = generateConcreteStrikeText(st, side, currentAtm);
+            legs.push({ side: side, formula: st, formatted: formatted });
+        });
+    }
+
+    const payload = {
+        strategy_name: strategy.name,
+        index: strategy.index,
+        category: strategy.sheet,
+        deployment_date: formatDateString(currentActiveModalDep.actualDate),
+        expiry_date: formatDateString(currentActiveModalDep.expiryDate),
+        atm_price: currentAtm,
+        legs: legs,
+        target_profit: strategy.exit.target || "N/A",
+        stop_loss: strategy.exit.sl || "N/A"
+    };
+
+    if (mode === 'copy') {
+        const jsonStr = JSON.stringify(payload, null, 2);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(jsonStr).then(() => {
+                showToast("📋 Trade JSON payload copied to clipboard!");
+            }).catch(() => {
+                showToast("Failed to copy JSON to clipboard", true);
+            });
+        } else {
+            alert("Trade JSON Payload:\n\n" + jsonStr);
+        }
+    } else if (mode === 'webhook') {
+        const webhookUrl = localStorage.getItem("admin_webhook_url") || "";
+        if (!webhookUrl) {
+            showToast("⚠️ Webhook URL not configured. Please set it in Admin DB Management -> Dispatch Settings tab.", true);
+            return;
+        }
+        fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).then(res => {
+            if (res.ok) {
+                showToast("🚀 Trade payload dispatched to Webhook successfully!");
+            } else {
+                showToast("Webhook returned status: " + res.status, true);
+            }
+        }).catch(err => {
+            showToast("Webhook dispatch error: " + err.message, true);
+        });
+    } else if (mode === 'link') {
+        const appUrl = localStorage.getItem("admin_app_url") || "";
+        if (!appUrl) {
+            showToast("⚠️ External App Base URL not configured. Please set it in Admin DB Management -> Dispatch Settings tab.", true);
+            return;
+        }
+        const fullUrl = `${appUrl}${appUrl.includes('?') ? '&' : '?'}data=${encodeURIComponent(JSON.stringify(payload))}`;
+        window.open(fullUrl, '_blank');
+    }
+}
+
+function saveAdminDispatchSettings() {
+    const webhookUrl = document.getElementById("admin-webhook-url-input").value.trim();
+    const appUrl = document.getElementById("admin-app-url-input").value.trim();
+    localStorage.setItem("admin_webhook_url", webhookUrl);
+    localStorage.setItem("admin_app_url", appUrl);
+    showToast("💾 Admin Dispatch Settings saved successfully!");
+}
+
+function loadAdminDispatchSettings() {
+    const webhookInput = document.getElementById("admin-webhook-url-input");
+    const appInput = document.getElementById("admin-app-url-input");
+    if (webhookInput) webhookInput.value = localStorage.getItem("admin_webhook_url") || "";
+    if (appInput) appInput.value = localStorage.getItem("admin_app_url") || "";
+}
+
 function updateCalendars() {
     if (currentFlowViewMode === "calendar") {
         // Render June (Month 5), July (Month 6), August (Month 7) 2026
@@ -571,6 +672,31 @@ function updateCalendars() {
     } else {
         renderCapitalFlow();
     }
+}
+
+const INDEX_STRIKE_STEPS = {
+    "Nifty": 50,
+    "Bank Nifty": 100,
+    "Fin Nifty": 50,
+    "Fin Nifty (Expiry Tue)": 50,
+    "Sensex": 100,
+    "Sensex (Expiry Thur)": 100
+};
+
+let currentActiveModalDep = null;
+
+function getSavedAtmForIndex(indexName, defaultAtm) {
+    const key = `lastAtm_${indexName}`;
+    const saved = sessionStorage.getItem(key);
+    if (saved && !isNaN(parseInt(saved, 10))) {
+        return parseInt(saved, 10);
+    }
+    return defaultAtm;
+}
+
+function saveAtmForIndex(indexName, atmVal) {
+    const key = `lastAtm_${indexName}`;
+    sessionStorage.setItem(key, atmVal);
 }
 
 // Helper to dynamically calculate and format concrete strike labels (e.g. "Buy 1 25200 CE")
@@ -599,6 +725,7 @@ function generateConcreteStrikeText(legStr, side, atmPrice) {
 }
 
 function showStrategyDetails(dep) {
+    currentActiveModalDep = dep;
     const strategy = dep.strategy;
     const modal = document.getElementById("strategy-modal");
     
@@ -630,8 +757,90 @@ function showStrategyDetails(dep) {
     const strikeExampleContainer = document.getElementById("modal-strikes-list");
     strikeExampleContainer.innerHTML = "";
     
-    const atmPrice = (strategy.strike_example && strategy.strike_example.ATM) ? strategy.strike_example.ATM : 25000;
+    const defaultAtm = (strategy.strike_example && strategy.strike_example.ATM) ? strategy.strike_example.ATM : 25000;
+    const stepSize = INDEX_STRIKE_STEPS[strategy.index] || 50;
+    let currentAtm = getSavedAtmForIndex(strategy.index, defaultAtm);
     
+    // Configure interactive ATM input & reset button
+    const atmInput = document.getElementById("modal-atm-input");
+    if (atmInput) {
+        atmInput.value = currentAtm;
+        atmInput.step = stepSize;
+        
+        atmInput.oninput = (e) => {
+            const raw = parseInt(e.target.value, 10);
+            if (!isNaN(raw)) {
+                saveAtmForIndex(strategy.index, raw);
+                renderStrikesForAtm(raw);
+            }
+        };
+        
+        atmInput.onchange = (e) => {
+            const raw = parseInt(e.target.value, 10);
+            if (!isNaN(raw)) {
+                const rounded = Math.round(raw / stepSize) * stepSize;
+                atmInput.value = rounded;
+                saveAtmForIndex(strategy.index, rounded);
+                renderStrikesForAtm(rounded);
+            }
+        };
+    }
+    
+    const resetBtn = document.getElementById("modal-atm-reset-btn");
+    if (resetBtn) {
+        resetBtn.onclick = () => {
+            saveAtmForIndex(strategy.index, defaultAtm);
+            if (atmInput) atmInput.value = defaultAtm;
+            renderStrikesForAtm(defaultAtm);
+        };
+    }
+    
+    function renderStrikesForAtm(activeAtm) {
+        strikeExampleContainer.innerHTML = "";
+        
+        if (strategy.type === "Both (CE & PE)" || strategy.type.includes("Both")) {
+            const peStrikesTitle = document.createElement("h5");
+            peStrikesTitle.innerText = "PE Strikes";
+            strikeExampleContainer.appendChild(peStrikesTitle);
+            
+            const peSource = (strategy.setup && strategy.setup.PE) ? strategy.setup.PE : strategy.strike_example.PE;
+            peSource.forEach(st => {
+                const li = document.createElement("div");
+                li.className = "leg-item pe-side";
+                li.innerText = generateConcreteStrikeText(st, "PE", activeAtm);
+                strikeExampleContainer.appendChild(li);
+            });
+            
+            const ceStrikesTitle = document.createElement("h5");
+            ceStrikesTitle.innerText = "CE Strikes";
+            strikeExampleContainer.appendChild(ceStrikesTitle);
+            
+            const ceSource = (strategy.setup && strategy.setup.CE) ? strategy.setup.CE : strategy.strike_example.CE;
+            ceSource.forEach(st => {
+                const li = document.createElement("div");
+                li.className = "leg-item ce-side";
+                li.innerText = generateConcreteStrikeText(st, "CE", activeAtm);
+                strikeExampleContainer.appendChild(li);
+            });
+        } else {
+            const side = strategy.type.split(" ")[0]; // CE or PE
+            const sideSource = (strategy.setup && strategy.setup[side]) ? strategy.setup[side] : strategy.strike_example[side];
+            sideSource.forEach(st => {
+                const li = document.createElement("div");
+                li.className = `leg-item ${side.toLowerCase()}-side`;
+                li.innerText = generateConcreteStrikeText(st, side, activeAtm);
+                strikeExampleContainer.appendChild(li);
+            });
+            
+            if (strategy.strike_example && strategy.strike_example.notes) {
+                const note = document.createElement("p");
+                note.className = "setup-note";
+                note.innerHTML = `*Note:* ${strategy.strike_example.notes}`;
+                strikeExampleContainer.appendChild(note);
+            }
+        }
+    }
+
     if (strategy.type === "Both (CE & PE)" || strategy.type.includes("Both")) {
         // Double Sided
         const peTitle = document.createElement("h5");
@@ -657,35 +866,6 @@ function showStrategyDetails(dep) {
             li.innerText = leg;
             legsContainer.appendChild(li);
         });
-        
-        // Strike Examples
-        const strikeTitle = document.createElement("p");
-        strikeTitle.innerHTML = `<strong>Strike Example (ATM = ${atmPrice})</strong>`;
-        strikeExampleContainer.appendChild(strikeTitle);
-        
-        const peStrikesTitle = document.createElement("h5");
-        peStrikesTitle.innerText = "PE Strikes";
-        strikeExampleContainer.appendChild(peStrikesTitle);
-        
-        const peSource = (strategy.setup && strategy.setup.PE) ? strategy.setup.PE : strategy.strike_example.PE;
-        peSource.forEach(st => {
-            const li = document.createElement("div");
-            li.className = "leg-item pe-side";
-            li.innerText = generateConcreteStrikeText(st, "PE", atmPrice);
-            strikeExampleContainer.appendChild(li);
-        });
-        
-        const ceStrikesTitle = document.createElement("h5");
-        ceStrikesTitle.innerText = "CE Strikes";
-        strikeExampleContainer.appendChild(ceStrikesTitle);
-        
-        const ceSource = (strategy.setup && strategy.setup.CE) ? strategy.setup.CE : strategy.strike_example.CE;
-        ceSource.forEach(st => {
-            const li = document.createElement("div");
-            li.className = "leg-item ce-side";
-            li.innerText = generateConcreteStrikeText(st, "CE", atmPrice);
-            strikeExampleContainer.appendChild(li);
-        });
     } else {
         // Single Sided
         const side = strategy.type.split(" ")[0]; // CE or PE
@@ -707,27 +887,10 @@ function showStrategyDetails(dep) {
             note.innerHTML = `*Note:* ${strategy.setup.notes}`;
             legsContainer.appendChild(note);
         }
-        
-        // Strike Examples
-        const strikeTitle = document.createElement("p");
-        strikeTitle.innerHTML = `<strong>Strike Example (ATM = ${atmPrice})</strong>`;
-        strikeExampleContainer.appendChild(strikeTitle);
-        
-        const sideSource = (strategy.setup && strategy.setup[side]) ? strategy.setup[side] : strategy.strike_example[side];
-        sideSource.forEach(st => {
-            const li = document.createElement("div");
-            li.className = `leg-item ${side.toLowerCase()}-side`;
-            li.innerText = generateConcreteStrikeText(st, side, atmPrice);
-            strikeExampleContainer.appendChild(li);
-        });
-        
-        if (strategy.strike_example && strategy.strike_example.notes) {
-            const note = document.createElement("p");
-            note.className = "setup-note";
-            note.innerHTML = `*Note:* ${strategy.strike_example.notes}`;
-            strikeExampleContainer.appendChild(note);
-        }
     }
+    
+    // Render Strikes
+    renderStrikesForAtm(currentAtm);
     
     // Conditions
     document.getElementById("modal-credit-range").innerText = strategy.conditions.credit_range || "N/A";
@@ -785,8 +948,14 @@ function showStrategyDetails(dep) {
             updatePBtn();
         };
     }
+
+    // Admin Only Trade Dispatch Card Control
+    const adminDispatchCard = document.getElementById("modal-admin-dispatch-card");
+    if (adminDispatchCard) {
+        const isAdmin = (document.cookie || "").includes("admin_token=") || (window.location.pathname.includes("admin"));
+        adminDispatchCard.style.display = isAdmin ? "block" : "none";
+    }
     
-    // Detail modal edit/delete actions removed from calendar details context
     modal.style.display = "flex";
 }
 
@@ -987,16 +1156,22 @@ function switchDbTab(tab) {
     document.getElementById("tab-holidays-btn").classList.toggle("active", tab === 'holidays');
     document.getElementById("tab-strategies-btn").classList.toggle("active", tab === 'strategies');
     document.getElementById("tab-logs-btn").classList.toggle("active", tab === 'logs');
+    const dispatchBtn = document.getElementById("tab-dispatch-btn");
+    if (dispatchBtn) dispatchBtn.classList.toggle("active", tab === 'dispatch');
     
     document.getElementById("tab-users-content").style.display = tab === 'users' ? 'flex' : 'none';
     document.getElementById("tab-holidays-content").style.display = tab === 'holidays' ? 'flex' : 'none';
     document.getElementById("tab-strategies-content").style.display = tab === 'strategies' ? 'flex' : 'none';
     document.getElementById("tab-logs-content").style.display = tab === 'logs' ? 'flex' : 'none';
+    const dispatchContent = document.getElementById("tab-dispatch-content");
+    if (dispatchContent) dispatchContent.style.display = tab === 'dispatch' ? 'flex' : 'none';
     
     if (tab === 'logs') {
         renderAuditLogsTable();
     } else if (tab === 'strategies') {
         renderStrategiesTable();
+    } else if (tab === 'dispatch') {
+        loadAdminDispatchSettings();
     }
 }
 

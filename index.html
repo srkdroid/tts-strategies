@@ -258,6 +258,16 @@
                             <span id="modal-gapup" style="font-size: 0.85rem; line-height: 1.4;">N/A</span>
                         </div>
                     </div>
+
+                    <!-- Admin Only Trade Dispatch Card -->
+                    <div id="modal-admin-dispatch-card" class="modal-card" style="margin-top: 1rem; display: none; background: rgba(59, 130, 246, 0.08); border-color: rgba(59, 130, 246, 0.3);">
+                        <h3 style="color: #60a5fa; margin-bottom: 0.8rem;">⚡ Admin Trade Dispatch</h3>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button id="btn-dispatch-webhook" onclick="dispatchAdminTrade('webhook')" class="admin-btn edit" style="background: #2563eb; border-color: #3b82f6; color: #fff; flex: 1; min-width: 130px; font-size: 0.78rem; padding: 0.5rem 0.6rem;">🚀 Webhook</button>
+                            <button id="btn-dispatch-link" onclick="dispatchAdminTrade('link')" class="admin-btn edit" style="background: #7c3aed; border-color: #8b5cf6; color: #fff; flex: 1; min-width: 130px; font-size: 0.78rem; padding: 0.5rem 0.6rem;">🔗 Open App</button>
+                            <button id="btn-dispatch-copy" onclick="dispatchAdminTrade('copy')" class="admin-btn edit" style="background: #059669; border-color: #10b981; color: #fff; flex: 1; min-width: 130px; font-size: 0.78rem; padding: 0.5rem 0.6rem;">📋 Copy JSON</button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Right Column: Setup Legs & Strike Examples -->
@@ -270,7 +280,14 @@
                     </div>
 
                     <div class="modal-card" style="margin-top: 1rem;">
-                        <h3>Concrete Strike Example</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <h3 style="margin: 0;">Concrete Strike Example</h3>
+                            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                <label for="modal-atm-input" style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">ATM:</label>
+                                <input type="number" id="modal-atm-input" style="width: 110px; padding: 0.25rem 0.5rem; background: rgba(15,23,42,0.6); border: 1px solid var(--border-color); color: #fff; border-radius: 6px; font-weight: 700; text-align: center; font-size: 0.9rem;">
+                                <button id="modal-atm-reset-btn" title="Reset to Default ATM" class="admin-btn edit" style="margin: 0; padding: 0.2rem 0.5rem; font-size: 0.8rem; border-radius: 6px;">↺</button>
+                            </div>
+                        </div>
                         <div id="modal-strikes-list">
                             <!-- JS populated -->
                         </div>
@@ -421,6 +438,7 @@
                 <button id="tab-holidays-btn" class="tab-nav-btn" onclick="switchDbTab('holidays')">Market Holidays</button>
                 <button id="tab-strategies-btn" class="tab-nav-btn" onclick="switchDbTab('strategies')">Manage Strategies</button>
                 <button id="tab-logs-btn" class="tab-nav-btn" onclick="switchDbTab('logs')">Auth Audit Logs</button>
+                <button id="tab-dispatch-btn" class="tab-nav-btn" onclick="switchDbTab('dispatch')">Dispatch Settings</button>
             </div>
 
             <!-- Tab Content: Users -->
@@ -539,6 +557,24 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+            <!-- Tab Content: Dispatch Settings -->
+            <div id="tab-dispatch-content" class="admin-tab-content" style="display: none; flex-direction: column; gap: 1rem; padding: 0.5rem 0; overflow-y: auto;">
+                <h3 style="margin: 0; color: #60a5fa;">External App & Webhook Configuration</h3>
+                <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">Configure the Webhook URL and External App URL used by the Admin Trade Dispatch buttons inside strategy detail modals.</p>
+                
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="admin-webhook-url-input">Webhook POST URL (e.g. n8n, Make, Custom API, Python broker bridge)</label>
+                    <input type="url" id="admin-webhook-url-input" placeholder="https://your-api.com/trade-webhook" style="width: 100%; font-family: monospace;">
+                </div>
+                
+                <div class="form-group">
+                    <label for="admin-app-url-input">External App Base URL (for opening URL with query params)</label>
+                    <input type="url" id="admin-app-url-input" placeholder="https://your-trading-app.com/trade" style="width: 100%; font-family: monospace;">
+                </div>
+                
+                <button onclick="saveAdminDispatchSettings()" class="admin-btn add" style="align-self: flex-start; margin-top: 0.5rem;">💾 Save Dispatch Settings</button>
             </div>
         </div>
     </div>
