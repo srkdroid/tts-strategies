@@ -933,6 +933,33 @@ function showStrategyDetails(dep) {
     document.getElementById("modal-sheet-type").innerText = strategy.sheet;
     document.getElementById("modal-sheet-type").className = `badge ${strategy.sheet.toLowerCase()}`;
     
+    // Priority Badge in Modal Header
+    let priorityBadge = document.getElementById("modal-priority-badge");
+    if (!priorityBadge) {
+        priorityBadge = document.createElement("span");
+        priorityBadge.id = "modal-priority-badge";
+        priorityBadge.className = "badge";
+        const headerLeft = document.querySelector(".modal-header-left");
+        if (headerLeft) headerLeft.appendChild(priorityBadge);
+    }
+    
+    let bucketMatch = null;
+    if (typeof capitalPlannerMasterData !== 'undefined') {
+        capitalPlannerMasterData.buckets.forEach(b => {
+            if (b.strategies.some(s => s.appStrategyId === strategy.id)) {
+                bucketMatch = b;
+            }
+        });
+    }
+    
+    if (bucketMatch) {
+        priorityBadge.innerText = bucketMatch.badgeText;
+        priorityBadge.className = `badge ${bucketMatch.colorClass}`;
+        priorityBadge.style.display = "inline-block";
+    } else {
+        priorityBadge.style.display = "none";
+    }
+    
     // Show Strategy Notes button ONLY if a note actually exists for this strategy
     const notesBtn = document.getElementById("modal-notes-btn");
     if (notesBtn) {
@@ -2066,22 +2093,26 @@ function switchViewMode(mode) {
     const calendarBtn = document.getElementById("mode-calendar-btn");
     const flowBtn = document.getElementById("mode-flow-btn");
     const notesBtn = document.getElementById("mode-notes-btn");
+    const plannerBtn = document.getElementById("mode-planner-btn");
     const headerNotesBtn = document.getElementById("header-notes-btn");
 
     if (calendarBtn) calendarBtn.classList.toggle("active", mode === "calendar");
     if (flowBtn) flowBtn.classList.toggle("active", mode === "flow");
     if (notesBtn) notesBtn.classList.toggle("active", mode === "notes");
+    if (plannerBtn) plannerBtn.classList.toggle("active", mode === "planner");
     
     const calContainer = document.getElementById("calendar-view-container");
     const flowContainer = document.getElementById("capital-flow-view-container");
     const notesContainer = document.getElementById("notes-view-container");
+    const plannerContainer = document.getElementById("capital-planner-view-container");
 
     if (calContainer) calContainer.style.display = mode === "calendar" ? "grid" : "none";
     if (flowContainer) flowContainer.style.display = mode === "flow" ? "grid" : "none";
     if (notesContainer) notesContainer.style.display = mode === "notes" ? "block" : "none";
+    if (plannerContainer) plannerContainer.style.display = mode === "planner" ? "block" : "none";
     
     // Clean up inline styles so CSS classes take full effect in all themes
-    [calendarBtn, flowBtn, notesBtn, headerNotesBtn].forEach(btn => {
+    [calendarBtn, flowBtn, notesBtn, plannerBtn, headerNotesBtn].forEach(btn => {
         if (btn) {
             btn.style.background = "";
             btn.style.color = "";
@@ -2096,8 +2127,12 @@ function switchViewMode(mode) {
     if (mode === "notes" && typeof fetchNotesData === 'function') {
         fetchNotesData();
     }
+
+    if (mode === "planner") {
+        renderCapitalPlannerView();
+    }
     
-    if (mode !== "notes") {
+    if (mode !== "notes" && mode !== "planner") {
         updateCalendars();
     }
 }
@@ -2356,5 +2391,204 @@ function renderCapitalFlow() {
             currentRowGridIndex++;
         });
     });
+}
+
+// -------------------------------------------------------------
+// CAPITAL ALLOCATION PLANNER ENGINE
+// -------------------------------------------------------------
+
+function renderCapitalPlannerView() {
+    if (typeof capitalPlannerMasterData === 'undefined') return;
+
+    const capitalInput = document.getElementById("planner-capital-input");
+    const totalCapital = capitalInput ? parseFloat(capitalInput.value) || 5000000 : 5000000;
+
+    const heatmapBody = document.getElementById("planner-heatmap-body");
+    const breakdownBody = document.getElementById("planner-breakdown-body");
+
+    if (!heatmapBody || !breakdownBody) return;
+
+    // 1. Render Week-wise Heatmap Matrix
+    let heatmapHtml = "";
+    capitalPlannerMasterData.buckets.forEach(bucket => {
+        const badgeStyle = bucket.id === "p1" ? "background: rgba(168, 85, 247, 0.18); color: #e9d5ff; border: 1px solid rgba(168, 85, 247, 0.4);" :
+                           bucket.id === "p2" ? "background: rgba(59, 130, 246, 0.18); color: #bfdbfe; border: 1px solid rgba(59, 130, 246, 0.4);" :
+                           "background: rgba(16, 185, 129, 0.18); color: #a7f3d0; border: 1px solid rgba(16, 185, 129, 0.4);";
+        
+        heatmapHtml += `
+            <tr style="border-bottom: 1px solid var(--border-color);" class="planner-row">
+                <td style="padding: 0.8rem; text-align: left;">
+                    <span style="display: inline-block; padding: 0.25rem 0.6rem; border-radius: 4px; font-weight: 700; font-size: 0.8rem; ${badgeStyle}">${bucket.name}</span>
+                </td>
+                <td style="padding: 0.8rem; font-weight: 600;">${bucket.targetDeployPct[0]}%</td>
+                <td style="padding: 0.8rem; font-weight: 600;">${bucket.targetDeployPct[1]}%</td>
+                <td style="padding: 0.8rem; font-weight: 600;">${bucket.targetDeployPct[2]}%</td>
+                <td style="padding: 0.8rem; font-weight: 600;">${bucket.targetDeployPct[3]}%</td>
+                <td style="padding: 0.8rem; font-weight: 600;">${bucket.targetDeployPct[4]}%</td>
+                <td style="padding: 0.8rem; font-weight: 700; color: var(--text-primary);">${bucket.avgCapitalPct}%</td>
+                <td style="padding: 0.8rem; text-align: left; font-size: 0.8rem; color: var(--text-secondary);">${bucket.remarks}</td>
+            </tr>
+        `;
+    });
+    heatmapBody.innerHTML = heatmapHtml;
+
+    // 2. Render Strategy-Wise RoI Breakdown Table
+    let breakdownHtml = "";
+    let grandMaxPotential = 0;
+    let grandExpectedNetProfit = 0;
+
+    capitalPlannerMasterData.buckets.forEach(bucket => {
+        const winRateInput = document.getElementById(`winrate-input-${bucket.id}`);
+        const winRate = winRateInput ? parseFloat(winRateInput.value) || bucket.defaultWinRate : bucket.defaultWinRate;
+        const winRateDecimal = winRate / 100;
+
+        // Mathematical Expectancy Factor: (WinRate * Target) - ((1 - WinRate) * SL)
+        // With 1:1 RR (Target = SL), Factor = (2 * WinRateDecimal) - 1
+        const netFactor = (2 * winRateDecimal) - 1;
+
+        const bucketMaxPotential = (totalCapital * bucket.maxPotentialPct) / 100;
+        const bucketExpectedNet = bucketMaxPotential * netFactor;
+        const bucketNetRoiPct = bucket.maxPotentialPct * netFactor;
+
+        grandMaxPotential += bucketMaxPotential;
+        grandExpectedNetProfit += bucketExpectedNet;
+
+        const bucketHeaderBg = bucket.id === "p1" ? "rgba(168, 85, 247, 0.12)" :
+                               bucket.id === "p2" ? "rgba(59, 130, 246, 0.12)" :
+                               "rgba(16, 185, 129, 0.12)";
+        const bucketTextColor = bucket.id === "p1" ? "#d8b4fe" : bucket.id === "p2" ? "#93c5fd" : "#6ee7b7";
+
+        breakdownHtml += `
+            <tr style="background: ${bucketHeaderBg}; font-weight: 700; border-top: 2px solid var(--border-color);" class="planner-bucket-row">
+                <td style="padding: 0.75rem 0.8rem; color: ${bucketTextColor}; font-size: 0.9rem;">${bucket.name}</td>
+                <td style="padding: 0.75rem; text-align: center; color: ${bucketTextColor};">${bucket.targetDeployPct[0]}%</td>
+                <td style="padding: 0.75rem; text-align: center; color: ${bucketTextColor};">${bucket.targetDeployPct[1]}%</td>
+                <td style="padding: 0.75rem; text-align: center; color: ${bucketTextColor};">${bucket.targetDeployPct[2]}%</td>
+                <td style="padding: 0.75rem; text-align: center; color: ${bucketTextColor};">${bucket.targetDeployPct[3]}%</td>
+                <td style="padding: 0.75rem; text-align: center; color: ${bucketTextColor};">${bucket.targetDeployPct[4]}%</td>
+                <td style="padding: 0.75rem; text-align: center; color: ${bucketTextColor};">${bucket.maxPotentialPct}%</td>
+                <td style="padding: 0.75rem; text-align: right; color: ${bucketTextColor}; font-weight: 700;">₹ ${bucketMaxPotential.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                <td style="padding: 0.75rem; text-align: center;">
+                    <input type="number" id="winrate-input-${bucket.id}" value="${winRate}" min="50" max="100" step="1" onchange="recalculateCapitalPlanner()" style="width: 55px; text-align: center; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 0.25rem; font-weight: 700; font-size: 0.85rem;"> %
+                </td>
+                <td style="padding: 0.75rem; text-align: right; color: ${bucketTextColor}; font-weight: 700;">₹ ${bucketExpectedNet.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                <td style="padding: 0.75rem; text-align: center; color: ${bucketTextColor}; font-weight: 700;">${bucketNetRoiPct.toFixed(2)}%</td>
+            </tr>
+        `;
+
+        bucket.strategies.forEach(strat => {
+            const stratMaxPotential = (totalCapital * strat.maxProfitPct) / 100;
+            const w1Str = strat.allocationW[0] > 0 ? `${strat.allocationW[0]}%` : "-";
+            const w2Str = strat.allocationW[1] > 0 ? `${strat.allocationW[1]}%` : "-";
+            const w3Str = strat.allocationW[2] > 0 ? `${strat.allocationW[2]}%` : "-";
+            const w4Str = strat.allocationW[3] > 0 ? `${strat.allocationW[3]}%` : "-";
+            const w5Str = strat.allocationW[4] > 0 ? `${strat.allocationW[4]}%` : "-";
+
+            breakdownHtml += `
+                <tr style="border-bottom: 1px solid var(--border-color);" class="planner-strat-row" onclick="openPlannerStrategyModal('${strat.appStrategyId}')">
+                    <td style="padding: 0.55rem 0.8rem 0.55rem 1.5rem; cursor: pointer;">
+                        <strong style="color: var(--text-primary); font-size: 0.85rem; display: flex; align-items: center; gap: 0.3rem;">
+                            ${strat.displayName} <span style="font-size: 0.7rem; color: #a855f7;">🔗</span>
+                        </strong>
+                        <span style="font-size: 0.72rem; color: var(--text-secondary); display: block;">${strat.cycleLabel}</span>
+                    </td>
+                    <td style="padding: 0.55rem; text-align: center; color: var(--text-secondary);">${w1Str}</td>
+                    <td style="padding: 0.55rem; text-align: center; color: var(--text-secondary);">${w2Str}</td>
+                    <td style="padding: 0.55rem; text-align: center; color: var(--text-secondary);">${w3Str}</td>
+                    <td style="padding: 0.55rem; text-align: center; color: var(--text-secondary);">${w4Str}</td>
+                    <td style="padding: 0.55rem; text-align: center; color: var(--text-secondary);">${w5Str}</td>
+                    <td style="padding: 0.55rem; text-align: center; font-weight: 500;">${strat.targetSlPct}%</td>
+                    <td style="padding: 0.55rem; text-align: right; font-weight: 600;">₹ ${stratMaxPotential.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                    <td style="padding: 0.55rem; text-align: center; color: var(--text-secondary);">-</td>
+                    <td style="padding: 0.55rem; text-align: right; color: var(--text-secondary);">-</td>
+                    <td style="padding: 0.55rem; text-align: center; color: var(--text-secondary);">-</td>
+                </tr>
+            `;
+        });
+    });
+
+    const grandMaxPct = (grandMaxPotential / totalCapital) * 100;
+    const grandNetPct = (grandExpectedNetProfit / totalCapital) * 100;
+
+    breakdownHtml += `
+        <tr style="background: rgba(16, 185, 129, 0.15); font-weight: 700; border-top: 2px solid var(--border-color); font-size: 0.9rem;">
+            <td style="padding: 0.8rem; color: #10b981;">Target Deployed Capital & Portfolio Totals</td>
+            <td style="padding: 0.8rem; text-align: center; color: #34d399;">100%</td>
+            <td style="padding: 0.8rem; text-align: center; color: #34d399;">100%</td>
+            <td style="padding: 0.8rem; text-align: center; color: #34d399;">100%</td>
+            <td style="padding: 0.8rem; text-align: center; color: #34d399;">100%</td>
+            <td style="padding: 0.8rem; text-align: center; color: #34d399;">100%</td>
+            <td style="padding: 0.8rem; text-align: center; color: #34d399;">-</td>
+            <td style="padding: 0.8rem; text-align: right; color: #60a5fa;">₹ ${grandMaxPotential.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+            <td style="padding: 0.8rem; text-align: center; color: #34d399;">-</td>
+            <td style="padding: 0.8rem; text-align: right; color: #34d399;">₹ ${grandExpectedNetProfit.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+            <td style="padding: 0.8rem; text-align: center; color: #34d399;">${grandNetPct.toFixed(2)}%</td>
+        </tr>
+    `;
+
+    breakdownBody.innerHTML = breakdownHtml;
+
+    // 3. Update Dashboard KPI Summary Cards
+    const kpiCapital = document.getElementById("kpi-total-capital");
+    const kpiMaxPotential = document.getElementById("kpi-max-potential");
+    const kpiMaxPotentialPct = document.getElementById("kpi-max-potential-pct");
+    const kpiNetMonthly = document.getElementById("kpi-net-monthly");
+    const kpiNetMonthlyPct = document.getElementById("kpi-net-monthly-pct");
+    const kpiAnnualized = document.getElementById("kpi-annualized");
+    const kpiAnnualizedPct = document.getElementById("kpi-annualized-pct");
+
+    if (kpiCapital) kpiCapital.innerText = `₹ ${totalCapital.toLocaleString('en-IN')}`;
+    if (kpiMaxPotential) kpiMaxPotential.innerText = `₹ ${grandMaxPotential.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+    if (kpiMaxPotentialPct) kpiMaxPotentialPct.innerText = `${grandMaxPct.toFixed(2)}% / month (100% Target)`;
+
+    if (kpiNetMonthly) kpiNetMonthly.innerText = `₹ ${grandExpectedNetProfit.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+    if (kpiNetMonthlyPct) kpiNetMonthlyPct.innerText = `${grandNetPct.toFixed(2)}% / month (Probability Weighted)`;
+
+    const annualizedRupees = grandExpectedNetProfit * 12;
+    const annualizedPct = grandNetPct * 12;
+
+    if (kpiAnnualized) kpiAnnualized.innerText = `₹ ${annualizedRupees.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+    if (kpiAnnualizedPct) kpiAnnualizedPct.innerText = `${annualizedPct.toFixed(2)}% / annum`;
+}
+
+function recalculateCapitalPlanner() {
+    renderCapitalPlannerView();
+}
+
+function resetPlannerDefaults() {
+    const capitalInput = document.getElementById("planner-capital-input");
+    if (capitalInput) capitalInput.value = 5000000;
+
+    const p1Wr = document.getElementById("winrate-input-p1");
+    const p2Wr = document.getElementById("winrate-input-p2");
+    const p3Wr = document.getElementById("winrate-input-p3");
+
+    if (p1Wr) p1Wr.value = 80;
+    if (p2Wr) p2Wr.value = 75;
+    if (p3Wr) p3Wr.value = 70;
+
+    renderCapitalPlannerView();
+}
+
+function openPlannerStrategyModal(appStrategyId) {
+    if (!appStrategyId) return;
+
+    if (window.allDeploymentsCache && window.allDeploymentsCache.length > 0) {
+        const dep = window.allDeploymentsCache.find(d => d.strategy && d.strategy.id === appStrategyId);
+        if (dep) {
+            showStrategyDetails(dep);
+            return;
+        }
+    }
+
+    const strat = (window.strategiesData || []).find(s => s.id === appStrategyId);
+    if (strat) {
+        showStrategyDetails({
+            strategy: strat,
+            actualDate: new Date(),
+            originalDate: new Date(),
+            isHolidayShifted: false
+        });
+    }
 }
 // Reverted PDF generation feature

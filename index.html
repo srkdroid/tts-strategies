@@ -80,10 +80,11 @@
                     </div>
                 </div>
             </div>
-            <!-- View Mode Toggle (Calendar & Capital Flow) -->
+            <!-- View Mode Toggle (Calendar, Capital Flow & Capital Planner) -->
             <div class="view-mode-toggle">
                 <button id="mode-calendar-btn" class="toggle-btn" onclick="switchViewMode('calendar')">📅 Calendar</button>
                 <button id="mode-flow-btn" class="toggle-btn active" onclick="switchViewMode('flow')">📊 Capital Flow</button>
+                <button id="mode-planner-btn" class="toggle-btn" onclick="switchViewMode('planner')">💰 Capital Planner</button>
             </div>
         </section>
 
@@ -163,6 +164,122 @@
                         <!-- JS populated -->
                     </div>
                 </div>
+            </article>
+        </main>
+
+        <!-- Capital Allocation & Expected RoI Planner Container -->
+        <main class="calendars-grid" id="capital-planner-view-container" style="display: none;">
+            <article class="month-container" style="max-width: 100%; padding: 1.5rem; box-sizing: border-box;">
+                
+                <!-- Section Header & Controls -->
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                    <div>
+                        <h2 style="margin: 0; font-family: var(--font-heading); font-size: 1.5rem; background: linear-gradient(to right, #f472b6, #a855f7, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">💰 Capital Allocation Planner & RoI Model</h2>
+                        <p style="margin: 0.3rem 0 0 0; font-size: 0.88rem; color: var(--text-secondary);">Simulate 100% week-by-week capital utilization, win rates, and expected net returns.</p>
+                    </div>
+
+                    <!-- Interactive Inputs -->
+                    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-card); padding: 0.4rem 0.8rem; border-radius: 8px; border: 1px solid var(--border-color);">
+                            <label for="planner-capital-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary);">Total Capital (₹):</label>
+                            <input type="number" id="planner-capital-input" value="5000000" step="500000" min="100000" onchange="recalculateCapitalPlanner()" style="width: 130px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.35rem 0.6rem; border-radius: 6px; font-weight: 600; font-size: 0.9rem;">
+                        </div>
+                        <button onclick="resetPlannerDefaults()" class="admin-btn edit" style="margin: 0; padding: 0.4rem 0.8rem; font-size: 0.8rem;">↺ Reset Defaults</button>
+                    </div>
+                </div>
+
+                <!-- KPI Summary Dashboard Cards -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.8rem;">
+                    
+                    <div class="planner-kpi-card" style="background: var(--bg-modal-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 1rem;">
+                        <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.05em; display: block; margin-bottom: 0.3rem;">Total Account Capital</span>
+                        <strong id="kpi-total-capital" style="font-size: 1.4rem; color: var(--text-primary); font-family: var(--font-heading);">₹ 50,00,000</strong>
+                        <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 0.2rem;">Benchmark Capital Base</span>
+                    </div>
+
+                    <div class="planner-kpi-card" style="background: var(--bg-modal-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 1rem;">
+                        <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #3b82f6; letter-spacing: 0.05em; display: block; margin-bottom: 0.3rem;">Max Potential Profit</span>
+                        <strong id="kpi-max-potential" style="font-size: 1.4rem; color: #60a5fa; font-family: var(--font-heading);">₹ 1,64,200</strong>
+                        <span id="kpi-max-potential-pct" style="font-size: 0.75rem; color: #93c5fd; display: block; margin-top: 0.2rem;">3.28% / month (100% Target)</span>
+                    </div>
+
+                    <div class="planner-kpi-card" style="background: var(--bg-modal-card); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 12px; padding: 1rem;">
+                        <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #10b981; letter-spacing: 0.05em; display: block; margin-bottom: 0.3rem;">Expected Net Monthly Return</span>
+                        <strong id="kpi-net-monthly" style="font-size: 1.4rem; color: #34d399; font-family: var(--font-heading);">₹ 90,080</strong>
+                        <span id="kpi-net-monthly-pct" style="font-size: 0.75rem; color: #6ee7b7; font-weight: 700; display: block; margin-top: 0.2rem;">1.80% / month (Probability Weighted)</span>
+                    </div>
+
+                    <div class="planner-kpi-card" style="background: var(--bg-modal-card); border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 12px; padding: 1rem;">
+                        <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #a855f7; letter-spacing: 0.05em; display: block; margin-bottom: 0.3rem;">Annualized Expected Return</span>
+                        <strong id="kpi-annualized" style="font-size: 1.4rem; color: #c084fc; font-family: var(--font-heading);">₹ 10,80,960</strong>
+                        <span id="kpi-annualized-pct" style="font-size: 0.75rem; color: #d8b4fe; font-weight: 700; display: block; margin-top: 0.2rem;">21.60% / annum</span>
+                    </div>
+
+                </div>
+
+                <!-- Section 1: Week-wise Deployment Heatmap Table (W1 - W5) -->
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">📊 Week-wise Capital Deployment Matrix (% of Capital)</h3>
+                    <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 10px;">
+                        <table class="planner-table" style="width: 100%; border-collapse: collapse; text-align: center; font-size: 0.88rem;">
+                            <thead>
+                                <tr style="background: var(--bg-header); border-bottom: 1px solid var(--border-color);">
+                                    <th style="padding: 0.8rem; text-align: left;">Strategy Priority Bucket</th>
+                                    <th style="padding: 0.8rem;">W1 %</th>
+                                    <th style="padding: 0.8rem;">W2 %</th>
+                                    <th style="padding: 0.8rem;">W3 %</th>
+                                    <th style="padding: 0.8rem;">W4 %</th>
+                                    <th style="padding: 0.8rem;">W5 %</th>
+                                    <th style="padding: 0.8rem;">Avg %</th>
+                                    <th style="padding: 0.8rem;">Execution Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody id="planner-heatmap-body">
+                                <!-- JS Populated -->
+                            </tbody>
+                            <tfoot>
+                                <tr style="background: rgba(16, 185, 129, 0.1); font-weight: 700; border-top: 2px solid var(--border-color);">
+                                    <td style="padding: 0.8rem; text-align: left; color: #10b981;">Target Deployed Capital %</td>
+                                    <td style="padding: 0.8rem; color: #34d399;">100%</td>
+                                    <td style="padding: 0.8rem; color: #34d399;">100%</td>
+                                    <td style="padding: 0.8rem; color: #34d399;">100%</td>
+                                    <td style="padding: 0.8rem; color: #34d399;">100%</td>
+                                    <td style="padding: 0.8rem; color: #34d399;">100%</td>
+                                    <td style="padding: 0.8rem; color: #34d399;">100%</td>
+                                    <td style="padding: 0.8rem; font-size: 0.8rem; color: #6ee7b7; font-weight: 500;">Zero Idle Capital Leakage Across All Weeks</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Section 2: Strategy-Wise Allocation & Expected RoI Table -->
+                <div>
+                    <h3 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">📈 Strategy-Wise RoI Model & Probability-Weighted Expectancy</h3>
+                    <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 10px;">
+                        <table class="planner-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
+                            <thead>
+                                <tr style="background: var(--bg-header); border-bottom: 1px solid var(--border-color);">
+                                    <th style="padding: 0.8rem;">Strategy / Bucket</th>
+                                    <th style="padding: 0.8rem; text-align: center;">W1 %</th>
+                                    <th style="padding: 0.8rem; text-align: center;">W2 %</th>
+                                    <th style="padding: 0.8rem; text-align: center;">W3 %</th>
+                                    <th style="padding: 0.8rem; text-align: center;">W4 %</th>
+                                    <th style="padding: 0.8rem; text-align: center;">W5 %</th>
+                                    <th style="padding: 0.8rem; text-align: center;">Target / SL % (1:1 RR)</th>
+                                    <th style="padding: 0.8rem; text-align: right;">Max Monthly Potential (₹)</th>
+                                    <th style="padding: 0.8rem; text-align: center;">Assumed Win Rate</th>
+                                    <th style="padding: 0.8rem; text-align: right;">Expected Profit (after Win Rate & SL)</th>
+                                    <th style="padding: 0.8rem; text-align: center;">Net RoI %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="planner-breakdown-body">
+                                <!-- JS Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
             </article>
         </main>
 
@@ -845,6 +962,7 @@
 
     <!-- Script imports -->
     <script src="holidays.js"></script>
+    <script src="capital-planner-data.js"></script>
     <script src="notes.js"></script>
     <script src="app.js"></script>
 </body>

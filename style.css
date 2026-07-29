@@ -2006,6 +2006,34 @@ header {
     background: #ffffff;
 }
 
+/* Capital Planner Styles & Light Theme Overrides */
+.planner-strat-row {
+    transition: background 0.15s;
+}
+
+.planner-strat-row:hover {
+    background: rgba(168, 85, 247, 0.08);
+}
+
+.light-theme .planner-kpi-card {
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
+}
+
+.light-theme .planner-table th {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+.light-theme .planner-row {
+    border-bottom-color: #e2e8f0 !important;
+}
+
+.light-theme .planner-strat-row:hover {
+    background: #f8fafc !important;
+}
+
 
 
 
