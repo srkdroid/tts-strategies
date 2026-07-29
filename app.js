@@ -545,11 +545,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
         isAdminMode = !!resJson.isAdmin;
         window.isAdminMode = isAdminMode;
+        const plannerBtn = document.getElementById("mode-planner-btn");
         if (isAdminMode) {
             document.getElementById("admin-bar").style.display = "flex";
             document.getElementById("admin-user-info").innerText = `Logged in as Admin (${resJson.userPhone})`;
+            if (plannerBtn) plannerBtn.style.display = "inline-flex";
             fetchAdminDbData();
         } else {
+            if (plannerBtn) plannerBtn.style.display = "none";
             const userLogoutBtn = document.getElementById("user-logout-btn");
             if (userLogoutBtn) userLogoutBtn.style.display = "block";
         }
@@ -2088,6 +2091,11 @@ async function logoutUser() {
 /* ─── Capital Flow Timeline View Helpers ──────────────────────────────────── */
 
 function switchViewMode(mode) {
+    // Restrict Capital Planner to Admin login only
+    if (mode === "planner" && !window.isAdminMode && !isAdminMode) {
+        switchViewMode("flow");
+        return;
+    }
     currentFlowViewMode = mode;
     
     const calendarBtn = document.getElementById("mode-calendar-btn");
