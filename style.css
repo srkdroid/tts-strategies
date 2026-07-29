@@ -514,6 +514,33 @@ header {
     border-radius: 10px;
 }
 
+/* Guide Feature Cards */
+.guide-card {
+    background: var(--bg-modal-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.2rem;
+}
+
+.guide-desc {
+    font-size: 0.88rem;
+    color: var(--text-primary);
+    margin-bottom: 0.6rem;
+    line-height: 1.5;
+}
+
+.guide-list {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    padding-left: 1.2rem;
+    margin: 0;
+    line-height: 1.6;
+}
+
+.guide-list strong {
+    color: var(--text-primary);
+}
+
 .modal-card h3 {
     font-family: var(--font-heading);
     font-size: 1.05rem;
@@ -1730,6 +1757,98 @@ header {
     .editor-split-container {
         grid-template-columns: 1fr !important;
     }
+
+/* ============================================================= */
+/* LIGHT THEME HIGH CONTRAST OVERRIDES & ACCESSIBILITY FIXES     */
+/* ============================================================= */
+.light-theme #header-guide-btn {
+    background: rgba(139, 92, 246, 0.12) !important;
+    border-color: rgba(139, 92, 246, 0.4) !important;
+    color: #6b21a8 !important;
+}
+
+.light-theme #header-notes-btn {
+    background: rgba(37, 99, 235, 0.12) !important;
+    border-color: rgba(37, 99, 235, 0.4) !important;
+    color: #1e3a8a !important;
+}
+
+.light-theme .guide-card {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.light-theme .guide-desc {
+    color: #1e293b;
+}
+
+.light-theme .guide-list {
+    color: #334155;
+}
+
+.light-theme .guide-list strong {
+    color: #0f172a;
+}
+
+.light-theme .modal-card {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.light-theme .meta-item strong {
+    color: #475569;
+}
+
+.light-theme .meta-item span {
+    color: #0f172a;
+}
+
+.light-theme .markdown-body blockquote {
+    background: rgba(37, 99, 235, 0.08);
+    color: #1e3a8a;
+    border-left-color: #2563eb;
+}
+
+.light-theme .markdown-body code {
+    background: rgba(15, 23, 42, 0.08);
+    color: #9d174d;
+}
+
+.light-theme .markdown-body pre {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.light-theme .markdown-body pre code {
+    color: #0f172a;
+}
+
+.light-theme .markdown-body th {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.light-theme .holiday-notice-card {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(217, 119, 6, 0.4);
+    color: #92400e;
+}
+
+.light-theme .holiday-notice-card strong {
+    color: #78350f;
+}
+
+.light-theme .note-sidebar-item:hover {
+    background: rgba(15, 23, 42, 0.05);
+}
+
+.light-theme .note-sidebar-item.active {
+    background: rgba(37, 99, 235, 0.1);
+    border-color: rgba(37, 99, 235, 0.3);
+}
+
+.light-theme .notes-main-pane {
+    background: #ffffff;
 }
 
 
