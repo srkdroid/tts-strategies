@@ -527,6 +527,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
         const resJson = await response.json();
         strategiesData = resJson.strategies;
+        window.strategiesData = strategiesData;
         if (Array.isArray(strategiesData)) {
             strategiesData.forEach(strat => {
                 const masterDeploy = DEPLOY_RULES[strat.id] || (strat.name ? DEPLOY_RULES[Object.keys(DEPLOY_RULES).find(k => k && strat.name.toLowerCase().includes(k.replace(/^(monthly|biweekly|stbt)-/, '').replace(/-\d+$/, '')))] : null);
@@ -1407,6 +1408,7 @@ async function fetchAdminDbData() {
         }
         if (resJson.strategies) {
             strategiesData = resJson.strategies;
+            window.strategiesData = strategiesData;
         }
         renderWhitelistTable();
         renderHolidaysTable();

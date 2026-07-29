@@ -51,11 +51,25 @@ function populateNotesStrategyDropdown() {
     if (!select) return;
     select.innerHTML = "";
     
-    const strats = (window.strategiesData && Array.isArray(window.strategiesData)) ? window.strategiesData : [];
+    let strats = [];
+    if (window.strategiesData && Array.isArray(window.strategiesData) && window.strategiesData.length > 0) {
+        strats = window.strategiesData;
+    } else if (typeof strategiesData !== 'undefined' && Array.isArray(strategiesData) && strategiesData.length > 0) {
+        strats = strategiesData;
+    }
+
+    if (strats.length === 0) {
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.innerText = "-- Select Strategy --";
+        select.appendChild(placeholder);
+        return;
+    }
+
     strats.forEach(st => {
         const opt = document.createElement("option");
         opt.value = st.id;
-        opt.innerText = `${st.name} (${st.index})`;
+        opt.innerText = `${st.name} (${st.index || st.sheet || 'Strategy'})`;
         select.appendChild(opt);
     });
 }
