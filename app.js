@@ -2080,40 +2080,21 @@ function switchViewMode(mode) {
     if (flowContainer) flowContainer.style.display = mode === "flow" ? "grid" : "none";
     if (notesContainer) notesContainer.style.display = mode === "notes" ? "block" : "none";
     
-    // Reset toggle button styles
-    [calendarBtn, flowBtn, notesBtn].forEach(btn => {
+    // Clean up inline styles so CSS classes take full effect in all themes
+    [calendarBtn, flowBtn, notesBtn, headerNotesBtn].forEach(btn => {
         if (btn) {
-            btn.style.background = "transparent";
-            btn.style.color = "var(--text-secondary)";
+            btn.style.background = "";
+            btn.style.color = "";
+            btn.style.borderColor = "";
         }
     });
 
     if (headerNotesBtn) {
-        if (mode === "notes") {
-            headerNotesBtn.style.background = "var(--primary-color)";
-            headerNotesBtn.style.color = "#fff";
-            headerNotesBtn.style.borderColor = "var(--primary-color)";
-        } else {
-            headerNotesBtn.style.background = "rgba(59, 130, 246, 0.15)";
-            headerNotesBtn.style.color = "#93c5fd";
-            headerNotesBtn.style.borderColor = "rgba(59, 130, 246, 0.4)";
-        }
+        headerNotesBtn.classList.toggle("active", mode === "notes");
     }
 
-    if (mode === "calendar" && calendarBtn) {
-        calendarBtn.style.background = "var(--primary-color)";
-        calendarBtn.style.color = "#fff";
-    } else if (mode === "flow" && flowBtn) {
-        flowBtn.style.background = "var(--primary-color)";
-        flowBtn.style.color = "#fff";
-    } else if (mode === "notes") {
-        if (notesBtn) {
-            notesBtn.style.background = "var(--primary-color)";
-            notesBtn.style.color = "#fff";
-        }
-        if (typeof fetchNotesData === 'function') {
-            fetchNotesData();
-        }
+    if (mode === "notes" && typeof fetchNotesData === 'function') {
+        fetchNotesData();
     }
     
     if (mode !== "notes") {

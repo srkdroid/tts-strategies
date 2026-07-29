@@ -31,11 +31,11 @@
                 <p>Interactive deployment guide considering Indian F&O expiries & trading holidays</p>
             </div>
             <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
-                <button id="header-guide-btn" onclick="openAppGuideModal()" class="admin-btn edit" style="margin:0; padding: 0.4rem 0.9rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem; background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.4); color: #d8b4fe; cursor: pointer;">❓ App Guide</button>
-                <button id="header-notes-btn" onclick="switchViewMode('notes')" class="admin-btn edit" style="margin:0; padding: 0.4rem 0.9rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem; background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.4); color: #93c5fd; cursor: pointer;">📖 Strategy Notes</button>
+                <button id="header-guide-btn" onclick="openAppGuideModal()" class="header-btn header-btn-guide">❓ App Guide</button>
+                <button id="header-notes-btn" onclick="switchViewMode('notes')" class="header-btn header-btn-notes">📖 Strategy Notes</button>
                 <div id="current-time-display">Date: 28/07/2026</div>
-                <button id="theme-toggle-btn" class="theme-toggle-btn" title="Toggle Theme" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.4rem 0.7rem; border-radius: 9999px; cursor: pointer; font-size: 1rem; transition: background-color 0.2s; margin: 0; display: inline-flex; align-items: center; justify-content: center;">☀️</button>
-                <button id="user-logout-btn" onclick="logoutUser()" class="admin-btn logout" style="display: none; padding: 0.4rem 0.8rem; border-radius: 9999px; font-size: 0.85rem; margin: 0; font-weight: 500;">🚪 Logout</button>
+                <button id="theme-toggle-btn" class="header-btn header-btn-theme" title="Toggle Theme">☀️</button>
+                <button id="user-logout-btn" onclick="logoutUser()" class="header-btn header-btn-logout" style="display: none;">🚪 Logout</button>
             </div>
         </header>
 
@@ -81,9 +81,9 @@
                 </div>
             </div>
             <!-- View Mode Toggle (Calendar & Capital Flow) -->
-            <div class="view-mode-toggle" style="display: flex; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); padding: 2px; border-radius: 9999px; flex-shrink: 0;">
-                <button id="mode-calendar-btn" class="toggle-btn" onclick="switchViewMode('calendar')" style="background: transparent; border: none; color: var(--text-secondary); padding: 0.4rem 1rem; border-radius: 9999px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem; transition: background-color 0.2s, color 0.2s;">📅 Calendar</button>
-                <button id="mode-flow-btn" class="toggle-btn active" onclick="switchViewMode('flow')" style="background: var(--primary-color); border: none; color: #fff; padding: 0.4rem 1rem; border-radius: 9999px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem; transition: background-color 0.2s;">📊 Capital Flow</button>
+            <div class="view-mode-toggle">
+                <button id="mode-calendar-btn" class="toggle-btn" onclick="switchViewMode('calendar')">📅 Calendar</button>
+                <button id="mode-flow-btn" class="toggle-btn active" onclick="switchViewMode('flow')">📊 Capital Flow</button>
             </div>
         </section>
 

@@ -135,6 +135,91 @@ header {
     font-weight: 500;
 }
 
+/* Header Button Styles */
+.header-btn {
+    margin: 0;
+    padding: 0.45rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.15s;
+}
+
+.header-btn:hover {
+    transform: translateY(-1px);
+}
+
+.header-btn:active {
+    transform: translateY(0);
+}
+
+/* Dark Mode (Default) Header Buttons */
+.header-btn-guide {
+    background: rgba(168, 85, 247, 0.18);
+    border: 1px solid rgba(168, 85, 247, 0.45);
+    color: #e9d5ff;
+}
+
+.header-btn-notes {
+    background: rgba(59, 130, 246, 0.18);
+    border: 1px solid rgba(59, 130, 246, 0.45);
+    color: #bfdbfe;
+}
+
+.header-btn-notes.active {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    color: #ffffff;
+}
+
+.header-btn-theme {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 0.45rem 0.75rem;
+}
+
+.header-btn-logout {
+    background: rgba(239, 68, 68, 0.18);
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    color: #fecaca;
+}
+
+/* View Mode Toggle Bar (Calendar & Capital Flow) */
+.view-mode-toggle {
+    display: flex;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--border-color);
+    padding: 3px;
+    border-radius: 9999px;
+    flex-shrink: 0;
+}
+
+.view-mode-toggle .toggle-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 0.4rem 1rem;
+    border-radius: 9999px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.view-mode-toggle .toggle-btn.active {
+    background: var(--primary-color);
+    color: #ffffff;
+    font-weight: 700;
+}
+
 /* Filters Section */
 .filters-bar {
     display: flex;
@@ -1761,16 +1846,76 @@ header {
 /* ============================================================= */
 /* LIGHT THEME HIGH CONTRAST OVERRIDES & ACCESSIBILITY FIXES     */
 /* ============================================================= */
-.light-theme #header-guide-btn {
-    background: rgba(139, 92, 246, 0.12) !important;
-    border-color: rgba(139, 92, 246, 0.4) !important;
+.light-theme header {
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+}
+
+.light-theme .header-btn-guide {
+    background: #f3e8ff !important;
+    border-color: #c084fc !important;
     color: #6b21a8 !important;
 }
 
-.light-theme #header-notes-btn {
-    background: rgba(37, 99, 235, 0.12) !important;
-    border-color: rgba(37, 99, 235, 0.4) !important;
-    color: #1e3a8a !important;
+.light-theme .header-btn-guide:hover {
+    background: #e9d5ff !important;
+}
+
+.light-theme .header-btn-notes {
+    background: #dbeafe !important;
+    border-color: #60a5fa !important;
+    color: #1e40af !important;
+}
+
+.light-theme .header-btn-notes:hover {
+    background: #bfdbfe !important;
+}
+
+.light-theme .header-btn-notes.active {
+    background: #2563eb !important;
+    border-color: #2563eb !important;
+    color: #ffffff !important;
+}
+
+.light-theme .header-btn-theme {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+.light-theme .header-btn-logout {
+    background: #fee2e2 !important;
+    border-color: #f87171 !important;
+    color: #991b1b !important;
+}
+
+.light-theme #current-time-display {
+    background: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+    font-weight: 600 !important;
+}
+
+.light-theme .view-mode-toggle {
+    background: #e2e8f0 !important;
+    border-color: #cbd5e1 !important;
+}
+
+.light-theme .view-mode-toggle .toggle-btn {
+    color: #475569 !important;
+}
+
+.light-theme .view-mode-toggle .toggle-btn.active {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3) !important;
+}
+
+.light-theme .beta-badge {
+    background: #f3e8ff !important;
+    color: #7e22ce !important;
+    border-color: #c084fc !important;
 }
 
 .light-theme .guide-card {
