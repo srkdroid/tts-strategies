@@ -929,6 +929,16 @@ function showStrategyDetails(dep) {
     document.getElementById("modal-sheet-type").innerText = strategy.sheet;
     document.getElementById("modal-sheet-type").className = `badge ${strategy.sheet.toLowerCase()}`;
     
+    // Show Strategy Notes button ONLY if a note actually exists for this strategy
+    const notesBtn = document.getElementById("modal-notes-btn");
+    if (notesBtn) {
+        const hasNote = typeof allNotes !== 'undefined' && Array.isArray(allNotes) && allNotes.some(n => 
+            (n.strategyId && strategy.id && n.strategyId.toLowerCase() === strategy.id.toLowerCase()) || 
+            (n.category === 'Strategy' && n.title && strategy.name && n.title.toLowerCase().includes(strategy.name.toLowerCase()))
+        );
+        notesBtn.style.display = hasNote ? "inline-flex" : "none";
+    }
+    
     document.getElementById("modal-index").innerText = strategy.index;
     document.getElementById("modal-expiry").innerText = strategy.expiry;
     document.getElementById("modal-dte").innerText = strategy.dte;
