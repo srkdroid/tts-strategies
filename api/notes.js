@@ -106,7 +106,7 @@ module.exports = async function handler(req, res) {
     }
 
     const cookies = parseCookies(req.headers.cookie);
-    const userPhone = verifyToken(cookies.auth_token);
+    const userPhone = verifyToken(cookies.session_token || cookies.auth_token);
     const isAdmin = verifyAdminToken(cookies.admin_token);
 
     if (!userPhone && !isAdmin) {

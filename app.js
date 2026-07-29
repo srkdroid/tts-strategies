@@ -520,11 +520,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         const response = await fetch('/api/data');
         if (!response.ok) {
             if (response.status === 401) {
-                // TEMPORARY DIAGNOSTIC — show why auth failed before redirecting
-                try {
-                    const debugData = await response.json();
-                    alert('AUTH DEBUG (401):\\n' + JSON.stringify(debugData._debug || debugData, null, 2));
-                } catch(e) {}
                 window.location.href = '/login.html';
                 return;
             }
@@ -559,7 +554,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     } catch (error) {
         console.error('Authentication check failed:', error);
-        window.location.href = '/login.html?dbg=appjs_catch&msg=' + encodeURIComponent(error.message);
+        window.location.href = '/login.html';
         return;
     }
     
