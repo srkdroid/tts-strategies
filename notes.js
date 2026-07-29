@@ -391,13 +391,22 @@ async function deleteCurrentNote() {
 
 // Jump to specific strategy note from strategy modal
 function jumpToStrategyNote() {
-    if (!window.currentActiveModalDep || !window.currentActiveModalDep.strategy) return;
-    const strat = window.currentActiveModalDep.strategy;
+    const activeDep = window.currentActiveModalDep || (typeof currentActiveModalDep !== 'undefined' ? currentActiveModalDep : null);
+    if (!activeDep || !activeDep.strategy) {
+        console.warn("jumpToStrategyNote: No active strategy deployment context found.");
+        return;
+    }
+    const strat = activeDep.strategy;
     
     if (typeof hideModal === 'function') hideModal();
     if (typeof switchViewMode === 'function') switchViewMode('notes');
 
-    const note = allNotes.find(n => n.strategyId === strat.id || (n.category === 'Strategy' && n.title.toLowerCase().includes(strat.name.toLowerCase())));
+    const note = allNotes.find(n => 
+        (n.strategyId && strat.id && n.strategyId.toLowerCase() === strat.id.toLowerCase()) || 
+        (n.category === 'Strategy' && n.title && strat.name && n.title.toLowerCase().includes(strat.name.toLowerCase())) ||
+        (n.title && strat.name && strat.name.toLowerCase().includes(n.title.toLowerCase()))
+    );
+
     if (note) {
         selectNote(note.id);
     } else {

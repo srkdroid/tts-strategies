@@ -921,6 +921,7 @@ function generateConcreteStrikeText(legStr, side, atmPrice) {
 
 function showStrategyDetails(dep) {
     currentActiveModalDep = dep;
+    window.currentActiveModalDep = dep;
     const strategy = dep.strategy;
     const modal = document.getElementById("strategy-modal");
     
