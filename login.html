@@ -307,7 +307,9 @@
                         clearInterval(pollingInterval);
                         document.getElementById('polling-status').innerHTML =
                             '<span style="color: #34d399; font-weight: 600;">✅ Verified! Redirecting...</span>';
-                        window.location.href = '/index.html';
+                        // Navigate to complete endpoint which sets cookie via 302 redirect.
+                        // This is reliable (unlike Set-Cookie from fetch() responses).
+                        window.location.href = `/api/login?complete=${token}`;
                     } else if (!response.ok) {
                         clearInterval(pollingInterval);
                         const errorBox = document.getElementById('error-message');

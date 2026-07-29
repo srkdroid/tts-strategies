@@ -112,7 +112,37 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') {
         const url = new URL(req.url, `http://${req.headers.host}`);
         const token = url.searchParams.get('check');
+        const completeToken = url.searchParams.get('complete');
 
+        // --- Complete login: set cookie via browser navigation + 302 redirect ---
+        if (completeToken) {
+            try {
+                let sessionStr = null;
+                try {
+                    sessionStr = await queryKV(['GET', `auth_token:${completeToken}`]);
+                } catch (err) {
+                    return res.writeHead(302, { Location: '/login.html' }).end();
+                }
+                if (!sessionStr) {
+                    return res.writeHead(302, { Location: '/login.html' }).end();
+                }
+                const session = JSON.parse(sessionStr);
+                if (!session.verified) {
+                    return res.writeHead(302, { Location: '/login.html' }).end();
+                }
+                const sessionCookie = generateToken(session.phone);
+                try { await logAuthEvent(session.phone, 'telegram'); } catch(e) {}
+                res.setHeader('Set-Cookie', [
+                    `session_token=${sessionCookie}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}`
+                ]);
+                return res.writeHead(302, { Location: '/index.html' }).end();
+            } catch (error) {
+                console.error('Complete login error:', error);
+                return res.writeHead(302, { Location: '/login.html' }).end();
+            }
+        }
+
+        // --- Polling check: just returns verified status, no cookie ---
         if (!token) {
             return res.status(400).json({ error: 'Token is required for verification check' });
         }
@@ -133,20 +163,9 @@ module.exports = async (req, res) => {
             const session = JSON.parse(sessionStr);
 
             if (session.verified) {
-                // Generate secure JWT-like session token
-                const sessionCookie = generateToken(session.phone);
-                
-                // Don't delete the token immediately — let the 5-min TTL handle cleanup.
-                // Deleting here causes a race condition: if two overlapping poll requests 
-                // are in-flight, the second one finds the token deleted and returns 400,
-                // which reverts the login form before the redirect from the first completes.
-
-                // Log successful login (use try/catch to not block cookie setting)
-                try { await logAuthEvent(session.phone, 'telegram'); } catch(e) {}
-
-                res.setHeader('Set-Cookie', [
-                    `session_token=${sessionCookie}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${30 * 24 * 60 * 60}`
-                ]);
+                // Don't set cookie here — Set-Cookie from fetch() responses is unreliable.
+                // The client will redirect to /api/login?complete=token which sets the
+                // cookie via a proper 302 redirect (browser navigation).
                 return res.status(200).json({ success: true, verified: true });
             }
 
