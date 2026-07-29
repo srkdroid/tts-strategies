@@ -128,7 +128,17 @@ module.exports = async (req, res) => {
         const isAdmin = verifyAdminToken(adminToken);
         
         if (!userPhone && !isAdmin) {
-            return res.status(401).json({ error: 'Unauthorized. Please login first.' });
+            return res.status(401).json({ 
+                error: 'Unauthorized. Please login first.',
+                _debug: {
+                    hasCookieHeader: !!req.headers.cookie,
+                    cookieKeys: Object.keys(cookies),
+                    hasSessionToken: !!token,
+                    sessionTokenLength: token ? token.length : 0,
+                    verifyResult: token ? 'FAILED' : 'NO_TOKEN',
+                    hasAdminToken: !!adminToken
+                }
+            });
         }
 
         let strategiesData = null;
