@@ -7,23 +7,29 @@
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="favicon.png">
     <style>
-        .login-wrapper {
+        .login-grid-container {
             display: flex;
+            gap: 2rem;
+            align-items: stretch;
             justify-content: center;
-            align-items: center;
-            min-height: 90vh;
+            max-width: 920px;
+            width: 100%;
+            flex-wrap: wrap;
+            margin: 2rem auto;
         }
-        
-        .login-card {
+
+        .login-card, .login-guide-card {
             background: rgba(30, 41, 59, 0.45);
             border: 1px solid rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(16px);
-            padding: 2.5rem;
+            padding: 2.2rem;
             border-radius: 16px;
-            width: 100%;
-            max-width: 420px;
+            flex: 1 1 400px;
+            max-width: 440px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             animation: fadeIn 0.4s ease-out;
+            display: flex;
+            flex-direction: column;
         }
         
         @keyframes fadeIn {
@@ -31,15 +37,28 @@
             to { transform: translateY(0); opacity: 1; }
         }
         
-        .login-card h2 {
+        .login-card h2, .login-guide-card h3 {
             font-family: 'Outfit', sans-serif;
-            font-size: 1.8rem;
+            font-size: 1.7rem;
             font-weight: 700;
-            text-align: center;
             margin-bottom: 0.5rem;
             background: linear-gradient(to right, #f472b6, #a855f7, #3b82f6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+
+        .login-card h2 {
+            text-align: center;
+        }
+
+        .login-guide-card h3 {
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 0.8rem;
+            margin-bottom: 1.2rem;
         }
         
         .login-card p {
@@ -148,51 +167,133 @@
             color: #a855f7;
             text-decoration: underline;
         }
+
+        /* Step Guide Styling */
+        .guide-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            font-size: 0.88rem;
+            color: #cbd5e1;
+            line-height: 1.4;
+        }
+
+        .step-num {
+            background: rgba(168, 85, 247, 0.2);
+            color: #c084fc;
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            font-weight: 700;
+            font-size: 0.75rem;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .guide-tip {
+            margin-top: auto;
+            padding-top: 1rem;
+            border-top: 1px dashed rgba(255, 255, 255, 0.1);
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
     </style>
 </head>
 <body>
     <div class="dashboard-container login-wrapper">
-        <div class="login-card">
-            <h2>Access Portal</h2>
-            <p>Enter your registered phone number to authenticate via Telegram</p>
+        <div class="login-grid-container">
             
-            <!-- Error feedback -->
-            <div id="error-message" class="error-box"></div>
-            
-            <!-- Phase 1: Request Verification -->
-            <form id="login-form">
-                <div class="form-group">
-                    <label for="phone">Phone Number</label>
-                    <input type="text" id="phone" placeholder="e.g. 9876543210" required>
-                </div>
+            <!-- Left Card: Login Form Portal -->
+            <div class="login-card">
+                <h2>Access Portal</h2>
+                <p>Enter your registered phone number to authenticate via Telegram</p>
                 
-                <button type="submit" class="login-btn" id="submit-btn">Verify on Telegram</button>
-            </form>
+                <!-- Error feedback -->
+                <div id="error-message" class="error-box"></div>
+                
+                <!-- Phase 1: Request Verification -->
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="text" id="phone" placeholder="e.g. +919876543210 or +14155552671" required>
+                        <span style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.3rem; display: block;">Include country code for non-Indian numbers (e.g. +1, +44)</span>
+                    </div>
+                    
+                    <button type="submit" class="login-btn" id="submit-btn">Verify on Telegram</button>
+                </form>
 
-            <!-- Phase 2: Telegram Webhook OTP / Polling -->
-            <div id="telegram-verify-step" style="display: none; margin-top: 1rem; text-align: center; animation: fadeIn 0.4s ease-out;">
-                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">
-                    Please open Telegram and click "Start" in the bot to verify your number:
-                </p>
-                <div style="background: rgba(15, 23, 42, 0.4); padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 1.5rem;">
-                    <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); display: block; margin-bottom: 0.2rem;">Your Auth Code</span>
-                    <strong id="auth-token-display" style="font-size: 1.6rem; letter-spacing: 0.1em; color: #a855f7;">------</strong>
-                </div>
-                
-                <a id="telegram-bot-link" href="#" target="_blank" class="login-btn" style="display: block; text-decoration: none; background: #0088cc; margin-bottom: 1.5rem;">
-                    💬 Open Telegram Bot
-                </a>
-                
-                <div id="polling-status" style="font-size: 0.85rem; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; gap: 0.6rem;">
-                    <span class="spinner"></span>
-                    <span>Waiting for Telegram verification...</span>
-                </div>
+                <!-- Phase 2: Telegram Webhook OTP / Polling -->
+                <div id="telegram-verify-step" style="display: none; margin-top: 1rem; text-align: center; animation: fadeIn 0.4s ease-out;">
+                    <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                        Please open Telegram and click "Start" in the bot to verify your number:
+                    </p>
+                    <div style="background: rgba(15, 23, 42, 0.4); padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 1.5rem;">
+                        <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); display: block; margin-bottom: 0.2rem;">Your Auth Code</span>
+                        <strong id="auth-token-display" style="font-size: 1.6rem; letter-spacing: 0.1em; color: #a855f7;">------</strong>
+                    </div>
+                    
+                    <a id="telegram-bot-link" href="#" target="_blank" class="login-btn" style="display: block; text-decoration: none; background: #0088cc; margin-bottom: 1.5rem;">
+                        💬 Open Telegram Bot
+                    </a>
+                    
+                    <div id="polling-status" style="font-size: 0.85rem; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; gap: 0.6rem;">
+                        <span class="spinner"></span>
+                        <span>Waiting for Telegram verification...</span>
+                    </div>
 
-                <!-- Simulation bypass button for local offline testing -->
-                <button id="simulate-btn" class="login-btn" style="background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.3); color: #d8b4fe; margin-top: 1.5rem; display: none;">
-                    ⚡ Skip Telegram (Local Test Bypass)
-                </button>
+                    <!-- Simulation bypass button for local offline testing -->
+                    <button id="simulate-btn" class="login-btn" style="background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.3); color: #d8b4fe; margin-top: 1.5rem; display: none;">
+                        ⚡ Skip Telegram (Local Test Bypass)
+                    </button>
+                </div>
             </div>
+
+            <!-- Right Card: Telegram Login Step-by-Step Guide -->
+            <div class="login-guide-card">
+                <h3>📖 Telegram Login Guide</h3>
+                
+                <div class="guide-steps">
+                    <div class="step-item">
+                        <div class="step-num">1</div>
+                        <div><strong>Enter Registered Number:</strong> Input your whitelisted mobile number in international format with country code (e.g., <code style="color: #cbd5e1; background: rgba(0,0,0,0.3); padding: 0.1rem 0.3rem; border-radius: 4px;">+919876543210</code> or <code style="color: #cbd5e1; background: rgba(0,0,0,0.3); padding: 0.1rem 0.3rem; border-radius: 4px;">+14155552671</code>).</div>
+                    </div>
+                    
+                    <div class="step-item">
+                        <div class="step-num">2</div>
+                        <div><strong>Request Code:</strong> Click <strong style="color: #3b82f6;">Verify on Telegram</strong> to generate your unique 6-digit Auth Code.</div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-num">3</div>
+                        <div><strong>Open Telegram:</strong> Click <strong style="color: #0088cc;">💬 Open Telegram Bot</strong> to launch <code style="color: #93c5fd;">@TTSStrategiesBot</code>.</div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-num">4</div>
+                        <div><strong>Share Contact:</strong> Tap <strong style="color: #a855f7;">START</strong> in Telegram and click the <strong style="color: #34d399;">📱 Verify Phone Number</strong> keyboard button to share your contact card.</div>
+                    </div>
+
+                    <div class="step-item">
+                        <div class="step-num">5</div>
+                        <div><strong>Instant Access:</strong> Upon verification, your browser automatically logs you in and redirects to your strategy dashboard!</div>
+                    </div>
+                </div>
+
+                <div class="guide-tip">
+                    🔒 <strong>Access Note:</strong> Your number must be whitelisted. If access is denied, please contact your administrator to get added.
+                </div>
+            </div>
+
         </div>
     </div>
     

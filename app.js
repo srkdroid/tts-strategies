@@ -615,6 +615,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (e.target === document.getElementById("strategy-modal")) {
             hideModal();
         }
+        if (e.target === document.getElementById("app-guide-modal")) {
+            closeAppGuideModal();
+        }
     });
 });
 
@@ -1167,6 +1170,16 @@ function showStrategyDetails(dep) {
 
 function hideModal() {
     document.getElementById("strategy-modal").style.display = "none";
+}
+
+function openAppGuideModal() {
+    const modal = document.getElementById("app-guide-modal");
+    if (modal) modal.style.display = "flex";
+}
+
+function closeAppGuideModal() {
+    const modal = document.getElementById("app-guide-modal");
+    if (modal) modal.style.display = "none";
 }
 
 // -------------------------------------------------------------
