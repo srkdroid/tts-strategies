@@ -290,16 +290,23 @@
             }
         });
 
+        let verificationComplete = false;
+
         function startPolling(token) {
             if (pollingInterval) clearInterval(pollingInterval);
             
             pollingInterval = setInterval(async () => {
+                if (verificationComplete) return; // Guard: don't process after success
                 try {
                     const response = await fetch(`/api/login?check=${token}`);
+                    if (verificationComplete) return; // Re-check after await
                     const data = await response.json();
                     
                     if (response.ok && data.verified) {
+                        verificationComplete = true;
                         clearInterval(pollingInterval);
+                        document.getElementById('polling-status').innerHTML =
+                            '<span style="color: #34d399; font-weight: 600;">✅ Verified! Redirecting...</span>';
                         window.location.href = '/index.html';
                     } else if (!response.ok) {
                         clearInterval(pollingInterval);
@@ -317,7 +324,7 @@
                 } catch (err) {
                     console.warn("Polling network issue:", err);
                 }
-            }, 2000);
+            }, 2500);
         }
     </script>
 </body>

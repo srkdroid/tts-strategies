@@ -136,11 +136,13 @@ module.exports = async (req, res) => {
                 // Generate secure JWT-like session token
                 const sessionCookie = generateToken(session.phone);
                 
-                // Cleanup the token from KV
-                await queryKV(['DEL', `auth_token:${token}`]);
+                // Don't delete the token immediately — let the 5-min TTL handle cleanup.
+                // Deleting here causes a race condition: if two overlapping poll requests 
+                // are in-flight, the second one finds the token deleted and returns 400,
+                // which reverts the login form before the redirect from the first completes.
 
-                // Log successful login
-                await logAuthEvent(session.phone, 'telegram');
+                // Log successful login (use try/catch to not block cookie setting)
+                try { await logAuthEvent(session.phone, 'telegram'); } catch(e) {}
 
                 res.setHeader('Set-Cookie', [
                     `session_token=${sessionCookie}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${30 * 24 * 60 * 60}`
