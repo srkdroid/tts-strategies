@@ -121,24 +121,25 @@ module.exports = async (req, res) => {
                 try {
                     sessionStr = await queryKV(['GET', `auth_token:${completeToken}`]);
                 } catch (err) {
-                    return res.writeHead(302, { Location: '/login.html' }).end();
+                    return res.writeHead(302, { Location: '/login.html?dbg=kv_error' }).end();
                 }
                 if (!sessionStr) {
-                    return res.writeHead(302, { Location: '/login.html' }).end();
+                    return res.writeHead(302, { Location: '/login.html?dbg=token_null' }).end();
                 }
                 const session = JSON.parse(sessionStr);
                 if (!session.verified) {
-                    return res.writeHead(302, { Location: '/login.html' }).end();
+                    return res.writeHead(302, { Location: '/login.html?dbg=not_verified' }).end();
                 }
                 const sessionCookie = generateToken(session.phone);
                 try { await logAuthEvent(session.phone, 'telegram'); } catch(e) {}
-                res.setHeader('Set-Cookie', [
-                    `session_token=${sessionCookie}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}`
-                ]);
-                return res.writeHead(302, { Location: '/index.html' }).end();
+                // Put ALL headers in writeHead to avoid Vercel setHeader+writeHead conflicts
+                return res.writeHead(302, {
+                    Location: '/index.html',
+                    'Set-Cookie': `session_token=${sessionCookie}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${30 * 24 * 60 * 60}`
+                }).end();
             } catch (error) {
                 console.error('Complete login error:', error);
-                return res.writeHead(302, { Location: '/login.html' }).end();
+                return res.writeHead(302, { Location: `/login.html?dbg=exception&msg=${encodeURIComponent(error.message)}` }).end();
             }
         }
 

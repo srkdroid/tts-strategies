@@ -559,7 +559,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     } catch (error) {
         console.error('Authentication check failed:', error);
-        window.location.href = '/login.html';
+        window.location.href = '/login.html?dbg=appjs_catch&msg=' + encodeURIComponent(error.message);
         return;
     }
     
