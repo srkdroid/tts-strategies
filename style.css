@@ -1842,6 +1842,7 @@ header {
     .editor-split-container {
         grid-template-columns: 1fr !important;
     }
+}
 
 /* ============================================================= */
 /* LIGHT THEME HIGH CONTRAST OVERRIDES & ACCESSIBILITY FIXES     */
@@ -1854,8 +1855,9 @@ header {
 
 .light-theme .header-btn-guide {
     background: #f3e8ff !important;
-    border-color: #c084fc !important;
-    color: #6b21a8 !important;
+    border: 1.5px solid #a855f7 !important;
+    color: #581c87 !important;
+    font-weight: 700 !important;
 }
 
 .light-theme .header-btn-guide:hover {
@@ -1864,8 +1866,9 @@ header {
 
 .light-theme .header-btn-notes {
     background: #dbeafe !important;
-    border-color: #60a5fa !important;
-    color: #1e40af !important;
+    border: 1.5px solid #3b82f6 !important;
+    color: #1e3a8a !important;
+    font-weight: 700 !important;
 }
 
 .light-theme .header-btn-notes:hover {
@@ -1874,48 +1877,55 @@ header {
 
 .light-theme .header-btn-notes.active {
     background: #2563eb !important;
-    border-color: #2563eb !important;
+    border: 1.5px solid #1d4ed8 !important;
     color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35) !important;
 }
 
 .light-theme .header-btn-theme {
     background: #f1f5f9 !important;
-    border-color: #cbd5e1 !important;
+    border: 1.5px solid #94a3b8 !important;
     color: #0f172a !important;
+    font-weight: 600 !important;
 }
 
 .light-theme .header-btn-logout {
     background: #fee2e2 !important;
-    border-color: #f87171 !important;
+    border: 1.5px solid #ef4444 !important;
     color: #991b1b !important;
+    font-weight: 700 !important;
 }
 
 .light-theme #current-time-display {
     background: #f1f5f9 !important;
-    border-color: #cbd5e1 !important;
+    border: 1.5px solid #cbd5e1 !important;
     color: #0f172a !important;
     font-weight: 600 !important;
 }
 
 .light-theme .view-mode-toggle {
     background: #e2e8f0 !important;
-    border-color: #cbd5e1 !important;
+    border: 1.5px solid #cbd5e1 !important;
 }
 
 .light-theme .view-mode-toggle .toggle-btn {
-    color: #475569 !important;
+    color: #334155 !important;
+    font-weight: 600 !important;
 }
 
 .light-theme .view-mode-toggle .toggle-btn.active {
     background: #2563eb !important;
     color: #ffffff !important;
+    font-weight: 700 !important;
     box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3) !important;
 }
 
 .light-theme .beta-badge {
     background: #f3e8ff !important;
-    color: #7e22ce !important;
-    border-color: #c084fc !important;
+    color: #6b21a8 !important;
+    border: 1px solid #c084fc !important;
+    font-weight: 700 !important;
 }
 
 .light-theme .guide-card {
