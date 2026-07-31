@@ -101,18 +101,22 @@ function calculateExitDate(deployDate, expiryDate, exitRule) {
 function calculateDeploymentsForRange(startDate, endDate) {
     let deployments = [];
     
-    // We need to look at expiries from May 2026 to October 2026 to cover all possible deployments for June-August 2026
-    const startYear = 2026;
-    const startMonth = 4; // May (0-indexed)
-    const endMonth = 9;   // October
+    const startYear = startDate ? startDate.getFullYear() : 2026;
+    const startMonth = startDate ? Math.max(0, startDate.getMonth() - 1) : 4;
+    const endYear = endDate ? endDate.getFullYear() : 2026;
+    const endMonth = endDate ? Math.min(11, endDate.getMonth() + 1) : 11;
     
-    // Generate expiries
+    // Generate expiries across the required date range
     let niftyExpiries = [];
     let sensexExpiries = [];
     
-    for (let m = startMonth; m <= endMonth; m++) {
-        niftyExpiries = niftyExpiries.concat(getExpiriesForMonth(startYear, m, 2)); // Tuesdays
-        sensexExpiries = sensexExpiries.concat(getExpiriesForMonth(startYear, m, 4)); // Thursdays
+    for (let y = startYear; y <= endYear; y++) {
+        const mStart = (y === startYear) ? startMonth : 0;
+        const mEnd = (y === endYear) ? endMonth : 11;
+        for (let m = mStart; m <= mEnd; m++) {
+            niftyExpiries = niftyExpiries.concat(getExpiriesForMonth(y, m, 2)); // Tuesdays
+            sensexExpiries = sensexExpiries.concat(getExpiriesForMonth(y, m, 4)); // Thursdays
+        }
     }
     
     // Map each strategy to its nominal deployment dates
@@ -562,8 +566,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
     
-    const startDate = new Date(2026, 5, 1); // June 1, 2026
-    const endDate = new Date(2026, 7, 31);   // August 31, 2026
+    const startDate = new Date(2026, 0, 1); // January 1, 2026
+    const endDate = new Date(2026, 11, 31); // December 31, 2026
     
     allCalculatedDeployments = calculateDeploymentsForRange(startDate, endDate);
     
