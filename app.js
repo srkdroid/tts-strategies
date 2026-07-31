@@ -496,8 +496,9 @@ function togglePortfolioFilter(checked) {
 }
 
 let currentFlowViewMode = "flow";
-let currentFlowYear = 2026;
-let currentFlowMonth = 6; // July (0-indexed: 6 is July)
+const initialNow = new Date();
+let currentFlowYear = initialNow.getFullYear();
+let currentFlowMonth = initialNow.getMonth(); // Automatically picks August (7) when date is August
 
 // Global deployments cache
 let allCalculatedDeployments = [];
