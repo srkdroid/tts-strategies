@@ -16,10 +16,9 @@
             <div class="admin-bar-left" style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
                 <span class="admin-badge">🛠️ Admin Mode</span>
                 <span id="admin-user-info">Logged in as Admin</span>
-                <span id="admin-user-count-badge" class="badge" style="background: rgba(59, 130, 246, 0.18); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.35); padding: 0.2rem 0.6rem; border-radius: 9999px; font-size: 0.78rem;">👥 Whitelisted Users: ...</span>
             </div>
             <div class="admin-bar-right">
-                <button onclick="openDbManagementModal()" class="admin-btn edit">📂 Manage DB (Users & Holidays)</button>
+                <button onclick="openDbManagementModal()" class="admin-btn edit">📂 Manage App</button>
                 <button onclick="logoutAdmin()" class="admin-btn logout">🚪 Admin Logout</button>
             </div>
         </div>
@@ -641,7 +640,7 @@
     <div id="db-management-modal" class="modal">
         <div class="modal-content" style="max-width: 900px; height: 85vh; display: flex; flex-direction: column;">
             <div class="modal-header">
-                <h2>Database Management</h2>
+                <h2>App Management</h2>
                 <span class="close-btn" onclick="closeDbManagementModal()">&times;</span>
             </div>
             
