@@ -887,38 +887,86 @@ const INDEX_STRIKE_STEPS = {
     "Fin Nifty": 50,
     "Fin Nifty (Expiry Tue)": 50,
     "Sensex": 100,
+    "Sensex (Exp Thur)": 100,
     "Sensex (Expiry Thur)": 100
+};
+
+const INDEX_BENCHMARK_ATMS = {
+    "Nifty": 25000,
+    "Bank Nifty": 57500,
+    "Fin Nifty": 25000,
+    "Fin Nifty (Expiry Tue)": 25000,
+    "Sensex": 87000,
+    "Sensex (Exp Thur)": 87000,
+    "Sensex (Expiry Thur)": 87000
 };
 
 let currentActiveModalDep = null;
 
-function getSavedAtmForIndex(indexName, defaultAtm) {
-    const key = `lastAtm_${indexName}`;
+// Determine if a strategy requires 500-multiple or 100-multiple strike selection
+function getStrategyRoundingStep(strategy) {
+    if (!strategy) return 50;
+    const allNotesText = [
+        strategy.setup && strategy.setup.notes,
+        strategy.strike_example && strategy.strike_example.notes,
+        strategy.conditions && strategy.conditions.credit_range,
+        strategy.conditions && strategy.conditions.refine_credit
+    ].filter(Boolean).join(" ").toLowerCase();
+
+    if (allNotesText.includes("multiple of 500") || allNotesText.includes("500 strikes") || allNotesText.includes("closest multiple of 500")) {
+        return 500;
+    }
+    if (allNotesText.includes("multiple of 100") || allNotesText.includes("100 strikes")) {
+        return 100;
+    }
+    
+    return INDEX_STRIKE_STEPS[strategy.index] || 50;
+}
+
+// Compute Effective ATM after applying strategy-specific rounding rules
+function getEffectiveAtmForStrategy(strategy, rawAtm) {
+    if (!strategy || isNaN(rawAtm)) return rawAtm;
+    const roundStep = getStrategyRoundingStep(strategy);
+    if (roundStep > 1) {
+        return Math.round(rawAtm / roundStep) * roundStep;
+    }
+    return rawAtm;
+}
+
+function getSavedAtmForStrategy(strategy, defaultAtm) {
+    if (!strategy) return defaultAtm;
+    const key = `lastAtm_strat_${strategy.id}`;
     const saved = sessionStorage.getItem(key);
     if (saved && !isNaN(parseInt(saved, 10))) {
-        return parseInt(saved, 10);
+        const val = parseInt(saved, 10);
+        // Validate if saved value is reasonable for this index to avoid cross-index contamination
+        if (strategy.index.includes("Bank Nifty") && val < 40000) return defaultAtm;
+        if (strategy.index.includes("Sensex") && val < 60000) return defaultAtm;
+        if (strategy.index.includes("Nifty") && !strategy.index.includes("Bank") && val > 40000) return defaultAtm;
+        return val;
     }
     return defaultAtm;
 }
 
-function saveAtmForIndex(indexName, atmVal) {
-    const key = `lastAtm_${indexName}`;
+function saveAtmForStrategy(strategy, atmVal) {
+    if (!strategy) return;
+    const key = `lastAtm_strat_${strategy.id}`;
     sessionStorage.setItem(key, atmVal);
 }
 
-// Helper to dynamically calculate and format concrete strike labels (e.g. "Buy 1 25200 CE")
-function generateConcreteStrikeText(legStr, side, atmPrice) {
+// Helper to dynamically calculate and format concrete strike labels with strategy rounding rules
+function generateConcreteStrikeText(legStr, side, atmPrice, strategy) {
     if (!legStr) return legStr;
-    const atm = atmPrice || 25000;
+    const effectiveAtm = getEffectiveAtmForStrategy(strategy, atmPrice);
     
-    // Parse setup leg strings like "Buy 1 ATM+200", "Sell 3 ATM-600", "Buy 2 ATM-1000", "Buy 1 ATM"
+    // Parse setup leg strings like "Buy 1 ATM+1000", "Sell 2 ATM+1500", "Buy 1 ATM+3500", "Buy 1 ATM"
     const match = legStr.match(/^(Buy|Sell)\s+(\d+)\s+ATM\s*([+-]\s*\d+)?/i);
     if (match) {
         const action = match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
         const qty = match[2];
         const offsetStr = match[3] ? match[3].replace(/\s+/g, '') : '0';
         const offset = parseInt(offsetStr, 10) || 0;
-        const strike = atm + offset;
+        const strike = effectiveAtm + offset;
         return `${action} ${qty} ${strike} ${side}`;
     }
     
@@ -1002,9 +1050,12 @@ function showStrategyDetails(dep) {
     const strikeExampleContainer = document.getElementById("modal-strikes-list");
     strikeExampleContainer.innerHTML = "";
     
-    const defaultAtm = (strategy.strike_example && strategy.strike_example.ATM) ? strategy.strike_example.ATM : 25000;
+    const defaultAtm = (strategy.strike_example && strategy.strike_example.ATM) 
+        ? strategy.strike_example.ATM 
+        : (INDEX_BENCHMARK_ATMS[strategy.index] || 25000);
     const stepSize = INDEX_STRIKE_STEPS[strategy.index] || 50;
-    let currentAtm = getSavedAtmForIndex(strategy.index, defaultAtm);
+    const roundStep = getStrategyRoundingStep(strategy);
+    let currentAtm = getSavedAtmForStrategy(strategy, defaultAtm);
     
     // Configure interactive ATM input & reset button
     const atmInput = document.getElementById("modal-atm-input");
@@ -1015,7 +1066,7 @@ function showStrategyDetails(dep) {
         atmInput.oninput = (e) => {
             const raw = parseInt(e.target.value, 10);
             if (!isNaN(raw)) {
-                saveAtmForIndex(strategy.index, raw);
+                saveAtmForStrategy(strategy, raw);
                 renderStrikesForAtm(raw);
             }
         };
@@ -1023,10 +1074,8 @@ function showStrategyDetails(dep) {
         atmInput.onchange = (e) => {
             const raw = parseInt(e.target.value, 10);
             if (!isNaN(raw)) {
-                const rounded = Math.round(raw / stepSize) * stepSize;
-                atmInput.value = rounded;
-                saveAtmForIndex(strategy.index, rounded);
-                renderStrikesForAtm(rounded);
+                saveAtmForStrategy(strategy, raw);
+                renderStrikesForAtm(raw);
             }
         };
     }
@@ -1034,7 +1083,7 @@ function showStrategyDetails(dep) {
     const resetBtn = document.getElementById("modal-atm-reset-btn");
     if (resetBtn) {
         resetBtn.onclick = () => {
-            saveAtmForIndex(strategy.index, defaultAtm);
+            saveAtmForStrategy(strategy, defaultAtm);
             if (atmInput) atmInput.value = defaultAtm;
             renderStrikesForAtm(defaultAtm);
         };
@@ -1042,6 +1091,18 @@ function showStrategyDetails(dep) {
     
     function renderStrikesForAtm(activeAtm) {
         strikeExampleContainer.innerHTML = "";
+        
+        const effectiveAtm = getEffectiveAtmForStrategy(strategy, activeAtm);
+        if (effectiveAtm !== activeAtm) {
+            const roundingNotice = document.createElement("p");
+            roundingNotice.className = "setup-note";
+            roundingNotice.style.color = "#fbbf24";
+            roundingNotice.style.marginTop = "0";
+            roundingNotice.style.marginBottom = "0.6rem";
+            roundingNotice.style.fontSize = "0.78rem";
+            roundingNotice.innerHTML = `💡 <strong>ATM ${activeAtm.toLocaleString('en-IN')}</strong> rounded to <strong>${effectiveAtm.toLocaleString('en-IN')}</strong> per strategy ${roundStep}-multiple rule.`;
+            strikeExampleContainer.appendChild(roundingNotice);
+        }
         
         if (strategy.type.includes("Both") || (strategy.setup.PE && strategy.setup.CE)) {
             const peStrikesTitle = document.createElement("h5");
@@ -1052,7 +1113,7 @@ function showStrategyDetails(dep) {
             peSource.forEach(st => {
                 const li = document.createElement("div");
                 li.className = "leg-item pe-side";
-                li.innerText = generateConcreteStrikeText(st, "PE", activeAtm);
+                li.innerText = generateConcreteStrikeText(st, "PE", activeAtm, strategy);
                 strikeExampleContainer.appendChild(li);
             });
             
@@ -1064,7 +1125,7 @@ function showStrategyDetails(dep) {
             ceSource.forEach(st => {
                 const li = document.createElement("div");
                 li.className = "leg-item ce-side";
-                li.innerText = generateConcreteStrikeText(st, "CE", activeAtm);
+                li.innerText = generateConcreteStrikeText(st, "CE", activeAtm, strategy);
                 strikeExampleContainer.appendChild(li);
             });
         } else {
@@ -1073,7 +1134,7 @@ function showStrategyDetails(dep) {
             sideSource.forEach(st => {
                 const li = document.createElement("div");
                 li.className = `leg-item ${side.toLowerCase()}-side`;
-                li.innerText = generateConcreteStrikeText(st, side, activeAtm);
+                li.innerText = generateConcreteStrikeText(st, side, activeAtm, strategy);
                 strikeExampleContainer.appendChild(li);
             });
             

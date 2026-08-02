@@ -123,12 +123,12 @@ const strategiesData = [
             "notes": "1) pick only multiple of 500 strikes\n2) if ATM is not at multiple of 500 then consider next closest multiple of 500 as ATM"
         },
         "strike_example": {
-            "ATM": 56000,
-            "notes": "If ATM is 55800, consider 56000 as ATM",
+            "ATM": 57500,
+            "notes": "If ATM is 57300, consider 57500 as ATM",
             "CE": [
-                "Buy 1 57000 CE",
-                "Sell 2 57500 CE",
-                "Buy 1 59500 CE"
+                "Buy 1 58500 CE",
+                "Sell 2 59000 CE",
+                "Buy 1 61000 CE"
             ]
         },
         "conditions": {
@@ -664,12 +664,12 @@ const strategiesData = [
             ]
         },
         "strike_example": {
-            "ATM": 85000,
-            "notes": null,
+            "ATM": 87000,
+            "notes": "If ATM is 86800, consider 87000 as ATM",
             "CE": [
-                "Buy 1 85500 CE",
-                "Sell 2 86000 CE",
-                "Buy 1 88000 CE"
+                "Buy 1 87500 CE",
+                "Sell 2 88000 CE",
+                "Buy 1 90000 CE"
             ]
         },
         "conditions": {
