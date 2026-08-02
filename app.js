@@ -543,6 +543,18 @@ document.addEventListener("DOMContentLoaded", async () => {
                 if (masterExit && (!strat.exit_rule || (strat.exit_rule.type === 'next_weekday' && strat.exit_rule.weekday === 5 && strat.sheet === 'Monthly'))) {
                     strat.exit_rule = masterExit;
                 }
+                if (strat.index && strat.index.includes("Bank Nifty")) {
+                    if (!strat.strike_example || !strat.strike_example.ATM || strat.strike_example.ATM < 40000) {
+                        strat.strike_example = strat.strike_example || {};
+                        strat.strike_example.ATM = 57500;
+                    }
+                }
+                if (strat.index && strat.index.includes("Sensex")) {
+                    if (!strat.strike_example || !strat.strike_example.ATM || strat.strike_example.ATM < 60000) {
+                        strat.strike_example = strat.strike_example || {};
+                        strat.strike_example.ATM = 87000;
+                    }
+                }
             });
         }
         if (resJson.holidays) {
@@ -1050,9 +1062,16 @@ function showStrategyDetails(dep) {
     const strikeExampleContainer = document.getElementById("modal-strikes-list");
     strikeExampleContainer.innerHTML = "";
     
-    const defaultAtm = (strategy.strike_example && strategy.strike_example.ATM) 
-        ? strategy.strike_example.ATM 
-        : (INDEX_BENCHMARK_ATMS[strategy.index] || 25000);
+    let defaultAtm = 25000;
+    if (strategy.index && strategy.index.includes("Bank Nifty")) {
+        defaultAtm = (strategy.strike_example && strategy.strike_example.ATM >= 40000) ? strategy.strike_example.ATM : 57500;
+    } else if (strategy.index && strategy.index.includes("Sensex")) {
+        defaultAtm = (strategy.strike_example && strategy.strike_example.ATM >= 60000) ? strategy.strike_example.ATM : 87000;
+    } else if (strategy.strike_example && strategy.strike_example.ATM) {
+        defaultAtm = strategy.strike_example.ATM;
+    } else {
+        defaultAtm = INDEX_BENCHMARK_ATMS[strategy.index] || 25000;
+    }
     const stepSize = INDEX_STRIKE_STEPS[strategy.index] || 50;
     const roundStep = getStrategyRoundingStep(strategy);
     let currentAtm = getSavedAtmForStrategy(strategy, defaultAtm);

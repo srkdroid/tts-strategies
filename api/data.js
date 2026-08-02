@@ -200,6 +200,24 @@ module.exports = async (req, res) => {
             }
         }
 
+        // Auto-heal/sanitize legacy benchmark ATMs from Redis KV
+        if (Array.isArray(strategiesData)) {
+            strategiesData.forEach(strat => {
+                if (strat.index && strat.index.includes("Bank Nifty")) {
+                    if (!strat.strike_example || !strat.strike_example.ATM || strat.strike_example.ATM < 40000) {
+                        strat.strike_example = strat.strike_example || {};
+                        strat.strike_example.ATM = 57500;
+                    }
+                }
+                if (strat.index && strat.index.includes("Sensex")) {
+                    if (!strat.strike_example || !strat.strike_example.ATM || strat.strike_example.ATM < 60000) {
+                        strat.strike_example = strat.strike_example || {};
+                        strat.strike_example.ATM = 87000;
+                    }
+                }
+            });
+        }
+
         return res.status(200).json({ 
             strategies: strategiesData || [],
             holidays: holidaysData || {},
