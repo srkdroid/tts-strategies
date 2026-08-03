@@ -743,11 +743,19 @@
                         <input type="text" id="edit-strat-name" required>
                     </div>
                     <div class="form-group">
-                        <label for="edit-strat-sheet">Category</label>
+                        <label for="edit-strat-sheet">Sheet / Duration</label>
                         <select id="edit-strat-sheet" required>
                             <option value="Monthly">Monthly</option>
                             <option value="BiWkly">Bi-Weekly / Weekly</option>
                             <option value="STBT">STBT</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-strat-category">Strategy Type / Catalog Group *</label>
+                        <select id="edit-strat-category" required>
+                            <option value="0_adjustment">⚡ 0 Adjustment (Appears in Calendar & Catalog)</option>
+                            <option value="discretionary">🎯 Discretionary Strategy (Catalog Only)</option>
+                            <option value="adjustments">🛠️ Adjustment / Repair Strategy (Catalog Only)</option>
                         </select>
                     </div>
                     <div class="form-group">

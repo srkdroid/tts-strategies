@@ -1371,6 +1371,7 @@ function openAddStrategyModal() {
     document.getElementById("edit-modal-title").innerText = "Add New Strategy";
     document.getElementById("edit-strat-id").value = "";
     document.getElementById("edit-strategy-form").reset();
+    document.getElementById("edit-strat-category").value = "0_adjustment";
     document.getElementById("edit-strat-legs").value = JSON.stringify({ CE: ["Sell 1 ATM+200"], PE: ["Sell 1 ATM-200"] }, null, 4);
     document.getElementById("edit-strategy-modal").style.display = "block";
 }
@@ -1384,6 +1385,7 @@ function openEditStrategyModal(strategy) {
     document.getElementById("edit-strat-id").value = strategy.id;
     document.getElementById("edit-strat-name").value = strategy.name;
     document.getElementById("edit-strat-sheet").value = strategy.sheet;
+    document.getElementById("edit-strat-category").value = strategy.strategy_category || "0_adjustment";
     document.getElementById("edit-strat-index").value = strategy.index;
     document.getElementById("edit-strat-expiry").value = strategy.expiry;
     document.getElementById("edit-strat-dte").value = strategy.dte;
@@ -1417,6 +1419,7 @@ async function saveStrategyForm(event) {
     const id = document.getElementById("edit-strat-id").value;
     const name = document.getElementById("edit-strat-name").value;
     const sheet = document.getElementById("edit-strat-sheet").value;
+    const strategy_category = document.getElementById("edit-strat-category").value;
     const index = document.getElementById("edit-strat-index").value;
     const expiry = document.getElementById("edit-strat-expiry").value;
     const dte = document.getElementById("edit-strat-dte").value;
@@ -1479,6 +1482,7 @@ async function saveStrategyForm(event) {
     const updatedStrat = {
         id: id || `strat_${Date.now()}`,
         sheet,
+        strategy_category,
         name,
         index,
         expiry,
