@@ -3645,14 +3645,14 @@ function renderAnalyticsView() {
             stratTbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 1.5rem; color: var(--text-secondary);">No closed trades recorded yet for strategy-level analysis.</td></tr>`;
         } else {
             stratList.forEach(s => {
-                const sWinRate = (s.wins / s.trades) * 100;
+                const sWinRate = s.trades > 0 ? (s.wins / s.trades) * 100 : 0;
                 const sRoi = s.margin > 0 ? (s.netPnl / s.margin) * 100 : 0;
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
                     <td><strong>${s.name}</strong></td>
                     <td><span class="badge monthly" style="font-size: 0.72rem;">${s.category}</span></td>
                     <td>${s.trades}</td>
-                    <td>${s.winRate.toFixed(1)}%</td>
+                    <td>${sWinRate.toFixed(1)}%</td>
                     <td>₹ ${s.margin.toLocaleString('en-IN')}</td>
                     <td style="font-weight: 700; color: ${s.netPnl >= 0 ? '#34d399' : '#fca5a5'};">₹ ${s.netPnl.toLocaleString('en-IN')}</td>
                     <td style="font-weight: 700; color: ${sRoi >= 0 ? '#c084fc' : '#fca5a5'};">${sRoi.toFixed(2)}%</td>
