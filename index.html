@@ -40,6 +40,9 @@
                 <button id="header-journal-btn" onclick="switchViewMode('journal')" class="header-btn header-btn-notes" style="background: rgba(16, 185, 129, 0.18); border-color: rgba(16, 185, 129, 0.4); color: #a7f3d0;">📔 Trade Journal</button>
                 <div id="current-time-display">Date: 28/07/2026</div>
                 <button id="theme-toggle-btn" class="header-btn header-btn-theme" title="Toggle Theme">☀️</button>
+                <div id="user-info-display" style="display: none; font-size: 0.78rem; font-weight: 700; color: var(--text-primary); background: rgba(255, 255, 255, 0.08); padding: 0.35rem 0.65rem; border-radius: 6px; border: 1px solid var(--border-color); align-items: center; gap: 0.35rem;">
+                    <span>👤</span> <span id="user-phone-number"></span>
+                </div>
                 <button id="user-logout-btn" onclick="logoutUser()" class="header-btn header-btn-logout" style="display: none;">🚪 Logout</button>
             </div>
         </header>

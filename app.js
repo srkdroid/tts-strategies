@@ -599,6 +599,15 @@ document.addEventListener("DOMContentLoaded", async () => {
             const userLogoutBtn = document.getElementById("user-logout-btn");
             if (userLogoutBtn) userLogoutBtn.style.display = "block";
         }
+
+        const userInfoDisplay = document.getElementById("user-info-display");
+        const userPhoneNumber = document.getElementById("user-phone-number");
+        if (userPhoneNumber && resJson.userPhone) {
+            userPhoneNumber.innerText = resJson.userPhone;
+        }
+        if (userInfoDisplay && resJson.userPhone) {
+            userInfoDisplay.style.display = "inline-flex";
+        }
     } catch (error) {
         console.error('Authentication check failed:', error);
         window.location.href = '/login.html';
