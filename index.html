@@ -1221,11 +1221,19 @@
             <form id="trade-form" onsubmit="saveTradeFromModal(event)" class="modal-body" style="display: flex; flex-direction: column; gap: 1rem; padding: 1rem 0;">
                 <input type="hidden" id="trade-id-input">
                 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
                     <div class="form-group">
                         <label for="trade-strategy-select">Select Strategy *</label>
                         <select id="trade-strategy-select" required onchange="onTradeStrategySelect(this.value)" style="width: 100%; padding: 0.5rem; border-radius: 6px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); font-weight: 600;">
                             <!-- Populated dynamically by JS -->
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trade-status-select">Trade Status *</label>
+                        <select id="trade-status-select" onchange="onTradeStatusChange(this.value)" style="width: 100%; padding: 0.5rem; border-radius: 6px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); font-weight: 700;">
+                            <option value="OPEN">🟢 OPEN Position</option>
+                            <option value="CLOSED">🏁 CLOSED Trade</option>
                         </select>
                     </div>
 
@@ -1235,21 +1243,27 @@
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
                     <div class="form-group">
                         <label for="trade-entry-date">Entry Date & Time *</label>
                         <input type="datetime-local" id="trade-entry-date" required style="width: 100%;">
                     </div>
+
+                    <div class="form-group" id="trade-exit-date-group" style="display: none;">
+                        <label for="trade-exit-date">Exit Date & Time</label>
+                        <input type="datetime-local" id="trade-exit-date" style="width: 100%;">
+                    </div>
+
                     <div class="form-group">
                         <label for="trade-index-display">Strategy Index & Category</label>
                         <input type="text" id="trade-index-display" readonly style="width: 100%; opacity: 0.8; background: rgba(0,0,0,0.15);">
                     </div>
                 </div>
 
-                <!-- Legs Setup Section -->
+                <!-- Legs Setup & Execution Section -->
                 <div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                        <label style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary); margin: 0;">Option Legs & Entry Execution *</label>
+                        <label style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary); margin: 0;">Option Legs & Execution Prices *</label>
                         <button type="button" onclick="addTradeLegRow()" class="admin-btn edit" style="padding: 0.25rem 0.6rem; font-size: 0.78rem;">+ Add Extra Leg</button>
                     </div>
                     
@@ -1262,6 +1276,7 @@
                                     <th>Strike Price</th>
                                     <th>Qty (Shares)</th>
                                     <th>Entry Price (₹)</th>
+                                    <th id="trade-leg-exit-header" style="display: none;">Exit Price (₹)</th>
                                     <th style="width: 40px; text-align: center;">Del</th>
                                 </tr>
                             </thead>
@@ -1272,11 +1287,27 @@
                     </div>
                 </div>
 
-                <!-- Notes Section -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <!-- Closed Trade Charges Section -->
+                <div id="trade-charges-group" style="display: none; grid-template-columns: 1fr 1fr; gap: 1rem; background: rgba(0,0,0,0.15); padding: 0.8rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                    <div class="form-group">
+                        <label for="trade-brokerage-input">Brokerage (₹)</label>
+                        <input type="number" id="trade-brokerage-input" value="160" step="10" min="0" style="width: 100%;">
+                    </div>
+                    <div class="form-group">
+                        <label for="trade-stt-input">STT, Exchange & Govt Taxes (₹)</label>
+                        <input type="number" id="trade-stt-input" value="240" step="10" min="0" style="width: 100%;">
+                    </div>
+                </div>
+
+                <!-- Notes Section (Entry, Exit, Psychology) -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
                     <div class="form-group">
                         <label for="trade-entry-notes">Entry Rationale Notes</label>
                         <textarea id="trade-entry-notes" rows="3" placeholder="Why was this trade entered? (e.g. VIX condition met, support bounce)..." style="width: 100%; box-sizing: border-box; font-size: 0.83rem; padding: 0.5rem;"></textarea>
+                    </div>
+                    <div class="form-group" id="trade-exit-notes-group" style="display: none;">
+                        <label for="trade-exit-notes">Exit Review Notes</label>
+                        <textarea id="trade-exit-notes" rows="3" placeholder="Why did you exit? (Target hit, SL triggered, time decay)..." style="width: 100%; box-sizing: border-box; font-size: 0.83rem; padding: 0.5rem;"></textarea>
                     </div>
                     <div class="form-group">
                         <label for="trade-psychology-notes">Mindset & Psychology Notes</label>

@@ -3008,17 +3008,41 @@ function renderJournalTradesTable() {
     });
 }
 
+function onTradeStatusChange(status) {
+    const exitDateGroup = document.getElementById("trade-exit-date-group");
+    const legExitHeader = document.getElementById("trade-leg-exit-header");
+    const chargesGroup = document.getElementById("trade-charges-group");
+    const exitNotesGroup = document.getElementById("trade-exit-notes-group");
+    const legExitCells = document.querySelectorAll(".leg-exit-cell");
+
+    const isClosed = status === "CLOSED";
+
+    if (exitDateGroup) exitDateGroup.style.display = isClosed ? "block" : "none";
+    if (legExitHeader) legExitHeader.style.display = isClosed ? "table-cell" : "none";
+    if (chargesGroup) chargesGroup.style.display = isClosed ? "grid" : "none";
+    if (exitNotesGroup) exitNotesGroup.style.display = isClosed ? "block" : "none";
+
+    legExitCells.forEach(cell => {
+        cell.style.display = isClosed ? "table-cell" : "none";
+    });
+}
+
 function openNewTradeModal() {
     document.getElementById("trade-id-input").value = "";
     document.getElementById("trade-modal-title").innerText = "📔 Record New Trade";
     document.getElementById("trade-margin-input").value = "250000";
     document.getElementById("trade-entry-notes").value = "";
+    document.getElementById("trade-exit-notes").value = "";
     document.getElementById("trade-psychology-notes").value = "";
+
+    const statusSelect = document.getElementById("trade-status-select");
+    if (statusSelect) statusSelect.value = "OPEN";
 
     // Set default entry date to current local datetime
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     document.getElementById("trade-entry-date").value = now.toISOString().slice(0, 16);
+    document.getElementById("trade-exit-date").value = now.toISOString().slice(0, 16);
 
     // Populate strategy dropdown
     const select = document.getElementById("trade-strategy-select");
@@ -3037,6 +3061,99 @@ function openNewTradeModal() {
         onTradeStrategySelect(strats[0].id);
     }
 
+    onTradeStatusChange("OPEN");
+
+    document.getElementById("trade-modal").style.display = "flex";
+}
+
+function editTradeRecord(tradeId) {
+    const trade = userTradesData.find(t => t.id === tradeId);
+    if (!trade) return;
+
+    document.getElementById("trade-id-input").value = trade.id;
+    document.getElementById("trade-modal-title").innerText = `✏️ Edit Trade (${trade.strategyName})`;
+    document.getElementById("trade-margin-input").value = trade.marginUsed || 250000;
+
+    // Trade status
+    const statusSelect = document.getElementById("trade-status-select");
+    if (statusSelect) statusSelect.value = trade.status || "OPEN";
+
+    // Entry date
+    if (trade.entryDate) {
+        const d = new Date(trade.entryDate);
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+        document.getElementById("trade-entry-date").value = d.toISOString().slice(0, 16);
+    }
+
+    // Exit date (if closed)
+    if (trade.exitDate) {
+        const dEx = new Date(trade.exitDate);
+        dEx.setMinutes(dEx.getMinutes() - dEx.getTimezoneOffset());
+        document.getElementById("trade-exit-date").value = dEx.toISOString().slice(0, 16);
+    } else {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById("trade-exit-date").value = now.toISOString().slice(0, 16);
+    }
+
+    // Populate strategy dropdown
+    const select = document.getElementById("trade-strategy-select");
+    select.innerHTML = "";
+    const strats = window.strategiesData || [];
+    strats.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.id;
+        const catLabel = s.strategy_category === 'discretionary' ? '🎯 Discretionary' : s.strategy_category === 'adjustments' ? '🛠️ Adjustment' : '⚡ 0 Adj';
+        opt.innerText = `${s.name} (${catLabel} • ${s.index})`;
+        if (s.id === trade.strategyId) opt.selected = true;
+        select.appendChild(opt);
+    });
+
+    document.getElementById("trade-index-display").value = `${trade.index || 'Nifty'} • ${trade.sheet || 'Monthly'} (${trade.category || '0_adjustment'})`;
+
+    // Charges & Taxes
+    if (trade.charges) {
+        document.getElementById("trade-brokerage-input").value = trade.charges.brokerage || 160;
+        document.getElementById("trade-stt-input").value = trade.charges.sttAndTaxes || 240;
+    }
+
+    // Notes
+    document.getElementById("trade-entry-notes").value = trade.notes?.entry || "";
+    document.getElementById("trade-exit-notes").value = trade.notes?.exit || "";
+    document.getElementById("trade-psychology-notes").value = trade.notes?.psychology || "";
+
+    // Populate Legs with entry and exit prices
+    const tbody = document.getElementById("trade-legs-tbody");
+    tbody.innerHTML = "";
+
+    const isClosed = trade.status === "CLOSED";
+
+    (trade.legs || []).forEach(leg => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>
+                <select class="leg-action" style="padding: 0.25rem; font-weight: 700;">
+                    <option value="BUY" ${leg.action === 'BUY' ? 'selected' : ''}>BUY</option>
+                    <option value="SELL" ${leg.action === 'SELL' ? 'selected' : ''}>SELL</option>
+                </select>
+            </td>
+            <td>
+                <select class="leg-type" style="padding: 0.25rem;">
+                    <option value="CE" ${leg.optionType === 'CE' ? 'selected' : ''}>CE</option>
+                    <option value="PE" ${leg.optionType === 'PE' ? 'selected' : ''}>PE</option>
+                </select>
+            </td>
+            <td><input type="number" class="leg-strike" value="${leg.strike || 25000}" step="50" style="width: 85px; font-weight: 700;"></td>
+            <td><input type="number" class="leg-qty" value="${leg.quantity || 25}" step="10" style="width: 70px;"></td>
+            <td><input type="number" class="leg-entry-price" value="${leg.entryPrice || 0}" step="0.5" style="width: 80px; font-weight: 600;"></td>
+            <td class="leg-exit-cell" style="display: ${isClosed ? 'table-cell' : 'none'};"><input type="number" class="leg-exit-price" value="${leg.exitPrice !== undefined && leg.exitPrice !== null ? leg.exitPrice : leg.entryPrice}" step="0.5" style="width: 80px; font-weight: 700;"></td>
+            <td style="text-align: center;"><button type="button" onclick="this.closest('tr').remove()" style="background: none; border: none; cursor: pointer; font-size: 1rem;">🗑️</button></td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    onTradeStatusChange(trade.status || "OPEN");
+
     document.getElementById("trade-modal").style.display = "flex";
 }
 
@@ -3054,8 +3171,8 @@ function onTradeStrategySelect(strategyId) {
     const tbody = document.getElementById("trade-legs-tbody");
     tbody.innerHTML = "";
 
-    let legCounter = 1;
     const defaultLotSize = strat.index.includes("Bank Nifty") ? 15 : strat.index.includes("Sensex") ? 10 : 25;
+    const isClosed = document.getElementById("trade-status-select")?.value === "CLOSED";
 
     const addLegRow = (action, optType, strikeText) => {
         let parsedStrike = 25000;
@@ -3082,6 +3199,7 @@ function onTradeStrategySelect(strategyId) {
             <td><input type="number" class="leg-strike" value="${parsedStrike}" step="50" style="width: 85px; font-weight: 700;"></td>
             <td><input type="number" class="leg-qty" value="${defaultLotSize}" step="${defaultLotSize}" style="width: 70px;"></td>
             <td><input type="number" class="leg-entry-price" value="100.00" step="0.5" style="width: 80px; font-weight: 600;"></td>
+            <td class="leg-exit-cell" style="display: ${isClosed ? 'table-cell' : 'none'};"><input type="number" class="leg-exit-price" value="100.00" step="0.5" style="width: 80px; font-weight: 700;"></td>
             <td style="text-align: center;"><button type="button" onclick="this.closest('tr').remove()" style="background: none; border: none; cursor: pointer; font-size: 1rem;">🗑️</button></td>
         `;
         tbody.appendChild(tr);
@@ -3104,6 +3222,7 @@ function onTradeStrategySelect(strategyId) {
 function addTradeLegRow() {
     const tbody = document.getElementById("trade-legs-tbody");
     if (!tbody) return;
+    const isClosed = document.getElementById("trade-status-select")?.value === "CLOSED";
     const tr = document.createElement("tr");
     tr.innerHTML = `
         <td>
@@ -3121,6 +3240,7 @@ function addTradeLegRow() {
         <td><input type="number" class="leg-strike" value="25000" step="50" style="width: 85px; font-weight: 700;"></td>
         <td><input type="number" class="leg-qty" value="25" step="25" style="width: 70px;"></td>
         <td><input type="number" class="leg-entry-price" value="100.00" step="0.5" style="width: 80px; font-weight: 600;"></td>
+        <td class="leg-exit-cell" style="display: ${isClosed ? 'table-cell' : 'none'};"><input type="number" class="leg-exit-price" value="100.00" step="0.5" style="width: 80px; font-weight: 700;"></td>
         <td style="text-align: center;"><button type="button" onclick="this.closest('tr').remove()" style="background: none; border: none; cursor: pointer; font-size: 1rem;">🗑️</button></td>
     `;
     tbody.appendChild(tr);
@@ -3132,9 +3252,16 @@ async function saveTradeFromModal(e) {
     const tradeId = document.getElementById("trade-id-input").value || `trade_${Date.now()}`;
     const strategyId = document.getElementById("trade-strategy-select").value;
     const strat = (window.strategiesData || []).find(s => s.id === strategyId) || {};
+    const status = document.getElementById("trade-status-select").value || 'OPEN';
     const marginUsed = parseFloat(document.getElementById("trade-margin-input").value) || 250000;
     const entryDate = document.getElementById("trade-entry-date").value;
+    const exitDate = document.getElementById("trade-exit-date").value;
+    
+    const brokerage = parseFloat(document.getElementById("trade-brokerage-input").value) || 160;
+    const sttAndTaxes = parseFloat(document.getElementById("trade-stt-input").value) || 240;
+
     const entryNotes = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(document.getElementById("trade-entry-notes").value) : document.getElementById("trade-entry-notes").value;
+    const exitNotes = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(document.getElementById("trade-exit-notes").value) : document.getElementById("trade-exit-notes").value;
     const psychologyNotes = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(document.getElementById("trade-psychology-notes").value) : document.getElementById("trade-psychology-notes").value;
 
     const legRows = document.querySelectorAll("#trade-legs-tbody tr");
@@ -3146,6 +3273,9 @@ async function saveTradeFromModal(e) {
         const strike = parseFloat(row.querySelector(".leg-strike").value) || 0;
         const quantity = parseFloat(row.querySelector(".leg-qty").value) || 0;
         const entryPrice = parseFloat(row.querySelector(".leg-entry-price").value) || 0;
+        
+        const exitInput = row.querySelector(".leg-exit-price");
+        const exitPrice = exitInput ? parseFloat(exitInput.value) || 0 : 0;
 
         legs.push({
             legId: idx + 1,
@@ -3153,7 +3283,8 @@ async function saveTradeFromModal(e) {
             optionType,
             strike,
             quantity,
-            entryPrice
+            entryPrice,
+            exitPrice: status === 'CLOSED' ? exitPrice : null
         });
     });
 
@@ -3169,12 +3300,18 @@ async function saveTradeFromModal(e) {
         category: strat.strategy_category || '0_adjustment',
         sheet: strat.sheet || 'Monthly',
         index: strat.index || 'Nifty',
-        status: 'OPEN',
+        status,
         marginUsed,
         entryDate,
+        exitDate: status === 'CLOSED' ? exitDate : null,
+        charges: {
+            brokerage,
+            sttAndTaxes
+        },
         legs,
         notes: {
             entry: entryNotes,
+            exit: exitNotes,
             psychology: psychologyNotes
         }
     };
@@ -3187,7 +3324,7 @@ async function saveTradeFromModal(e) {
         });
         const resJson = await response.json();
         if (response.ok) {
-            if (typeof showToast === 'function') showToast("💾 Trade record saved to journal!", "success");
+            if (typeof showToast === 'function') showToast("💾 Trade record saved successfully!", "success");
             closeTradeModal();
             fetchUserTradesData();
         } else {
