@@ -4,7 +4,7 @@ const crypto = require('crypto');
 
 // --- Rate Limiting ---
 const rateLimitMap = new Map();
-const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_MAX = 15;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
 function checkRateLimit(key) {
@@ -114,12 +114,6 @@ module.exports = async (req, res) => {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    // Rate limit by IP
-    const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
-    if (!checkRateLimit(`pin:${clientIp}`)) {
-        return res.status(429).json({ error: 'Too many login attempts. Please try again in 15 minutes.' });
-    }
-
     try {
         const { phone, pin } = req.body || {};
 
@@ -137,6 +131,8 @@ module.exports = async (req, res) => {
         if (storedPin !== pin.trim()) {
             return res.status(401).json({ error: 'Invalid PIN. Access denied.' });
         }
+        
+        rateLimitMap.delete(`login:${clientIp}`);
 
         // Generate secure JWT-like session token
         const sessionCookie = generateToken(cleanPhone);

@@ -803,7 +803,7 @@ function dispatchAdminTrade(mode) {
     }
 }
 
-function saveAdminDispatchSettings() {
+async function saveAdminDispatchSettings() {
     const webhookEl = document.getElementById("admin-webhook-url-input");
     const appEl = document.getElementById("admin-app-url-input");
     const waUrlEl = document.getElementById("admin-openwa-url-input");
@@ -811,14 +811,38 @@ function saveAdminDispatchSettings() {
     const waSessionEl = document.getElementById("admin-openwa-session-input");
     const waGroupEl = document.getElementById("admin-openwa-group-input");
 
-    localStorage.setItem("admin_webhook_url", webhookEl ? webhookEl.value.trim() : "");
-    localStorage.setItem("admin_app_url", appEl ? appEl.value.trim() : "");
-    localStorage.setItem("admin_openwa_url", waUrlEl ? waUrlEl.value.trim() : "");
-    localStorage.setItem("admin_openwa_key", waKeyEl ? waKeyEl.value.trim() : "");
-    localStorage.setItem("admin_openwa_session", waSessionEl ? waSessionEl.value.trim() : "");
-    localStorage.setItem("admin_openwa_group", waGroupEl ? waGroupEl.value.trim() : "");
+    const settings = {
+        admin_webhook_url: webhookEl ? webhookEl.value.trim() : "",
+        admin_app_url: appEl ? appEl.value.trim() : "",
+        admin_openwa_url: waUrlEl ? waUrlEl.value.trim() : "",
+        admin_openwa_key: waKeyEl ? waKeyEl.value.trim() : "",
+        admin_openwa_session: waSessionEl ? waSessionEl.value.trim() : "",
+        admin_openwa_group: waGroupEl ? waGroupEl.value.trim() : ""
+    };
 
-    showToast("💾 Admin Settings saved successfully!");
+    try {
+        const res = await fetch('/api/admin/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'save_dispatch_settings', data: settings })
+        });
+        const resJson = await res.json();
+        
+        if (res.ok) {
+            localStorage.setItem("admin_webhook_url", settings.admin_webhook_url);
+            localStorage.setItem("admin_app_url", settings.admin_app_url);
+            localStorage.setItem("admin_openwa_url", settings.admin_openwa_url);
+            localStorage.setItem("admin_openwa_key", settings.admin_openwa_key);
+            localStorage.setItem("admin_openwa_session", settings.admin_openwa_session);
+            localStorage.setItem("admin_openwa_group", settings.admin_openwa_group);
+            
+            showToast("💾 Admin Settings saved successfully!");
+        } else {
+            showToast(resJson.error || "Failed to save settings", "error");
+        }
+    } catch (e) {
+        showToast("Error saving dispatch settings", "error");
+    }
 }
 
 function loadAdminDispatchSettings() {
@@ -1616,6 +1640,18 @@ async function fetchAdminDbData() {
         whitelistData = resJson.whitelist || {};
         userPermissionsData = resJson.userPermissions || {};
         auditLogsData = resJson.auditLogs || [];
+        
+        if (resJson.dispatchSettings && Object.keys(resJson.dispatchSettings).length > 0) {
+            const ds = resJson.dispatchSettings;
+            localStorage.setItem("admin_webhook_url", ds.admin_webhook_url || "");
+            localStorage.setItem("admin_app_url", ds.admin_app_url || "");
+            localStorage.setItem("admin_openwa_url", ds.admin_openwa_url || "");
+            localStorage.setItem("admin_openwa_key", ds.admin_openwa_key || "");
+            localStorage.setItem("admin_openwa_session", ds.admin_openwa_session || "");
+            localStorage.setItem("admin_openwa_group", ds.admin_openwa_group || "");
+            loadAdminDispatchSettings();
+        }
+
         if (logsSortKey) {
             applyLogsSort();
             updateLogsSortIcons();

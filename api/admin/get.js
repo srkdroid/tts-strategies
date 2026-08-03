@@ -76,6 +76,7 @@ module.exports = async (req, res) => {
         let strategies = null;
         let holidays = null;
         let whitelist = null;
+        let dispatchSettings = null;
         let dbStatus = "connected";
 
         try {
@@ -115,6 +116,16 @@ module.exports = async (req, res) => {
                 whitelist = {};
                 for (let i = 0; i < wlRes.length; i += 2) {
                     whitelist[wlRes[i]] = wlRes[i+1];
+                }
+            }
+
+            // Fetch dispatch settings from KV
+            const dispatchRes = await queryKV(['GET', 'admin_dispatch_settings']);
+            if (dispatchRes) {
+                try {
+                    dispatchSettings = JSON.parse(dispatchRes);
+                } catch (e) {
+                    console.error("Failed to parse dispatch settings:", e);
                 }
             }
 
@@ -203,6 +214,7 @@ module.exports = async (req, res) => {
             holidays: holidays || {},
             whitelist: whitelist || {},
             userPermissions: userPermissions || {},
+            dispatchSettings: dispatchSettings || {},
             auditLogs: auditLogs
         });
 

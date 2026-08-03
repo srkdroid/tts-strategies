@@ -2,7 +2,7 @@ const crypto = require('crypto');
 
 // --- Rate Limiting ---
 const rateLimitMap = new Map();
-const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_MAX = 15;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
 function checkRateLimit(key) {
@@ -43,12 +43,6 @@ module.exports = (req, res) => {
         return res.status(455).json({ error: 'Method Not Allowed' });
     }
 
-    // Rate limit by IP
-    const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
-    if (!checkRateLimit(`admin:${clientIp}`)) {
-        return res.status(429).json({ error: 'Too many login attempts. Please try again in 15 minutes.' });
-    }
-
     try {
         const { password } = req.body || {};
         
@@ -57,6 +51,7 @@ module.exports = (req, res) => {
         }
 
         if (password === ADMIN_PASS) {
+            rateLimitMap.delete(`admin:${clientIp}`);
             const token = generateAdminToken();
             
             // Set secure, short-lived HTTP-only admin cookie

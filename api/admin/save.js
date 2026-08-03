@@ -227,6 +227,11 @@ module.exports = async (req, res) => {
                 return res.status(200).json({ success: true, message: `Permissions updated for ${data.phone}` });
             } 
             
+            else if (action === 'save_dispatch_settings') {
+                await queryKV(['SET', 'admin_dispatch_settings', JSON.stringify(data)]);
+                return res.status(200).json({ success: true, message: 'Dispatch settings saved successfully to KV' });
+            } 
+            
             else if (action === 'clear_logs') {
                 await queryKV(['DEL', 'auth_audit_logs']);
                 return res.status(200).json({ success: true, message: 'Logs cleared successfully' });
