@@ -2232,20 +2232,19 @@ function switchViewMode(mode) {
     
     const calendarBtn = document.getElementById("mode-calendar-btn");
     const flowBtn = document.getElementById("mode-flow-btn");
-    const notesBtn = document.getElementById("mode-notes-btn");
     const plannerBtn = document.getElementById("mode-planner-btn");
-    const catalogBtn = document.getElementById("mode-catalog-btn");
-    const journalBtn = document.getElementById("mode-journal-btn");
-    const analyticsBtn = document.getElementById("mode-analytics-btn");
+
     const headerNotesBtn = document.getElementById("header-notes-btn");
+    const headerCatalogBtn = document.getElementById("header-catalog-btn");
+    const headerJournalBtn = document.getElementById("header-journal-btn");
 
     if (calendarBtn) calendarBtn.classList.toggle("active", mode === "calendar");
     if (flowBtn) flowBtn.classList.toggle("active", mode === "flow");
-    if (notesBtn) notesBtn.classList.toggle("active", mode === "notes");
     if (plannerBtn) plannerBtn.classList.toggle("active", mode === "planner");
-    if (catalogBtn) catalogBtn.classList.toggle("active", mode === "catalog");
-    if (journalBtn) journalBtn.classList.toggle("active", mode === "journal");
-    if (analyticsBtn) analyticsBtn.classList.toggle("active", mode === "analytics");
+
+    if (headerNotesBtn) headerNotesBtn.classList.toggle("active", mode === "notes");
+    if (headerCatalogBtn) headerCatalogBtn.classList.toggle("active", mode === "catalog");
+    if (headerJournalBtn) headerJournalBtn.classList.toggle("active", mode === "journal");
     
     const calContainer = document.getElementById("calendar-view-container");
     const flowContainer = document.getElementById("capital-flow-view-container");
@@ -2253,7 +2252,6 @@ function switchViewMode(mode) {
     const plannerContainer = document.getElementById("capital-planner-view-container");
     const catalogContainer = document.getElementById("catalog-view-container");
     const journalContainer = document.getElementById("journal-view-container");
-    const analyticsContainer = document.getElementById("analytics-view-container");
 
     if (calContainer) calContainer.style.display = mode === "calendar" ? "grid" : "none";
     if (flowContainer) flowContainer.style.display = mode === "flow" ? "grid" : "none";
@@ -2261,9 +2259,8 @@ function switchViewMode(mode) {
     if (plannerContainer) plannerContainer.style.display = mode === "planner" ? "block" : "none";
     if (catalogContainer) catalogContainer.style.display = mode === "catalog" ? "block" : "none";
     if (journalContainer) journalContainer.style.display = mode === "journal" ? "block" : "none";
-    if (analyticsContainer) analyticsContainer.style.display = mode === "analytics" ? "block" : "none";
     
-    [calendarBtn, flowBtn, notesBtn, plannerBtn, catalogBtn, journalBtn, analyticsBtn, headerNotesBtn].forEach(btn => {
+    [calendarBtn, flowBtn, plannerBtn].forEach(btn => {
         if (btn) {
             btn.style.background = "";
             btn.style.color = "";
@@ -2271,15 +2268,10 @@ function switchViewMode(mode) {
         }
     });
 
-    if (headerNotesBtn) {
-        headerNotesBtn.classList.toggle("active", mode === "notes");
-    }
-
     if (mode === "notes" && typeof fetchNotesData === 'function') fetchNotesData();
     if (mode === "planner") renderCapitalPlannerView();
     if (mode === "catalog") renderStrategyCatalog();
     if (mode === "journal") fetchUserTradesData();
-    if (mode === "analytics") renderAnalyticsView();
     
     if (mode === "calendar" || mode === "flow") {
         updateCalendars();
@@ -2859,11 +2851,26 @@ async function fetchUserTradesData() {
 
 function filterJournalTab(tab) {
     activeJournalTab = tab;
-    ['all', 'OPEN', 'CLOSED'].forEach(t => {
+    ['all', 'OPEN', 'CLOSED', 'ANALYTICS'].forEach(t => {
         const btn = document.getElementById(`journal-tab-${t.toLowerCase()}`);
         if (btn) btn.classList.toggle('active', t === tab);
     });
-    renderJournalTradesTable();
+
+    const tradesTableContainer = document.getElementById("journal-trades-table-container");
+    const analyticsContainer = document.getElementById("journal-analytics-dashboard-container");
+    const searchInput = document.getElementById("journal-search-input");
+
+    if (tab === 'ANALYTICS') {
+        if (tradesTableContainer) tradesTableContainer.style.display = "none";
+        if (analyticsContainer) analyticsContainer.style.display = "block";
+        if (searchInput) searchInput.style.display = "none";
+        renderAnalyticsView();
+    } else {
+        if (tradesTableContainer) tradesTableContainer.style.display = "block";
+        if (analyticsContainer) analyticsContainer.style.display = "none";
+        if (searchInput) searchInput.style.display = "block";
+        renderJournalTradesTable();
+    }
 }
 
 function onJournalSearchInput(query) {
