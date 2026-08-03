@@ -2275,9 +2275,13 @@ function switchViewMode(mode) {
         headerNotesBtn.classList.toggle("active", mode === "notes");
     }
 
-    }
+    if (mode === "notes" && typeof fetchNotesData === 'function') fetchNotesData();
+    if (mode === "planner") renderCapitalPlannerView();
+    if (mode === "catalog") renderStrategyCatalog();
+    if (mode === "journal") fetchUserTradesData();
+    if (mode === "analytics") renderAnalyticsView();
     
-    if (mode !== "notes" && mode !== "planner") {
+    if (mode === "calendar" || mode === "flow") {
         updateCalendars();
     }
 }
