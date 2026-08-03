@@ -141,8 +141,12 @@ function calculateDeploymentsForRange(startDate, endDate) {
         }
     }
     
-    // Map each strategy to its nominal deployment dates
-    strategiesData.forEach(strategy => {
+    // Map each strategy to its nominal deployment dates (0_adjustment calendar strategies only)
+    const calendarStrategies = (strategiesData || []).filter(s => 
+        !s.strategy_category || s.strategy_category === '0_adjustment'
+    );
+
+    calendarStrategies.forEach(strategy => {
         // Auto-heal missing or corrupted rules (e.g. from legacy saves)
         const masterDeploy = DEPLOY_RULES[strategy.id] || (strategy.name ? DEPLOY_RULES[Object.keys(DEPLOY_RULES).find(k => k && strategy.name.toLowerCase().includes(k.replace(/^(monthly|biweekly|stbt)-/, '').replace(/-\d+$/, '')))] : null);
         if (masterDeploy && (!strategy.deploy_rule || (strategy.deploy_rule.type === 'expiry_offset' && strategy.deploy_rule.offset_days === -5 && (strategy.sheet === 'Monthly' || strategy.name.includes('Batman'))))) {
@@ -2224,36 +2228,42 @@ async function logoutUser() {
 /* ─── Capital Flow Timeline View Helpers ──────────────────────────────────── */
 
 function switchViewMode(mode) {
-    // Restrict Capital Planner to Admin login only
-    if (mode === "planner" && !window.isAdminMode && !isAdminMode) {
-        switchViewMode("flow");
-        return;
-    }
     currentFlowViewMode = mode;
     
     const calendarBtn = document.getElementById("mode-calendar-btn");
     const flowBtn = document.getElementById("mode-flow-btn");
     const notesBtn = document.getElementById("mode-notes-btn");
     const plannerBtn = document.getElementById("mode-planner-btn");
+    const catalogBtn = document.getElementById("mode-catalog-btn");
+    const journalBtn = document.getElementById("mode-journal-btn");
+    const analyticsBtn = document.getElementById("mode-analytics-btn");
     const headerNotesBtn = document.getElementById("header-notes-btn");
 
     if (calendarBtn) calendarBtn.classList.toggle("active", mode === "calendar");
     if (flowBtn) flowBtn.classList.toggle("active", mode === "flow");
     if (notesBtn) notesBtn.classList.toggle("active", mode === "notes");
     if (plannerBtn) plannerBtn.classList.toggle("active", mode === "planner");
+    if (catalogBtn) catalogBtn.classList.toggle("active", mode === "catalog");
+    if (journalBtn) journalBtn.classList.toggle("active", mode === "journal");
+    if (analyticsBtn) analyticsBtn.classList.toggle("active", mode === "analytics");
     
     const calContainer = document.getElementById("calendar-view-container");
     const flowContainer = document.getElementById("capital-flow-view-container");
     const notesContainer = document.getElementById("notes-view-container");
     const plannerContainer = document.getElementById("capital-planner-view-container");
+    const catalogContainer = document.getElementById("catalog-view-container");
+    const journalContainer = document.getElementById("journal-view-container");
+    const analyticsContainer = document.getElementById("analytics-view-container");
 
     if (calContainer) calContainer.style.display = mode === "calendar" ? "grid" : "none";
     if (flowContainer) flowContainer.style.display = mode === "flow" ? "grid" : "none";
     if (notesContainer) notesContainer.style.display = mode === "notes" ? "block" : "none";
     if (plannerContainer) plannerContainer.style.display = mode === "planner" ? "block" : "none";
+    if (catalogContainer) catalogContainer.style.display = mode === "catalog" ? "block" : "none";
+    if (journalContainer) journalContainer.style.display = mode === "journal" ? "block" : "none";
+    if (analyticsContainer) analyticsContainer.style.display = mode === "analytics" ? "block" : "none";
     
-    // Clean up inline styles so CSS classes take full effect in all themes
-    [calendarBtn, flowBtn, notesBtn, plannerBtn, headerNotesBtn].forEach(btn => {
+    [calendarBtn, flowBtn, notesBtn, plannerBtn, catalogBtn, journalBtn, analyticsBtn, headerNotesBtn].forEach(btn => {
         if (btn) {
             btn.style.background = "";
             btn.style.color = "";
@@ -2265,12 +2275,6 @@ function switchViewMode(mode) {
         headerNotesBtn.classList.toggle("active", mode === "notes");
     }
 
-    if (mode === "notes" && typeof fetchNotesData === 'function') {
-        fetchNotesData();
-    }
-
-    if (mode === "planner") {
-        renderCapitalPlannerView();
     }
     
     if (mode !== "notes" && mode !== "planner") {
@@ -2733,4 +2737,693 @@ function openPlannerStrategyModal(appStrategyId) {
         });
     }
 }
+
+/* ==========================================================================
+   FEATURE 1: STRATEGY CATALOG CLIENT LOGIC
+   ========================================================================== */
+
+let activeCatalogFilter = 'all';
+
+function filterCatalogCategory(category) {
+    activeCatalogFilter = category;
+    ['all', '0_adjustment', 'discretionary', 'adjustments'].forEach(cat => {
+        const btn = document.getElementById(`catalog-filter-${cat}`);
+        if (btn) btn.classList.toggle('active', cat === category);
+    });
+    renderStrategyCatalog();
+}
+
+function renderStrategyCatalog() {
+    const grid = document.getElementById("catalog-cards-grid");
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    const strats = window.strategiesData || [];
+    const filtered = strats.filter(s => {
+        const cat = s.strategy_category || '0_adjustment';
+        if (activeCatalogFilter === 'all') return true;
+        return cat === activeCatalogFilter;
+    });
+
+    if (filtered.length === 0) {
+        grid.innerHTML = `<div style="grid-column: 1 / -1; padding: 2rem; text-align: center; color: var(--text-secondary);">No strategies found in this category.</div>`;
+        return;
+    }
+
+    filtered.forEach(strat => {
+        const cat = strat.strategy_category || '0_adjustment';
+        const badgeText = cat === '0_adjustment' ? '⚡ 0 Adjustment' : cat === 'discretionary' ? '🎯 Discretionary' : '🛠️ Adjustment';
+        const badgeColor = cat === '0_adjustment' ? 'rgba(168, 85, 247, 0.18); color: #e9d5ff; border: 1px solid rgba(168, 85, 247, 0.4);' :
+                           cat === 'discretionary' ? 'rgba(59, 130, 246, 0.18); color: #bfdbfe; border: 1px solid rgba(59, 130, 246, 0.4);' :
+                           'rgba(245, 158, 11, 0.18); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.4);';
+
+        const card = document.createElement("div");
+        card.className = "catalog-card";
+        card.style.cssText = "background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.2rem; display: flex; flex-direction: column; justify-content: space-between; gap: 0.8rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s, border-color 0.2s;";
+        
+        const ceLegs = (strat.setup && strat.setup.CE) || [];
+        const peLegs = (strat.setup && strat.setup.PE) || [];
+
+        card.innerHTML = `
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-primary); font-weight: 700;">${strat.name}</h3>
+                    <span style="padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700; white-space: nowrap; ${badgeColor}">${badgeText}</span>
+                </div>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; font-size: 0.78rem; color: var(--text-secondary);">
+                    <span>📊 <strong>${strat.index}</strong></span>
+                    <span>•</span>
+                    <span>⏳ ${strat.dte}</span>
+                    <span>•</span>
+                    <span>📅 ${strat.expiry}</span>
+                </div>
+                <div style="font-size: 0.82rem; background: rgba(0,0,0,0.18); padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                    <span style="font-weight: 700; color: var(--text-primary); display: block; margin-bottom: 0.2rem;">Setup Overview:</span>
+                    <ul style="margin: 0; padding-left: 1.1rem; color: var(--text-secondary); font-size: 0.78rem;">
+                        ${ceLegs.length > 0 ? `<li>CE: ${ceLegs[0]}</li>` : ''}
+                        ${peLegs.length > 0 ? `<li>PE: ${peLegs[0]}</li>` : ''}
+                    </ul>
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.4rem;">
+                <button onclick="openCatalogStrategyDetails('${strat.id}')" class="admin-btn edit" style="font-size: 0.8rem; padding: 0.4rem 0.8rem; display: flex; align-items: center; gap: 0.3rem;">👁️ View Details</button>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+function openCatalogStrategyDetails(strategyId) {
+    const strat = (window.strategiesData || []).find(s => s.id === strategyId);
+    if (strat && typeof showStrategyDetails === 'function') {
+        showStrategyDetails({
+            strategy: strat,
+            isInactiveFallback: true,
+            actualDate: null,
+            expiryDate: null,
+            nominalDate: null,
+            shifted: false
+        });
+    }
+}
+
+
+/* ==========================================================================
+   FEATURE 2: TRADE JOURNAL & MULTI-LEVEL ROI ANALYTICS CLIENT LOGIC
+   ========================================================================== */
+
+let userTradesData = [];
+let activeJournalTab = 'all';
+let journalSearchQuery = '';
+
+async function fetchUserTradesData() {
+    try {
+        const response = await fetch('/api/journal');
+        if (!response.ok) {
+            if (response.status === 401) {
+                if (typeof showToast === 'function') showToast("Login required to access Trade Journal.", "warning");
+            }
+            return;
+        }
+        const resJson = await response.json();
+        userTradesData = resJson.trades || [];
+        renderJournalTradesTable();
+    } catch (e) {
+        console.error("Fetch journal error:", e);
+    }
+}
+
+function filterJournalTab(tab) {
+    activeJournalTab = tab;
+    ['all', 'OPEN', 'CLOSED'].forEach(t => {
+        const btn = document.getElementById(`journal-tab-${t.toLowerCase()}`);
+        if (btn) btn.classList.toggle('active', t === tab);
+    });
+    renderJournalTradesTable();
+}
+
+function onJournalSearchInput(query) {
+    journalSearchQuery = (query || '').toLowerCase();
+    renderJournalTradesTable();
+}
+
+function renderJournalTradesTable() {
+    const tbody = document.getElementById("journal-trades-tbody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    const filtered = userTradesData.filter(t => {
+        if (activeJournalTab !== 'all' && t.status !== activeJournalTab) return false;
+        if (!journalSearchQuery) return true;
+        const sName = (t.strategyName || '').toLowerCase();
+        const cat = (t.category || '').toLowerCase();
+        const index = (t.index || '').toLowerCase();
+        const notesStr = `${t.notes?.entry || ''} ${t.notes?.exit || ''} ${t.notes?.psychology || ''}`.toLowerCase();
+        return sName.includes(journalSearchQuery) || cat.includes(journalSearchQuery) || index.includes(journalSearchQuery) || notesStr.includes(journalSearchQuery);
+    });
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No trade records found. Click "+ Record New Trade" to log your first trade position.</td></tr>`;
+        return;
+    }
+
+    filtered.forEach(trade => {
+        const tr = document.createElement("tr");
+        tr.style.borderBottom = "1px solid var(--border-color)";
+
+        const entryDateFormatted = trade.entryDate ? new Date(trade.entryDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+        const isClosed = trade.status === 'CLOSED';
+        const isWin = isClosed && trade.netPnl > 0;
+        const isLoss = isClosed && trade.netPnl < 0;
+
+        const statusBadge = isClosed ? 
+            (isWin ? `<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);">🏁 Closed (Win)</span>` :
+             isLoss ? `<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4);">🏁 Closed (Loss)</span>` :
+             `<span class="badge" style="background: rgba(148, 163, 184, 0.2); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.4);">🏁 Closed (Flat)</span>`) :
+            `<span class="badge" style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4);">🟢 Open</span>`;
+
+        const marginVal = parseFloat(trade.marginUsed) || 0;
+        const grossPnlVal = parseFloat(trade.grossPnl) || 0;
+        const chargesVal = (parseFloat(trade.charges?.brokerage) || 0) + (parseFloat(trade.charges?.sttAndTaxes) || 0);
+        const netPnlVal = parseFloat(trade.netPnl) || 0;
+        const roiVal = parseFloat(trade.roiPct) || 0;
+
+        const netPnlColor = netPnlVal > 0 ? '#34d399' : netPnlVal < 0 ? '#fca5a5' : 'var(--text-primary)';
+        const roiColor = roiVal > 0 ? '#c084fc' : roiVal < 0 ? '#fca5a5' : 'var(--text-secondary)';
+
+        tr.innerHTML = `
+            <td>
+                <strong style="color: var(--text-primary); font-size: 0.88rem; display: block;">${trade.strategyName}</strong>
+                <span style="font-size: 0.74rem; color: var(--text-secondary);">${entryDateFormatted} • ${trade.index}</span>
+            </td>
+            <td>
+                <span class="badge monthly" style="font-size: 0.72rem;">${trade.sheet || trade.category || 'Strategy'}</span>
+            </td>
+            <td>${statusBadge}</td>
+            <td style="font-weight: 600;">₹ ${marginVal.toLocaleString('en-IN')}</td>
+            <td style="font-weight: 600; color: ${grossPnlVal > 0 ? '#34d399' : grossPnlVal < 0 ? '#fca5a5' : 'inherit'};">₹ ${grossPnlVal.toLocaleString('en-IN')}</td>
+            <td style="color: var(--text-secondary);">₹ ${chargesVal.toLocaleString('en-IN')}</td>
+            <td style="font-weight: 700; font-size: 0.92rem; color: ${netPnlColor};">₹ ${netPnlVal.toLocaleString('en-IN')}</td>
+            <td style="font-weight: 700; font-size: 0.92rem; color: ${roiColor};">${isClosed ? `${roiVal.toFixed(2)}%` : '-'}</td>
+            <td style="text-align: center;">
+                <div style="display: flex; gap: 0.3rem; justify-content: center;">
+                    ${!isClosed ? `<button onclick="openTradeExitModal('${trade.id}')" class="admin-btn add" style="padding: 0.25rem 0.55rem; font-size: 0.74rem; background: #10b981; border-color: #059669;">🏁 Exit</button>` : ''}
+                    <button onclick="editTradeRecord('${trade.id}')" class="admin-btn edit" style="padding: 0.25rem 0.55rem; font-size: 0.74rem;">✏️ Edit</button>
+                    <button onclick="deleteTradeRecord('${trade.id}')" class="admin-btn logout" style="padding: 0.25rem 0.55rem; font-size: 0.74rem; background: rgba(239,68,68,0.15); color: #fca5a5; border-color: rgba(239,68,68,0.3);">🗑️</button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function openNewTradeModal() {
+    document.getElementById("trade-id-input").value = "";
+    document.getElementById("trade-modal-title").innerText = "📔 Record New Trade";
+    document.getElementById("trade-margin-input").value = "250000";
+    document.getElementById("trade-entry-notes").value = "";
+    document.getElementById("trade-psychology-notes").value = "";
+
+    // Set default entry date to current local datetime
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById("trade-entry-date").value = now.toISOString().slice(0, 16);
+
+    // Populate strategy dropdown
+    const select = document.getElementById("trade-strategy-select");
+    select.innerHTML = "";
+    
+    const strats = window.strategiesData || [];
+    strats.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.id;
+        const catLabel = s.strategy_category === 'discretionary' ? '🎯 Discretionary' : s.strategy_category === 'adjustments' ? '🛠️ Adjustment' : '⚡ 0 Adj';
+        opt.innerText = `${s.name} (${catLabel} • ${s.index})`;
+        select.appendChild(opt);
+    });
+
+    if (strats.length > 0) {
+        onTradeStrategySelect(strats[0].id);
+    }
+
+    document.getElementById("trade-modal").style.display = "flex";
+}
+
+function closeTradeModal() {
+    document.getElementById("trade-modal").style.display = "none";
+}
+
+function onTradeStrategySelect(strategyId) {
+    const strat = (window.strategiesData || []).find(s => s.id === strategyId);
+    if (!strat) return;
+
+    document.getElementById("trade-index-display").value = `${strat.index} • ${strat.sheet || 'Monthly'} (${strat.strategy_category || '0_adjustment'})`;
+
+    // Populate default legs
+    const tbody = document.getElementById("trade-legs-tbody");
+    tbody.innerHTML = "";
+
+    let legCounter = 1;
+    const defaultLotSize = strat.index.includes("Bank Nifty") ? 15 : strat.index.includes("Sensex") ? 10 : 25;
+
+    const addLegRow = (action, optType, strikeText) => {
+        let parsedStrike = 25000;
+        if (strat.index.includes("Bank Nifty")) parsedStrike = 57500;
+        if (strat.index.includes("Sensex")) parsedStrike = 85000;
+
+        const matchNum = (strikeText || '').match(/\d+/);
+        if (matchNum) parsedStrike = parseInt(matchNum[0]);
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>
+                <select class="leg-action" style="padding: 0.25rem; font-weight: 700;">
+                    <option value="BUY" ${action === 'BUY' ? 'selected' : ''}>BUY</option>
+                    <option value="SELL" ${action === 'SELL' ? 'selected' : ''}>SELL</option>
+                </select>
+            </td>
+            <td>
+                <select class="leg-type" style="padding: 0.25rem;">
+                    <option value="CE" ${optType === 'CE' ? 'selected' : ''}>CE</option>
+                    <option value="PE" ${optType === 'PE' ? 'selected' : ''}>PE</option>
+                </select>
+            </td>
+            <td><input type="number" class="leg-strike" value="${parsedStrike}" step="50" style="width: 85px; font-weight: 700;"></td>
+            <td><input type="number" class="leg-qty" value="${defaultLotSize}" step="${defaultLotSize}" style="width: 70px;"></td>
+            <td><input type="number" class="leg-entry-price" value="100.00" step="0.5" style="width: 80px; font-weight: 600;"></td>
+            <td style="text-align: center;"><button type="button" onclick="this.closest('tr').remove()" style="background: none; border: none; cursor: pointer; font-size: 1rem;">🗑️</button></td>
+        `;
+        tbody.appendChild(tr);
+    };
+
+    if (strat.strike_example) {
+        if (strat.strike_example.CE) {
+            strat.strike_example.CE.forEach(leg => addLegRow(leg.includes("Sell") ? "SELL" : "BUY", "CE", leg));
+        }
+        if (strat.strike_example.PE) {
+            strat.strike_example.PE.forEach(leg => addLegRow(leg.includes("Sell") ? "SELL" : "BUY", "PE", leg));
+        }
+    }
+
+    if (tbody.children.length === 0) {
+        addLegRow("BUY", "CE", "ATM 25000");
+    }
+}
+
+function addTradeLegRow() {
+    const tbody = document.getElementById("trade-legs-tbody");
+    if (!tbody) return;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+        <td>
+            <select class="leg-action" style="padding: 0.25rem; font-weight: 700;">
+                <option value="BUY">BUY</option>
+                <option value="SELL">SELL</option>
+            </select>
+        </td>
+        <td>
+            <select class="leg-type" style="padding: 0.25rem;">
+                <option value="CE">CE</option>
+                <option value="PE">PE</option>
+            </select>
+        </td>
+        <td><input type="number" class="leg-strike" value="25000" step="50" style="width: 85px; font-weight: 700;"></td>
+        <td><input type="number" class="leg-qty" value="25" step="25" style="width: 70px;"></td>
+        <td><input type="number" class="leg-entry-price" value="100.00" step="0.5" style="width: 80px; font-weight: 600;"></td>
+        <td style="text-align: center;"><button type="button" onclick="this.closest('tr').remove()" style="background: none; border: none; cursor: pointer; font-size: 1rem;">🗑️</button></td>
+    `;
+    tbody.appendChild(tr);
+}
+
+async function saveTradeFromModal(e) {
+    e.preventDefault();
+
+    const tradeId = document.getElementById("trade-id-input").value || `trade_${Date.now()}`;
+    const strategyId = document.getElementById("trade-strategy-select").value;
+    const strat = (window.strategiesData || []).find(s => s.id === strategyId) || {};
+    const marginUsed = parseFloat(document.getElementById("trade-margin-input").value) || 250000;
+    const entryDate = document.getElementById("trade-entry-date").value;
+    const entryNotes = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(document.getElementById("trade-entry-notes").value) : document.getElementById("trade-entry-notes").value;
+    const psychologyNotes = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(document.getElementById("trade-psychology-notes").value) : document.getElementById("trade-psychology-notes").value;
+
+    const legRows = document.querySelectorAll("#trade-legs-tbody tr");
+    const legs = [];
+
+    legRows.forEach((row, idx) => {
+        const action = row.querySelector(".leg-action").value;
+        const optionType = row.querySelector(".leg-type").value;
+        const strike = parseFloat(row.querySelector(".leg-strike").value) || 0;
+        const quantity = parseFloat(row.querySelector(".leg-qty").value) || 0;
+        const entryPrice = parseFloat(row.querySelector(".leg-entry-price").value) || 0;
+
+        legs.push({
+            legId: idx + 1,
+            action,
+            optionType,
+            strike,
+            quantity,
+            entryPrice
+        });
+    });
+
+    if (legs.length === 0) {
+        if (typeof showToast === 'function') showToast("Please add at least 1 option leg to the trade.", "warning");
+        return;
+    }
+
+    const tradePayload = {
+        id: tradeId,
+        strategyId,
+        strategyName: strat.name || 'Custom Trade',
+        category: strat.strategy_category || '0_adjustment',
+        sheet: strat.sheet || 'Monthly',
+        index: strat.index || 'Nifty',
+        status: 'OPEN',
+        marginUsed,
+        entryDate,
+        legs,
+        notes: {
+            entry: entryNotes,
+            psychology: psychologyNotes
+        }
+    };
+
+    try {
+        const response = await fetch('/api/journal', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'save_trade', data: tradePayload })
+        });
+        const resJson = await response.json();
+        if (response.ok) {
+            if (typeof showToast === 'function') showToast("💾 Trade record saved to journal!", "success");
+            closeTradeModal();
+            fetchUserTradesData();
+        } else {
+            if (typeof showToast === 'function') showToast(resJson.error || "Failed to save trade", "error");
+        }
+    } catch (err) {
+        if (typeof showToast === 'function') showToast("Network error saving trade record", "error");
+    }
+}
+
+function openTradeExitModal(tradeId) {
+    const trade = userTradesData.find(t => t.id === tradeId);
+    if (!trade) return;
+
+    document.getElementById("exit-trade-id").value = trade.id;
+    document.getElementById("exit-margin-display").value = `₹ ${(trade.marginUsed || 0).toLocaleString('en-IN')}`;
+
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById("exit-date-input").value = now.toISOString().slice(0, 16);
+
+    const tbody = document.getElementById("exit-legs-tbody");
+    tbody.innerHTML = "";
+
+    (trade.legs || []).forEach(leg => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><strong>${leg.action} ${leg.strike} ${leg.optionType}</strong></td>
+            <td>₹ ${leg.entryPrice}</td>
+            <td>${leg.quantity}</td>
+            <td><input type="number" class="exit-price-input" data-legid="${leg.legId}" value="${leg.entryPrice}" step="0.5" style="width: 100px; font-weight: 700;"></td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById("trade-exit-modal").style.display = "flex";
+}
+
+function closeTradeExitModal() {
+    document.getElementById("trade-exit-modal").style.display = "none";
+}
+
+async function confirmTradeExit(e) {
+    e.preventDefault();
+
+    const tradeId = document.getElementById("exit-trade-id").value;
+    const exitDate = document.getElementById("exit-date-input").value;
+    const brokerage = parseFloat(document.getElementById("exit-brokerage-input").value) || 0;
+    const sttAndTaxes = parseFloat(document.getElementById("exit-stt-input").value) || 0;
+    const exitNotes = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(document.getElementById("exit-notes-input").value) : document.getElementById("exit-notes-input").value;
+
+    const exitInputs = document.querySelectorAll(".exit-price-input");
+    const legs = [];
+    exitInputs.forEach(input => {
+        legs.push({
+            legId: parseInt(input.dataset.legid),
+            exitPrice: parseFloat(input.value) || 0
+        });
+    });
+
+    const exitPayload = {
+        id: tradeId,
+        exitDate,
+        legs,
+        charges: { brokerage, sttAndTaxes },
+        notes: { exit: exitNotes }
+    };
+
+    try {
+        const response = await fetch('/api/journal', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'exit_trade', data: exitPayload })
+        });
+        const resJson = await response.json();
+        if (response.ok) {
+            if (typeof showToast === 'function') showToast(`🏁 Trade position closed! Net P&L: ₹ ${resJson.trade.netPnl.toLocaleString('en-IN')} (${resJson.trade.roiPct.toFixed(2)}% RoI)`, "success");
+            closeTradeExitModal();
+            fetchUserTradesData();
+        } else {
+            if (typeof showToast === 'function') showToast(resJson.error || "Failed to exit trade", "error");
+        }
+    } catch (err) {
+        if (typeof showToast === 'function') showToast("Network error closing trade position", "error");
+    }
+}
+
+async function deleteTradeRecord(tradeId) {
+    if (!confirm("Are you sure you want to delete this trade record from your journal?")) return;
+
+    try {
+        const response = await fetch('/api/journal', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete_trade', data: { id: tradeId } })
+        });
+        const resJson = await response.json();
+        if (response.ok) {
+            if (typeof showToast === 'function') showToast("🗑️ Trade record deleted", "success");
+            fetchUserTradesData();
+        } else {
+            if (typeof showToast === 'function') showToast(resJson.error || "Failed to delete trade", "error");
+        }
+    } catch (err) {
+        if (typeof showToast === 'function') showToast("Network error deleting trade record", "error");
+    }
+}
+
+
+/* ==========================================================================
+   MULTI-LEVEL ROI & PERFORMANCE ANALYTICS ENGINE
+   ========================================================================== */
+
+function renderAnalyticsView() {
+    const timeframeSelect = document.getElementById("analytics-timeframe-select");
+    const timeframe = timeframeSelect ? timeframeSelect.value : "monthly";
+
+    const closedTrades = userTradesData.filter(t => t.status === 'CLOSED');
+
+    let totalNetPnl = 0;
+    let totalMarginUsed = 0;
+    let totalWins = 0;
+    let totalGrossProfit = 0;
+    let totalGrossLoss = 0;
+    let totalCharges = 0;
+
+    closedTrades.forEach(t => {
+        const net = parseFloat(t.netPnl) || 0;
+        const gross = parseFloat(t.grossPnl) || 0;
+        const margin = parseFloat(t.marginUsed) || 0;
+        const charges = (parseFloat(t.charges?.brokerage) || 0) + (parseFloat(t.charges?.sttAndTaxes) || 0);
+
+        totalNetPnl += net;
+        totalMarginUsed += margin;
+        totalCharges += charges;
+
+        if (net > 0) {
+            totalWins += 1;
+            totalGrossProfit += gross;
+        } else if (net < 0) {
+            totalGrossLoss += Math.abs(gross);
+        }
+    });
+
+    const totalClosed = closedTrades.length;
+    const winRate = totalClosed > 0 ? (totalWins / totalClosed) * 100 : 0;
+    const portfolioRoi = totalMarginUsed > 0 ? (totalNetPnl / totalMarginUsed) * 100 : 0;
+    const profitFactor = totalGrossLoss > 0 ? (totalGrossProfit / totalGrossLoss) : (totalGrossProfit > 0 ? 99.99 : 0);
+
+    // Populate Top KPI Cards
+    const kpiNet = document.getElementById("analytics-kpi-net-pnl");
+    const kpiRoi = document.getElementById("analytics-kpi-roi");
+    const kpiWin = document.getElementById("analytics-kpi-winrate");
+    const kpiPf = document.getElementById("analytics-kpi-pf");
+    const kpiCharges = document.getElementById("analytics-kpi-charges");
+
+    if (kpiNet) {
+        kpiNet.innerText = `₹ ${totalNetPnl.toLocaleString('en-IN')}`;
+        kpiNet.style.color = totalNetPnl >= 0 ? "#34d399" : "#fca5a5";
+    }
+    if (kpiRoi) {
+        kpiRoi.innerText = `${portfolioRoi.toFixed(2)}%`;
+        kpiRoi.style.color = portfolioRoi >= 0 ? "#c084fc" : "#fca5a5";
+    }
+    if (kpiWin) kpiWin.innerText = `${winRate.toFixed(1)}%`;
+    if (kpiPf) kpiPf.innerText = profitFactor.toFixed(2);
+    if (kpiCharges) kpiCharges.innerText = `₹ ${totalCharges.toLocaleString('en-IN')}`;
+
+    // 1. Render Category / Sheet Level RoI Breakdown Table
+    const catTbody = document.getElementById("analytics-category-tbody");
+    if (catTbody) {
+        catTbody.innerHTML = "";
+        const categories = [
+            { id: "Monthly", name: "Monthly Strategies" },
+            { id: "BiWkly", name: "Bi-Weekly & Weekly Strategies" },
+            { id: "STBT", name: "STBT Strategies" },
+            { id: "discretionary", name: "Discretionary & Adjustments" }
+        ];
+
+        categories.forEach(cat => {
+            const catTrades = closedTrades.filter(t => 
+                (t.sheet === cat.id) || (t.category === cat.id) || (cat.id === 'discretionary' && (t.category === 'discretionary' || t.category === 'adjustments'))
+            );
+
+            let catMargin = 0;
+            let catNet = 0;
+            let catWins = 0;
+
+            catTrades.forEach(t => {
+                catMargin += parseFloat(t.marginUsed) || 0;
+                catNet += parseFloat(t.netPnl) || 0;
+                if (t.netPnl > 0) catWins += 1;
+            });
+
+            const catTotal = catTrades.length;
+            const catWinRate = catTotal > 0 ? (catWins / catTotal) * 100 : 0;
+            const catRoi = catMargin > 0 ? (catNet / catMargin) * 100 : 0;
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td><strong>${cat.name}</strong></td>
+                <td>${catTotal}</td>
+                <td>${catWinRate.toFixed(1)}%</td>
+                <td>₹ ${catMargin.toLocaleString('en-IN')}</td>
+                <td style="font-weight: 700; color: ${catNet >= 0 ? '#34d399' : '#fca5a5'};">₹ ${catNet.toLocaleString('en-IN')}</td>
+                <td style="font-weight: 700; color: ${catRoi >= 0 ? '#c084fc' : '#fca5a5'};">${catRoi.toFixed(2)}%</td>
+            `;
+            catTbody.appendChild(tr);
+        });
+    }
+
+    // 2. Render Strategy Level RoI Breakdown Table
+    const stratTbody = document.getElementById("analytics-strategy-tbody");
+    if (stratTbody) {
+        stratTbody.innerHTML = "";
+        const stratMap = {};
+
+        closedTrades.forEach(t => {
+            const sName = t.strategyName || 'Custom';
+            if (!stratMap[sName]) {
+                stratMap[sName] = { name: sName, category: t.sheet || t.category || 'Strategy', trades: 0, wins: 0, margin: 0, netPnl: 0 };
+            }
+            stratMap[sName].trades += 1;
+            if (t.netPnl > 0) stratMap[sName].wins += 1;
+            stratMap[sName].margin += parseFloat(t.marginUsed) || 0;
+            stratMap[sName].netPnl += parseFloat(t.netPnl) || 0;
+        });
+
+        const stratList = Object.values(stratMap);
+        if (stratList.length === 0) {
+            stratTbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 1.5rem; color: var(--text-secondary);">No closed trades recorded yet for strategy-level analysis.</td></tr>`;
+        } else {
+            stratList.forEach(s => {
+                const sWinRate = (s.wins / s.trades) * 100;
+                const sRoi = s.margin > 0 ? (s.netPnl / s.margin) * 100 : 0;
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td><strong>${s.name}</strong></td>
+                    <td><span class="badge monthly" style="font-size: 0.72rem;">${s.category}</span></td>
+                    <td>${s.trades}</td>
+                    <td>${s.winRate.toFixed(1)}%</td>
+                    <td>₹ ${s.margin.toLocaleString('en-IN')}</td>
+                    <td style="font-weight: 700; color: ${s.netPnl >= 0 ? '#34d399' : '#fca5a5'};">₹ ${s.netPnl.toLocaleString('en-IN')}</td>
+                    <td style="font-weight: 700; color: ${sRoi >= 0 ? '#c084fc' : '#fca5a5'};">${sRoi.toFixed(2)}%</td>
+                `;
+                stratTbody.appendChild(tr);
+            });
+        }
+    }
+
+    // 3. Render Timeframe Breakdown Table
+    const tfTbody = document.getElementById("analytics-timeframe-tbody");
+    if (tfTbody) {
+        tfTbody.innerHTML = "";
+        const periodMap = {};
+
+        closedTrades.forEach(t => {
+            const dateObj = t.exitDate ? new Date(t.exitDate) : new Date(t.entryDate);
+            let key = dateObj.toISOString().slice(0, 7); // Default YYYY-MM
+
+            if (timeframe === 'daily') {
+                key = dateObj.toISOString().slice(0, 10);
+            } else if (timeframe === 'weekly') {
+                const oneJan = new Date(dateObj.getFullYear(), 0, 1);
+                const weekNum = Math.ceil((((dateObj - oneJan) / 86400000) + oneJan.getDay() + 1) / 7);
+                key = `${dateObj.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+            } else if (timeframe === 'quarterly') {
+                const q = Math.floor(dateObj.getMonth() / 3) + 1;
+                key = `${dateObj.getFullYear()}-Q${q}`;
+            } else if (timeframe === 'annual') {
+                key = `${dateObj.getFullYear()}`;
+            }
+
+            if (!periodMap[key]) {
+                periodMap[key] = { period: key, trades: 0, wins: 0, margin: 0, gross: 0, charges: 0, net: 0 };
+            }
+
+            periodMap[key].trades += 1;
+            if (t.netPnl > 0) periodMap[key].wins += 1;
+            periodMap[key].margin += parseFloat(t.marginUsed) || 0;
+            periodMap[key].gross += parseFloat(t.grossPnl) || 0;
+            periodMap[key].charges += (parseFloat(t.charges?.brokerage) || 0) + (parseFloat(t.charges?.sttAndTaxes) || 0);
+            periodMap[key].net += parseFloat(t.netPnl) || 0;
+        });
+
+        const periodList = Object.values(periodMap).sort((a, b) => b.period.localeCompare(a.period));
+        if (periodList.length === 0) {
+            tfTbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 1.5rem; color: var(--text-secondary);">No closed trade data available for ${timeframe} timeframe.</td></tr>`;
+        } else {
+            periodList.forEach(p => {
+                const pWinRate = (p.wins / p.trades) * 100;
+                const pRoi = p.margin > 0 ? (p.net / p.margin) * 100 : 0;
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td><strong>${p.period}</strong></td>
+                    <td>${p.trades}</td>
+                    <td>${pWinRate.toFixed(1)}%</td>
+                    <td>₹ ${p.margin.toLocaleString('en-IN')}</td>
+                    <td style="color: ${p.gross >= 0 ? '#34d399' : '#fca5a5'};">₹ ${p.gross.toLocaleString('en-IN')}</td>
+                    <td style="color: var(--text-secondary);">₹ ${p.charges.toLocaleString('en-IN')}</td>
+                    <td style="font-weight: 700; color: ${p.net >= 0 ? '#34d399' : '#fca5a5'};">₹ ${p.net.toLocaleString('en-IN')}</td>
+                    <td style="font-weight: 700; color: ${pRoi >= 0 ? '#c084fc' : '#fca5a5'};">${pRoi.toFixed(2)}%</td>
+                `;
+                tfTbody.appendChild(tr);
+            });
+        }
+    }
+}
+
 // Reverted PDF generation feature

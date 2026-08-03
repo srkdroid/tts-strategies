@@ -83,11 +83,14 @@
                     </div>
                 </div>
             </div>
-            <!-- View Mode Toggle (Calendar, Capital Flow & Capital Planner - Admin Only) -->
+            <!-- View Mode Toggle -->
             <div class="view-mode-toggle">
                 <button id="mode-calendar-btn" class="toggle-btn" onclick="switchViewMode('calendar')">📅 Calendar</button>
                 <button id="mode-flow-btn" class="toggle-btn active" onclick="switchViewMode('flow')">📊 Capital Flow</button>
                 <button id="mode-planner-btn" class="toggle-btn" style="display: none;" onclick="switchViewMode('planner')">💰 Capital Planner</button>
+                <button id="mode-catalog-btn" class="toggle-btn" onclick="switchViewMode('catalog')">📖 Strategy Catalog</button>
+                <button id="mode-journal-btn" class="toggle-btn" onclick="switchViewMode('journal')">📔 Trade Journal</button>
+                <button id="mode-analytics-btn" class="toggle-btn" onclick="switchViewMode('analytics')">📈 Analytics</button>
             </div>
         </section>
 
@@ -349,6 +352,8 @@
                                     <select id="editor-note-category" onchange="onNoteCategoryChange(this.value)">
                                         <option value="Generic">Generic / Master Note</option>
                                         <option value="Strategy">Strategy Specific Note</option>
+                                        <option value="Discretionary">Discretionary Strategy Note</option>
+                                        <option value="Adjustments">Adjustment Guidelines Note</option>
                                     </select>
                                 </div>
                                 <div class="form-group" id="editor-strategy-select-group" style="display: none;">
@@ -375,6 +380,187 @@
                             </div>
                         </div>
                     </section>
+                </div>
+            </article>
+        </main>
+
+        <!-- 1. Strategy Catalog View Container -->
+        <main class="calendars-grid" id="catalog-view-container" style="display: none;">
+            <article class="month-container" style="max-width: 100%;">
+                <div class="month-header-row" style="flex-wrap: wrap; gap: 1rem; justify-content: space-between;">
+                    <div>
+                        <h2 class="month-title">📖 Strategy Master Catalog</h2>
+                        <span style="font-size: 0.8rem; color: var(--text-secondary);">Explore all 0-Adjustment, Discretionary, and Adjustment strategies</span>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button class="admin-btn edit active" id="catalog-filter-all" onclick="filterCatalogCategory('all')">All Strategies</button>
+                        <button class="admin-btn edit" id="catalog-filter-0_adjustment" onclick="filterCatalogCategory('0_adjustment')">⚡ 0 Adjustment</button>
+                        <button class="admin-btn edit" id="catalog-filter-discretionary" onclick="filterCatalogCategory('discretionary')">🎯 Discretionary</button>
+                        <button class="admin-btn edit" id="catalog-filter-adjustments" onclick="filterCatalogCategory('adjustments')">🛠️ Adjustments</button>
+                    </div>
+                </div>
+                <div id="catalog-cards-grid" class="catalog-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; margin-top: 1.2rem;">
+                    <!-- Populated dynamically by JS -->
+                </div>
+            </article>
+        </main>
+
+        <!-- 2. Trade Journal View Container -->
+        <main class="calendars-grid" id="journal-view-container" style="display: none;">
+            <article class="month-container" style="max-width: 100%;">
+                <div class="month-header-row" style="flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 class="month-title">📔 Trade Journal</h2>
+                        <span style="font-size: 0.8rem; color: var(--text-secondary);">Record and manage live execution trades across all strategy categories</span>
+                    </div>
+                    <div style="display: flex; gap: 0.6rem; align-items: center;">
+                        <button onclick="openNewTradeModal()" class="admin-btn add" style="font-size: 0.85rem; padding: 0.5rem 1rem;">+ Record New Trade</button>
+                    </div>
+                </div>
+
+                <!-- Journal Status Tabs & Search -->
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin: 1.2rem 0; background: rgba(0,0,0,0.2); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button id="journal-tab-all" class="admin-btn edit active" onclick="filterJournalTab('all')">All Trades</button>
+                        <button id="journal-tab-open" class="admin-btn edit" onclick="filterJournalTab('OPEN')">🟢 Open Positions</button>
+                        <button id="journal-tab-closed" class="admin-btn edit" onclick="filterJournalTab('CLOSED')">🏁 Closed Trades</button>
+                    </div>
+                    <input type="text" id="journal-search-input" placeholder="🔍 Search trade notes, strategy, index..." oninput="onJournalSearchInput(this.value)" style="padding: 0.45rem 0.8rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-primary); font-size: 0.85rem; min-width: 250px;">
+                </div>
+
+                <!-- Trades Table Container -->
+                <div class="table-container planner-table-container">
+                    <table class="admin-table planner-table">
+                        <thead>
+                            <tr>
+                                <th>Date & Strategy</th>
+                                <th>Category / Sheet</th>
+                                <th>Status</th>
+                                <th>Margin (₹)</th>
+                                <th>Gross P&L (₹)</th>
+                                <th>Charges (₹)</th>
+                                <th>Net P&L (₹)</th>
+                                <th>Realized RoI %</th>
+                                <th style="text-align: center;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="journal-trades-tbody">
+                            <!-- Populated dynamically by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+        </main>
+
+        <!-- 3. Performance Analytics View Container -->
+        <main class="calendars-grid" id="analytics-view-container" style="display: none;">
+            <article class="month-container" style="max-width: 100%;">
+                <div class="month-header-row" style="flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 class="month-title">📈 Performance & RoI Analytics</h2>
+                        <span style="font-size: 0.8rem; color: var(--text-secondary);">Multi-level RoI, Win Rate, and P&L analysis across Daily, Weekly, Monthly, Quarterly, & Annual timeframes</span>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">Timeframe:</span>
+                        <select id="analytics-timeframe-select" onchange="renderAnalyticsView()" style="padding: 0.45rem 0.8rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-primary); font-weight: 600; font-size: 0.85rem;">
+                            <option value="monthly">Monthly</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="daily">Daily</option>
+                            <option value="quarterly">Quarterly</option>
+                            <option value="annual">Annually</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Key Performance Metric Cards -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1.2rem 0;">
+                    <div class="planner-kpi-card" style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 1rem; text-align: center;">
+                        <span style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; color: #a7f3d0; font-weight: 700; display: block; margin-bottom: 0.3rem;">Total Realized Net P&L</span>
+                        <h3 id="analytics-kpi-net-pnl" style="margin: 0; font-size: 1.5rem; color: #34d399; font-weight: 800;">₹ 0</h3>
+                    </div>
+
+                    <div class="planner-kpi-card" style="background: rgba(168, 85, 247, 0.12); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 10px; padding: 1rem; text-align: center;">
+                        <span style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; color: #e9d5ff; font-weight: 700; display: block; margin-bottom: 0.3rem;">Portfolio Realized RoI %</span>
+                        <h3 id="analytics-kpi-roi" style="margin: 0; font-size: 1.5rem; color: #c084fc; font-weight: 800;">0.00%</h3>
+                    </div>
+
+                    <div class="planner-kpi-card" style="background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 10px; padding: 1rem; text-align: center;">
+                        <span style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; color: #bfdbfe; font-weight: 700; display: block; margin-bottom: 0.3rem;">Win Rate %</span>
+                        <h3 id="analytics-kpi-winrate" style="margin: 0; font-size: 1.5rem; color: #60a5fa; font-weight: 800;">0.0%</h3>
+                    </div>
+
+                    <div class="planner-kpi-card" style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 1rem; text-align: center;">
+                        <span style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; color: #fde68a; font-weight: 700; display: block; margin-bottom: 0.3rem;">Profit Factor</span>
+                        <h3 id="analytics-kpi-pf" style="margin: 0; font-size: 1.5rem; color: #fbbf24; font-weight: 800;">0.00</h3>
+                    </div>
+
+                    <div class="planner-kpi-card" style="background: rgba(148, 163, 184, 0.12); border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 10px; padding: 1rem; text-align: center;">
+                        <span style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; color: #cbd5e1; font-weight: 700; display: block; margin-bottom: 0.3rem;">Brokerage & Taxes</span>
+                        <h3 id="analytics-kpi-charges" style="margin: 0; font-size: 1.5rem; color: #94a3b8; font-weight: 800;">₹ 0</h3>
+                    </div>
+                </div>
+
+                <!-- 1. Category / Sheet Level RoI Breakdown -->
+                <h3 style="margin: 1.5rem 0 0.6rem 0; font-size: 1.1rem; color: var(--text-primary);">📊 Category Level RoI Breakdown (Monthly, Bi-Weekly, STBT, Discretionary)</h3>
+                <div class="table-container planner-table-container">
+                    <table class="admin-table planner-table">
+                        <thead>
+                            <tr>
+                                <th>Category / Sheet</th>
+                                <th>Total Closed Trades</th>
+                                <th>Win Rate %</th>
+                                <th>Peak Margin Used (₹)</th>
+                                <th>Total Net P&L (₹)</th>
+                                <th>Category Realized RoI %</th>
+                            </tr>
+                        </thead>
+                        <tbody id="analytics-category-tbody">
+                            <!-- Populated dynamically by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 2. Strategy Level RoI Breakdown -->
+                <h3 style="margin: 1.8rem 0 0.6rem 0; font-size: 1.1rem; color: var(--text-primary);">🎯 Strategy Level Performance & RoI</h3>
+                <div class="table-container planner-table-container">
+                    <table class="admin-table planner-table">
+                        <thead>
+                            <tr>
+                                <th>Strategy Name</th>
+                                <th>Category</th>
+                                <th>Closed Trades</th>
+                                <th>Win Rate %</th>
+                                <th>Margin Used (₹)</th>
+                                <th>Net P&L (₹)</th>
+                                <th>Strategy Realized RoI %</th>
+                            </tr>
+                        </thead>
+                        <tbody id="analytics-strategy-tbody">
+                            <!-- Populated dynamically by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 3. Timeframe Performance Breakdown -->
+                <h3 style="margin: 1.8rem 0 0.6rem 0; font-size: 1.1rem; color: var(--text-primary);">🗓️ Timeframe Performance Breakdown</h3>
+                <div class="table-container planner-table-container">
+                    <table class="admin-table planner-table">
+                        <thead>
+                            <tr>
+                                <th>Period</th>
+                                <th>Closed Trades</th>
+                                <th>Win Rate %</th>
+                                <th>Margin Utilized (₹)</th>
+                                <th>Gross P&L (₹)</th>
+                                <th>Charges (₹)</th>
+                                <th>Net P&L (₹)</th>
+                                <th>Timeframe Realized RoI %</th>
+                            </tr>
+                        </thead>
+                        <tbody id="analytics-timeframe-tbody">
+                            <!-- Populated dynamically by JS -->
+                        </tbody>
+                    </table>
                 </div>
             </article>
         </main>
@@ -963,6 +1149,162 @@
                 </div>
 
             </div>
+        </div>
+    </div>
+
+    <!-- New / Edit Trade Journal Modal -->
+    <div id="trade-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 720px; width: 94vw;">
+            <div class="modal-header">
+                <div>
+                    <h2 id="trade-modal-title" style="margin: 0; font-size: 1.3rem;">📔 Record New Trade</h2>
+                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Select a strategy to auto-populate legs, customize quantities, and record margin</span>
+                </div>
+                <button class="close-btn" onclick="closeTradeModal()">&times;</button>
+            </div>
+            
+            <form id="trade-form" onsubmit="saveTradeFromModal(event)" class="modal-body" style="display: flex; flex-direction: column; gap: 1rem; padding: 1rem 0;">
+                <input type="hidden" id="trade-id-input">
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="trade-strategy-select">Select Strategy *</label>
+                        <select id="trade-strategy-select" required onchange="onTradeStrategySelect(this.value)" style="width: 100%; padding: 0.5rem; border-radius: 6px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); font-weight: 600;">
+                            <!-- Populated dynamically by JS -->
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trade-margin-input">Margin Used (₹) *</label>
+                        <input type="number" id="trade-margin-input" placeholder="e.g. 250000" step="1000" min="0" required style="width: 100%; font-weight: 700;">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="trade-entry-date">Entry Date & Time *</label>
+                        <input type="datetime-local" id="trade-entry-date" required style="width: 100%;">
+                    </div>
+                    <div class="form-group">
+                        <label for="trade-index-display">Strategy Index & Category</label>
+                        <input type="text" id="trade-index-display" readonly style="width: 100%; opacity: 0.8; background: rgba(0,0,0,0.15);">
+                    </div>
+                </div>
+
+                <!-- Legs Setup Section -->
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <label style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary); margin: 0;">Option Legs & Entry Execution *</label>
+                        <button type="button" onclick="addTradeLegRow()" class="admin-btn edit" style="padding: 0.25rem 0.6rem; font-size: 0.78rem;">+ Add Extra Leg</button>
+                    </div>
+                    
+                    <div class="table-container" style="max-height: 220px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px;">
+                        <table class="admin-table" style="font-size: 0.82rem;">
+                            <thead>
+                                <tr>
+                                    <th>Action</th>
+                                    <th>Option</th>
+                                    <th>Strike Price</th>
+                                    <th>Qty (Shares)</th>
+                                    <th>Entry Price (₹)</th>
+                                    <th style="width: 40px; text-align: center;">Del</th>
+                                </tr>
+                            </thead>
+                            <tbody id="trade-legs-tbody">
+                                <!-- Dynamically populated legs -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Notes Section -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="trade-entry-notes">Entry Rationale Notes</label>
+                        <textarea id="trade-entry-notes" rows="3" placeholder="Why was this trade entered? (e.g. VIX condition met, support bounce)..." style="width: 100%; box-sizing: border-box; font-size: 0.83rem; padding: 0.5rem;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="trade-psychology-notes">Mindset & Psychology Notes</label>
+                        <textarea id="trade-psychology-notes" rows="3" placeholder="How did you feel executing? (Calm, FOMO, hesitant, disciplined)..." style="width: 100%; box-sizing: border-box; font-size: 0.83rem; padding: 0.5rem;"></textarea>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.5rem;">
+                    <button type="button" onclick="closeTradeModal()" class="admin-btn edit">Cancel</button>
+                    <button type="submit" class="admin-btn add">💾 Save Trade Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Trade Exit Modal -->
+    <div id="trade-exit-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 650px; width: 94vw;">
+            <div class="modal-header">
+                <div>
+                    <h2 style="margin: 0; font-size: 1.3rem;">🏁 Close Trade Position & Log Exit</h2>
+                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Enter leg exit prices and brokerage to compute Net P&L & Realized RoI %</span>
+                </div>
+                <button class="close-btn" onclick="closeTradeExitModal()">&times;</button>
+            </div>
+
+            <form id="trade-exit-form" onsubmit="confirmTradeExit(event)" class="modal-body" style="display: flex; flex-direction: column; gap: 1rem; padding: 1rem 0;">
+                <input type="hidden" id="exit-trade-id">
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="exit-date-input">Exit Date & Time *</label>
+                        <input type="datetime-local" id="exit-date-input" required style="width: 100%;">
+                    </div>
+                    <div class="form-group">
+                        <label for="exit-margin-display">Margin Deployed</label>
+                        <input type="text" id="exit-margin-display" readonly style="width: 100%; font-weight: 700; opacity: 0.85;">
+                    </div>
+                </div>
+
+                <!-- Leg Exit Prices Table -->
+                <div>
+                    <label style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary); display: block; margin-bottom: 0.4rem;">Leg Exit Prices *</label>
+                    <div class="table-container" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px;">
+                        <table class="admin-table" style="font-size: 0.82rem;">
+                            <thead>
+                                <tr>
+                                    <th>Leg Details</th>
+                                    <th>Entry Price</th>
+                                    <th>Qty</th>
+                                    <th>Exit Price (₹) *</th>
+                                </tr>
+                            </thead>
+                            <tbody id="exit-legs-tbody">
+                                <!-- Dynamically populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Charges & Taxes -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="exit-brokerage-input">Estimated Brokerage (₹)</label>
+                        <input type="number" id="exit-brokerage-input" value="160" step="10" min="0" required style="width: 100%;">
+                    </div>
+                    <div class="form-group">
+                        <label for="exit-stt-input">STT, Exchange & Govt Taxes (₹)</label>
+                        <input type="number" id="exit-stt-input" value="240" step="10" min="0" required style="width: 100%;">
+                    </div>
+                </div>
+
+                <!-- Exit Notes -->
+                <div class="form-group">
+                    <label for="exit-notes-input">Exit Rationale & Post-Trade Review</label>
+                    <textarea id="exit-notes-input" rows="3" placeholder="Why did you exit? (Target hit, SL triggered, time decay, market structure change)..." style="width: 100%; box-sizing: border-box; font-size: 0.83rem; padding: 0.5rem;"></textarea>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.5rem;">
+                    <button type="button" onclick="closeTradeExitModal()" class="admin-btn edit">Cancel</button>
+                    <button type="submit" class="admin-btn add" style="background: #10b981; border-color: #059669;">🏁 Complete Exit & Save P&L</button>
+                </div>
+            </form>
         </div>
     </div>
 
