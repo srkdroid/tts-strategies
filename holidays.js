@@ -59,6 +59,7 @@ function getNextTradingDay(date) {
 
 // Helper to format date as YYYY-MM-DD
 function formatDateString(date) {
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) return "Not Scheduled";
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const d = String(date.getDate()).padStart(2, '0');

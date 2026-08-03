@@ -217,13 +217,20 @@ function openLinkedStrategyModal() {
     if (!note || !note.strategyId) return;
 
     const strats = window.allCalculatedDeployments || [];
-    const dep = strats.find(d => d.strategy.id === note.strategyId);
+    const dep = strats.find(d => d.strategy && d.strategy.id === note.strategyId);
     if (dep && typeof showStrategyDetails === 'function') {
         showStrategyDetails(dep);
     } else if (window.strategiesData) {
         const strat = window.strategiesData.find(s => s.id === note.strategyId);
         if (strat && typeof showStrategyDetails === 'function') {
-            showStrategyDetails({ strategy: strat, actualDate: new Date(), expiryDate: new Date(), nominalDate: new Date(), shifted: false });
+            showStrategyDetails({ 
+                strategy: strat, 
+                isInactiveFallback: true, 
+                actualDate: null, 
+                expiryDate: null, 
+                nominalDate: null, 
+                shifted: false 
+            });
         } else {
             alert("Strategy details not found");
         }

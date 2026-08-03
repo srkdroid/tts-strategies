@@ -884,10 +884,28 @@ function closeWhatsAppSyncModal() {
 
 function updateCalendars() {
     if (currentFlowViewMode === "calendar") {
-        // Render June (Month 5), July (Month 6), August (Month 7) 2026
-        renderCalendar("calendar-june", 2026, 5, allCalculatedDeployments, activeFilters);
-        renderCalendar("calendar-july", 2026, 6, allCalculatedDeployments, activeFilters);
-        renderCalendar("calendar-august", 2026, 7, allCalculatedDeployments, activeFilters);
+        const now = new Date();
+        const curYear = now.getFullYear();
+        const curMonth = now.getMonth(); // 0-indexed (0=Jan, 11=Dec)
+
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        
+        const curTitle = document.getElementById("month-title-current");
+        const nextTitle = document.getElementById("month-title-next");
+        const prevTitle = document.getElementById("month-title-prev");
+
+        if (curTitle) curTitle.innerText = `${monthNames[curMonth]} ${curYear} (Current Month)`;
+        
+        const nextDate = new Date(curYear, curMonth + 1, 1);
+        if (nextTitle) nextTitle.innerText = `${monthNames[nextDate.getMonth()]} ${nextDate.getFullYear()} (Next Month)`;
+
+        const prevDate = new Date(curYear, curMonth - 1, 1);
+        if (prevTitle) prevTitle.innerText = `${monthNames[prevDate.getMonth()]} ${prevDate.getFullYear()} (Previous Month)`;
+
+        // Render Current, Next, Previous month calendars dynamically
+        renderCalendar("calendar-july", curYear, curMonth, allCalculatedDeployments, activeFilters);
+        renderCalendar("calendar-august", nextDate.getFullYear(), nextDate.getMonth(), allCalculatedDeployments, activeFilters);
+        renderCalendar("calendar-june", prevDate.getFullYear(), prevDate.getMonth(), allCalculatedDeployments, activeFilters);
     } else {
         renderCapitalFlow();
     }
@@ -918,6 +936,9 @@ let currentActiveModalDep = null;
 // Determine if a strategy requires 500-multiple or 100-multiple strike selection
 function getStrategyRoundingStep(strategy) {
     if (!strategy) return 50;
+    if (typeof strategy.rounding_step === 'number' && strategy.rounding_step > 0) {
+        return strategy.rounding_step;
+    }
     const allNotesText = [
         strategy.setup && strategy.setup.notes,
         strategy.strike_example && strategy.strike_example.notes,
@@ -1044,8 +1065,13 @@ function showStrategyDetails(dep) {
     document.getElementById("modal-deploy-day").innerText = `${strategy.day} at ${strategy.time}`;
     
     // Target deployment dates
-    document.getElementById("modal-target-date").innerText = formatDateString(dep.actualDate);
-    document.getElementById("modal-expiry-date").innerText = formatDateString(dep.expiryDate);
+    if (dep.isInactiveFallback) {
+        document.getElementById("modal-target-date").innerText = "Not Active in Current Calendar";
+        document.getElementById("modal-expiry-date").innerText = "Not Active in Current Calendar";
+    } else {
+        document.getElementById("modal-target-date").innerText = formatDateString(dep.actualDate);
+        document.getElementById("modal-expiry-date").innerText = formatDateString(dep.expiryDate);
+    }
     
     if (dep.shifted) {
         document.getElementById("modal-holiday-notice").style.display = "block";
@@ -2513,11 +2539,11 @@ function renderCapitalPlannerView() {
                 <td style="padding: 0.8rem; text-align: left;">
                     <span style="display: inline-block; padding: 0.25rem 0.6rem; border-radius: 4px; font-weight: 700; font-size: 0.8rem; ${badgeStyle}">${bucket.name}</span>
                 </td>
-                <td style="padding: 0.8rem; font-weight: 600;">${bucket.targetDeployPct[0]}%</td>
-                <td style="padding: 0.8rem; font-weight: 600;">${bucket.targetDeployPct[1]}%</td>
-                <td style="padding: 0.8rem; font-weight: 600;">${bucket.targetDeployPct[2]}%</td>
-                <td style="padding: 0.8rem; font-weight: 600;">${bucket.targetDeployPct[3]}%</td>
-                <td style="padding: 0.8rem; font-weight: 600;">${bucket.targetDeployPct[4]}%</td>
+                <td style="padding: 0.8rem; font-weight: 600;">${(bucket.targetDeployPct && bucket.targetDeployPct[0] !== undefined) ? bucket.targetDeployPct[0] : 0}%</td>
+                <td style="padding: 0.8rem; font-weight: 600;">${(bucket.targetDeployPct && bucket.targetDeployPct[1] !== undefined) ? bucket.targetDeployPct[1] : 0}%</td>
+                <td style="padding: 0.8rem; font-weight: 600;">${(bucket.targetDeployPct && bucket.targetDeployPct[2] !== undefined) ? bucket.targetDeployPct[2] : 0}%</td>
+                <td style="padding: 0.8rem; font-weight: 600;">${(bucket.targetDeployPct && bucket.targetDeployPct[3] !== undefined) ? bucket.targetDeployPct[3] : 0}%</td>
+                <td style="padding: 0.8rem; font-weight: 600;">${(bucket.targetDeployPct && bucket.targetDeployPct[4] !== undefined) ? bucket.targetDeployPct[4] : 0}%</td>
                 <td style="padding: 0.8rem; font-weight: 700; color: var(--text-primary);">${bucket.avgCapitalPct}%</td>
                 <td style="padding: 0.8rem; text-align: left; font-size: 0.8rem; color: var(--text-secondary);">${bucket.remarks}</td>
             </tr>
@@ -2554,11 +2580,11 @@ function renderCapitalPlannerView() {
         breakdownHtml += `
             <tr style="background: ${bucketHeaderBg}; font-weight: 700; border-top: 2px solid var(--border-color);" class="planner-bucket-row">
                 <td style="padding: 0.75rem 0.8rem; color: ${bucketTextColor}; font-size: 0.9rem;">${bucket.name}</td>
-                <td style="padding: 0.75rem; text-align: center; color: ${bucketTextColor};">${bucket.targetDeployPct[0]}%</td>
-                <td style="padding: 0.75rem; text-align: center; color: ${bucketTextColor};">${bucket.targetDeployPct[1]}%</td>
-                <td style="padding: 0.75rem; text-align: center; color: ${bucketTextColor};">${bucket.targetDeployPct[2]}%</td>
-                <td style="padding: 0.75rem; text-align: center; color: ${bucketTextColor};">${bucket.targetDeployPct[3]}%</td>
-                <td style="padding: 0.75rem; text-align: center; color: ${bucketTextColor};">${bucket.targetDeployPct[4]}%</td>
+                <td style="padding: 0.75rem; text-align: center; color: ${bucketTextColor};">${(bucket.targetDeployPct && bucket.targetDeployPct[0] !== undefined) ? bucket.targetDeployPct[0] : 0}%</td>
+                <td style="padding: 0.75rem; text-align: center; color: ${bucketTextColor};">${(bucket.targetDeployPct && bucket.targetDeployPct[1] !== undefined) ? bucket.targetDeployPct[1] : 0}%</td>
+                <td style="padding: 0.75rem; text-align: center; color: ${bucketTextColor};">${(bucket.targetDeployPct && bucket.targetDeployPct[2] !== undefined) ? bucket.targetDeployPct[2] : 0}%</td>
+                <td style="padding: 0.75rem; text-align: center; color: ${bucketTextColor};">${(bucket.targetDeployPct && bucket.targetDeployPct[3] !== undefined) ? bucket.targetDeployPct[3] : 0}%</td>
+                <td style="padding: 0.75rem; text-align: center; color: ${bucketTextColor};">${(bucket.targetDeployPct && bucket.targetDeployPct[4] !== undefined) ? bucket.targetDeployPct[4] : 0}%</td>
                 <td style="padding: 0.75rem; text-align: center; color: ${bucketTextColor};">${bucket.maxPotentialPct}%</td>
                 <td style="padding: 0.75rem; text-align: right; color: ${bucketTextColor}; font-weight: 700;">₹ ${bucketMaxPotential.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
                 <td style="padding: 0.75rem; text-align: center;">
@@ -2571,11 +2597,12 @@ function renderCapitalPlannerView() {
 
         bucket.strategies.forEach(strat => {
             const stratMaxPotential = (totalCapital * strat.maxProfitPct) / 100;
-            const w1Str = strat.allocationW[0] > 0 ? `${strat.allocationW[0]}%` : "-";
-            const w2Str = strat.allocationW[1] > 0 ? `${strat.allocationW[1]}%` : "-";
-            const w3Str = strat.allocationW[2] > 0 ? `${strat.allocationW[2]}%` : "-";
-            const w4Str = strat.allocationW[3] > 0 ? `${strat.allocationW[3]}%` : "-";
-            const w5Str = strat.allocationW[4] > 0 ? `${strat.allocationW[4]}%` : "-";
+            const alloc = strat.allocationW || [];
+            const w1Str = alloc[0] > 0 ? `${alloc[0]}%` : "-";
+            const w2Str = alloc[1] > 0 ? `${alloc[1]}%` : "-";
+            const w3Str = alloc[2] > 0 ? `${alloc[2]}%` : "-";
+            const w4Str = alloc[3] > 0 ? `${alloc[3]}%` : "-";
+            const w5Str = alloc[4] > 0 ? `${alloc[4]}%` : "-";
 
             breakdownHtml += `
                 <tr style="border-bottom: 1px solid var(--border-color);" class="planner-strat-row" onclick="openPlannerStrategyModal('${strat.appStrategyId}')">
