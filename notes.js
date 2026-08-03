@@ -98,12 +98,18 @@ function renderNotesSidebar() {
     // Group all notes dynamically by their category field
     const grouped = {};
     filtered.forEach(n => {
-        let cat = (n.category || "Generic Notes").trim();
-        if (cat.toUpperCase() === "GENERIC NOTES" || cat.toUpperCase() === "GENERIC") cat = "📌 Generic Notes";
-        else if (cat.toUpperCase() === "STRATEGY NOTES" || cat.toUpperCase() === "STRATEGY" || cat.toUpperCase() === "0_ADJUSTMENT") cat = "⚡ Strategy Notes";
-        else if (cat.toUpperCase() === "DISCRETIONARY" || cat.toUpperCase() === "DISCRETIONARY NOTES") cat = "🎯 Discretionary Notes";
-        else if (cat.toUpperCase() === "ADJUSTMENTS" || cat.toUpperCase() === "REPAIR" || cat.toUpperCase() === "ADJUSTMENT NOTES") cat = "🛠️ Adjustment Notes";
-        else cat = `📁 ${cat}`;
+        let rawCat = (n.category || "Generic").trim();
+        let catUpper = rawCat.toUpperCase();
+        let cat = "";
+        
+        if (catUpper === "GENERIC NOTES" || catUpper === "GENERIC") cat = "📌 Generic";
+        else if (catUpper === "STRATEGY NOTES" || catUpper === "STRATEGY" || catUpper === "0_ADJUSTMENT") cat = "⚡ Strategy";
+        else if (catUpper === "DISCRETIONARY" || catUpper === "DISCRETIONARY NOTES") cat = "🎯 Discretionary";
+        else if (catUpper === "ADJUSTMENTS" || catUpper === "REPAIR" || catUpper === "ADJUSTMENT NOTES") cat = "🛠️ Adjustments";
+        else {
+            let cleanCat = rawCat.replace(/\s+Notes?$/i, "");
+            cat = `📁 ${cleanCat}`;
+        }
 
         if (!grouped[cat]) grouped[cat] = [];
         grouped[cat].push(n);
