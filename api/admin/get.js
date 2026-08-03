@@ -117,6 +117,23 @@ module.exports = async (req, res) => {
                     whitelist[wlRes[i]] = wlRes[i+1];
                 }
             }
+
+            // Fetch user permissions hash from KV
+            var userPermissions = {};
+            try {
+                const permRes = await queryKV(['HGETALL', 'user_permissions']);
+                if (permRes && Array.isArray(permRes) && permRes.length > 0) {
+                    for (let i = 0; i < permRes.length; i += 2) {
+                        try {
+                            userPermissions[permRes[i]] = JSON.parse(permRes[i+1]);
+                        } catch (e) {
+                            userPermissions[permRes[i]] = { catalog: false, journal: false };
+                        }
+                    }
+                }
+            } catch (permErr) {
+                console.warn("Could not fetch user_permissions from KV:", permErr.message);
+            }
         } catch (dbErr) {
             if (dbErr.message === "KV_DATABASE_UNCONNECTED") {
                 dbStatus = "unconnected";
@@ -185,6 +202,7 @@ module.exports = async (req, res) => {
             strategies: strategies || [],
             holidays: holidays || {},
             whitelist: whitelist || {},
+            userPermissions: userPermissions || {},
             auditLogs: auditLogs
         });
 

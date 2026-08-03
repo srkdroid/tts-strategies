@@ -110,6 +110,22 @@ module.exports = async (req, res) => {
             return res.status(401).json({ error: 'Unauthorized. Login required to access Trade Journal.' });
         }
 
+        // Check if user has journal permission enabled
+        let hasJournalAccess = false;
+        try {
+            const permStr = await queryKV(['HGET', 'user_permissions', phone]);
+            if (permStr) {
+                const parsed = JSON.parse(permStr);
+                hasJournalAccess = parsed.journal === true;
+            }
+        } catch (e) {
+            hasJournalAccess = false;
+        }
+
+        if (!hasJournalAccess) {
+            return res.status(403).json({ error: 'Trade Journal access is disabled for your account. Please contact Admin.' });
+        }
+
         const kvKey = `user_trades:${phone}`;
 
         // 1. GET /api/journal -> Fetch all user trades

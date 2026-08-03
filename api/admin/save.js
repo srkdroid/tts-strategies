@@ -215,7 +215,16 @@ module.exports = async (req, res) => {
                 }
                 // HDEL whitelist phone
                 await queryKV(['HDEL', 'whitelist', data.phone.trim()]);
+                await queryKV(['HDEL', 'user_permissions', data.phone.trim()]);
                 return res.status(200).json({ success: true, message: `User ${data.phone} deleted successfully from KV` });
+            } 
+            
+            else if (action === 'save_user_permissions') {
+                if (!data.phone || !data.permissions) {
+                    return res.status(400).json({ error: 'Phone and permissions object are required' });
+                }
+                await queryKV(['HSET', 'user_permissions', data.phone.trim(), JSON.stringify(data.permissions)]);
+                return res.status(200).json({ success: true, message: `Permissions updated for ${data.phone}` });
             } 
             
             else if (action === 'clear_logs') {

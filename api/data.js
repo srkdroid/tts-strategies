@@ -218,11 +218,30 @@ module.exports = async (req, res) => {
             });
         }
 
+        let userPermissions = { catalog: false, journal: false };
+        if (isAdmin) {
+            userPermissions = { catalog: true, journal: true };
+        } else if (userPhone) {
+            try {
+                const permStr = await queryKV(['HGET', 'user_permissions', userPhone]);
+                if (permStr) {
+                    const parsedPerm = JSON.parse(permStr);
+                    userPermissions = {
+                        catalog: parsedPerm.catalog === true,
+                        journal: parsedPerm.journal === true
+                    };
+                }
+            } catch (permErr) {
+                console.warn("User permissions fetch failed:", permErr.message);
+            }
+        }
+
         return res.status(200).json({ 
             strategies: strategiesData || [],
             holidays: holidaysData || {},
             isAdmin: !!isAdmin,
-            userPhone: userPhone || 'Admin'
+            userPhone: userPhone || 'Admin',
+            permissions: userPermissions
         });
 
     } catch (error) {

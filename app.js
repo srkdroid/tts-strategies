@@ -600,6 +600,21 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (userLogoutBtn) userLogoutBtn.style.display = "block";
         }
 
+        window.userPermissions = resJson.permissions || { catalog: false, journal: false };
+
+        const headerCatalogBtn = document.getElementById("header-catalog-btn");
+        const headerJournalBtn = document.getElementById("header-journal-btn");
+
+        const canCatalog = window.isAdminMode || window.userPermissions.catalog === true;
+        const canJournal = window.isAdminMode || window.userPermissions.journal === true;
+
+        if (headerCatalogBtn) {
+            headerCatalogBtn.style.display = canCatalog ? "inline-flex" : "none";
+        }
+        if (headerJournalBtn) {
+            headerJournalBtn.style.display = canJournal ? "inline-flex" : "none";
+        }
+
         const userInfoDisplay = document.getElementById("user-info-display");
         const userPhoneNumber = document.getElementById("user-phone-number");
         if (userPhoneNumber && resJson.userPhone) {
@@ -1599,6 +1614,7 @@ async function fetchAdminDbData() {
         if (!response.ok) return;
         const resJson = await response.json();
         whitelistData = resJson.whitelist || {};
+        userPermissionsData = resJson.userPermissions || {};
         auditLogsData = resJson.auditLogs || [];
         if (logsSortKey) {
             applyLogsSort();
@@ -1853,6 +1869,32 @@ async function clearAuthLogs() {
     }
 }
 
+let userPermissionsData = {};
+
+function toggleUserPermission(phone, feature, isChecked) {
+    if (!userPermissionsData[phone]) {
+        userPermissionsData[phone] = { catalog: false, journal: false };
+    }
+    userPermissionsData[phone][feature] = isChecked;
+
+    fetch('/api/admin/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            action: 'save_user_permissions',
+            data: { phone, permissions: userPermissionsData[phone] }
+        })
+    }).then(res => res.json()).then(resJson => {
+        if (resJson.success) {
+            if (typeof showToast === 'function') showToast(`Updated ${feature} access for ${phone}`, "success");
+        } else {
+            if (typeof showToast === 'function') showToast(resJson.error || "Failed to update permission", "error");
+        }
+    }).catch(e => {
+        if (typeof showToast === 'function') showToast("Network error updating permission", "error");
+    });
+}
+
 function renderWhitelistTable() {
     const tbody = document.getElementById("whitelist-table-body");
     if (!tbody) return;
@@ -1907,9 +1949,24 @@ function renderWhitelistTable() {
         tdStatus.appendChild(toggleBtn);
         tr.appendChild(tdStatus);
         
+        // Catalog Access Checkbox
+        const tdCatalog = document.createElement("td");
+        tdCatalog.style.textAlign = "center";
+        const catPerm = (userPermissionsData[phone] && userPermissionsData[phone].catalog) === true;
+        tdCatalog.innerHTML = `<label style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; font-weight: 600; color: ${catPerm ? '#34d399' : 'var(--text-secondary)'};"><input type="checkbox" ${catPerm ? 'checked' : ''} onchange="toggleUserPermission('${phone}', 'catalog', this.checked)"> Catalog</label>`;
+        tr.appendChild(tdCatalog);
+
+        // Journal Access Checkbox
+        const tdJournal = document.createElement("td");
+        tdJournal.style.textAlign = "center";
+        const journalPerm = (userPermissionsData[phone] && userPermissionsData[phone].journal) === true;
+        tdJournal.innerHTML = `<label style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; font-weight: 600; color: ${journalPerm ? '#34d399' : 'var(--text-secondary)'};"><input type="checkbox" ${journalPerm ? 'checked' : ''} onchange="toggleUserPermission('${phone}', 'journal', this.checked)"> Journal</label>`;
+        tr.appendChild(tdJournal);
+
         const tdAction = document.createElement("td");
         tdAction.style.display = "flex";
         tdAction.style.gap = "0.5rem";
+        tdAction.style.justifyContent = "flex-end";
         
         const delBtn = document.createElement("button");
         delBtn.className = "admin-btn logout";
@@ -2246,6 +2303,18 @@ async function logoutUser() {
 /* ─── Capital Flow Timeline View Helpers ──────────────────────────────────── */
 
 function switchViewMode(mode) {
+    const canCatalog = window.isAdminMode || (window.userPermissions && window.userPermissions.catalog === true);
+    const canJournal = window.isAdminMode || (window.userPermissions && window.userPermissions.journal === true);
+
+    if (mode === "catalog" && !canCatalog) {
+        if (typeof showToast === 'function') showToast("Strategy Catalog access is reserved for authorized accounts.", "warning");
+        mode = "calendar";
+    }
+    if (mode === "journal" && !canJournal) {
+        if (typeof showToast === 'function') showToast("Trade Journal access is reserved for authorized accounts.", "warning");
+        mode = "calendar";
+    }
+
     currentFlowViewMode = mode;
     
     const calendarBtn = document.getElementById("mode-calendar-btn");
