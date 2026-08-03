@@ -267,6 +267,19 @@ header {
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
+/* Select Option Dropdown Menu Item Visibility & High Contrast Fix */
+select option {
+    background-color: #1e293b;
+    color: #f8fafc;
+    padding: 0.5rem;
+    font-weight: 600;
+}
+
+.light-theme select option {
+    background-color: #ffffff;
+    color: #0f172a;
+}
+
 .filter-group select:focus {
     border-color: #3b82f6;
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
