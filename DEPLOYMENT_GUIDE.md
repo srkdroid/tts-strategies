@@ -1,6 +1,6 @@
-# 🚀 TTS Strategy Calendar — Production Deployment Guide
+# 🚀 TTS Strategy Calendar — Production Deployment & Setup Guide
 
-This guide details the complete end-to-end deployment process for launching the **TTS Strategy Calendar & Capital Allocation System** to production, starting **only with the source code repository hosted on GitHub**.
+This guide details the complete end-to-end deployment process for launching the **TTS Strategy Calendar, Trade Journal & Capital Allocation System** to production on Vercel backed by Upstash Redis.
 
 ---
 
@@ -10,15 +10,15 @@ This guide details the complete end-to-end deployment process for launching the 
 3. [Step 2: Create & Configure Telegram Bot (`@BotFather`)](#step-2-create--configure-telegram-bot-botfather)
 4. [Step 3: Deploy Project on Vercel](#step-3-deploy-project-on-vercel)
 5. [Step 4: Register Telegram Webhook Endpoint](#step-4-register-telegram-webhook-endpoint)
-6. [Step 5: Custom Domain & SSL Configuration](#step-5-custom-domain--ssl-configuration)
-7. [Step 6: Post-Deployment Verification & Smoke Testing](#step-6-post-deployment-verification--smoke-testing)
+6. [Step 5: Post-Deployment Initial Whitelist & Permission Setup](#step-5-post-deployment-initial-whitelist--permission-setup)
+7. [Step 6: Custom Domain & SSL Configuration](#step-6-custom-domain--ssl-configuration)
 8. [Step 7: Ongoing Maintenance & Incident Recovery](#step-7-ongoing-maintenance--incident-recovery)
 
 ---
 
 ## 1. Prerequisites & Account Setup
 
-Before starting deployment, ensure you have accounts created for the following free services:
+Before starting deployment, ensure you have active accounts for the following free/standard services:
 
 - **GitHub Account:** Access to repository `srkdroid/tts-strategies`.
 - **Vercel Account:** [Vercel Sign-Up](https://vercel.com/signup) (free Hobby or Pro account).
@@ -29,7 +29,7 @@ Before starting deployment, ensure you have accounts created for the following f
 
 ## Step 1: Provision Upstash Redis Database
 
-Upstash Redis handles user sessions, transient Telegram login tokens, user whitelists (phone numbers & 6-digit PINs), notes data, and login audit trails.
+Upstash Redis handles user sessions, transient Telegram login tokens, user whitelists (phone numbers & 6-digit PINs), per-user feature permission flags (`user_permissions`), trade journal logs (`user_trades:<phone>`), strategy notes data, and login audit trails.
 
 1. Log into [Upstash Console](https://console.upstash.com/).
 2. Click **Create Database**.
@@ -39,8 +39,8 @@ Upstash Redis handles user sessions, transient Telegram login tokens, user white
 6. Click **Create**.
 7. Once created, scroll down to the **REST API** section under **Details**.
 8. Copy and save the following two credentials:
-   - `UPSTASH_REDIS_REST_URL` (e.g. `https://vital-snake-31234.upstash.io`)
-   - `UPSTASH_REDIS_REST_TOKEN` (e.g. `AX...`)
+   - `KV_REST_API_URL` (e.g. `https://vital-snake-31234.upstash.io`)
+   - `KV_REST_API_TOKEN` (e.g. `AX...`)
 
 ---
 
@@ -71,16 +71,16 @@ Vercel hosts the static HTML5/CSS/JS frontend assets and executes the Node.js Se
    - **Root Directory:** `./`
    - **Build Command:** *(Leave empty)*
    - **Output Directory:** `.`
-5. Expand **Environment Variables** and add the following 6 key-value pairs:
+5. Expand **Environment Variables** and add the following key-value pairs:
 
-| Key | Value Description | Example Value |
-|---|---|---|
-| `JWT_SECRET` | 32+ character random string for signing user tokens | `TTS_STRATEGIES_SECURE_KEY_2026_JULY` |
-| `ADMIN_JWT_SECRET` | 32+ character random string for admin sessions | `TTS_STRATEGIES_ADMIN_SECURE_KEY_2026` |
-| `ADMIN_PASSWORD` | Master password to access `/admin.html` | `YourMasterAdminPassword123!` |
-| `TELEGRAM_BOT_TOKEN` | API Token from `@BotFather` | `7123456789:AAE...` |
-| `KV_REST_API_URL` | Upstash Redis REST URL | `https://vital-snake-31234.upstash.io` |
-| `KV_REST_API_TOKEN` | Upstash Redis REST Token | `AX...` |
+| Key | Required | Value Description | Example Value |
+|---|---|---|---|
+| `JWT_SECRET` | **Yes** | 32+ character random string for signing user tokens | `TTS_STRATEGIES_SECURE_KEY_2026_JULY` |
+| `ADMIN_JWT_SECRET` | **Yes** | 32+ character random string for admin sessions | `TTS_STRATEGIES_ADMIN_SECURE_KEY_2026` |
+| `ADMIN_PASSWORD` | **Yes** | Master password to access `/admin.html` & Admin features | `YourMasterAdminPassword123!` |
+| `TELEGRAM_BOT_TOKEN` | **Yes** | API Token from `@BotFather` | `7123456789:AAE...` |
+| `KV_REST_API_URL` | **Yes** | Upstash Redis REST URL | `https://vital-snake-31234.upstash.io` |
+| `KV_REST_API_TOKEN` | **Yes** | Upstash Redis REST Token | `AX...` |
 
 6. Click **Deploy**.
 7. Wait 30–45 seconds for Vercel to complete building and deploying. Copy your live Vercel deployment URL (e.g., `https://tts-strategies.vercel.app`).
@@ -98,98 +98,35 @@ curl -X POST "https://api.telegram.org/bot<BOT_TOKEN>/setWebhook" \
      -H "Content-Type: application/json" \
      -d '{"url": "https://<VERCEL_URL>/api/telegram-webhook"}'
 ```
-
-*Example Execution:*
-```bash
-curl -X POST "https://api.telegram.org/bot7123456789:AAE.../setWebhook" \
-     -H "Content-Type: application/json" \
-     -d '{"url": "https://tts-strategies.vercel.app/api/telegram-webhook"}'
-```
-
-*Expected Success Response:*
-```json
-{"ok": true, "result": true, "description": "Webhook was set"}
-```
-
-To verify the webhook status at any time, open this URL in your web browser:
-```text
-https://api.telegram.org/bot<BOT_TOKEN>/getWebhookInfo
-```
+*Expected Output:* `{"ok":true,"result":true,"description":"Webhook was set"}`
 
 ---
 
-## Step 5: Custom Domain & SSL Configuration
+## Step 5: Post-Deployment Initial Whitelist & Permission Setup
 
-If you own a custom domain (e.g., `tts-strategies.com` or `app.yourdomain.com`):
-
-1. In Vercel Dashboard, go to **Project Settings > Domains**.
-2. Type your domain name and click **Add**.
-3. In your DNS provider (Cloudflare, GoDaddy, Namecheap, Google Domains):
-   - For Apex Domain (`yourdomain.com`): Add an **A Record** pointing `@` to `76.76.21.21`.
-   - For Subdomain (`app.yourdomain.com`): Add a **CNAME Record** pointing `app` to `cname.vercel-dns.com`.
-4. Vercel automatically provisions SSL certificates via Let's Encrypt within 60 seconds.
-5. If using a custom domain, re-register your Telegram webhook URL with the custom domain:
-   ```bash
-   curl -X POST "https://api.telegram.org/bot<BOT_TOKEN>/setWebhook" \
-        -H "Content-Type: application/json" \
-        -d '{"url": "https://app.yourdomain.com/api/telegram-webhook"}'
-   ```
+1. **Access Admin Portal:**
+   Navigate to `https://<YOUR-VERCEL-URL>/admin.html` and log in using your `ADMIN_PASSWORD`.
+2. **Import Whitelist & Initial Sync:**
+   - Click **🔄 Sync from Codebase** to populate the Redis `whitelist` hash with initial phone numbers from `whitelist.json`.
+   - Alternatively, tap **📱 Sync WhatsApp Group** to pull group members from OpenWA REST API.
+3. **Configure User Permissions:**
+   - Go to the **Whitelisted Users** tab.
+   - For each user who should have access to `Strategy Catalog` or `Trade Journal`, check the corresponding boxes (`[x] Catalog` / `[x] Journal`).
+   - Changes save automatically to Redis (`user_permissions` hash).
 
 ---
 
-## Step 6: Post-Deployment Verification & Smoke Testing
+## Step 6: Custom Domain & SSL Configuration
 
-Execute this smoke test suite to confirm 100% operational status:
-
-### 🧪 Test 1: Admin Portal Login & Seed Data Setup
-1. Navigate to `https://<YOUR-DOMAIN>/admin.html`.
-2. Enter your `ADMIN_PASSWORD`.
-3. Verify access to the Admin Dashboard.
-4. Add your phone number (e.g. `+919876543210`) and a 6-digit PIN under **User Whitelist Management**.
-
-### 🧪 Test 2: Telegram QR & Contact Authentication
-1. Open `https://<YOUR-DOMAIN>/login.html` in an Incognito window.
-2. Click **Verify on Telegram**.
-3. Open the Telegram link and click **Start** in Telegram.
-4. Tap **📱 Verify Phone Number**.
-5. Confirm that the browser automatically detects successful verification, sets the HTTP-only cookie, and redirects to `/index.html`.
-
-### 🧪 Test 3: 6-Digit PIN Authentication
-1. Open `https://<YOUR-DOMAIN>/loginpin.html`.
-2. Enter your registered phone number and 6-digit PIN.
-3. Confirm successful login and redirection to `/index.html`.
-
-### 🧪 Test 4: Master Calendar & Index Filters
-1. In `/index.html`, select index filters (`Nifty`, `Bank Nifty`, `Fin Nifty`, `Sensex`).
-2. Verify calendar deployment tiles render with exact dates and holiday badges.
-
-### 🧪 Test 5: Knowledge Base & Notes System
-1. Click **📖 Strategy Notes** in the top header.
-2. Verify generic guidelines and strategy blueprints render in markdown.
-3. Test editing or adding a note as Admin.
-
-### 🧪 Test 6: Capital Allocation & Expected RoI Planner
-1. Ensure you are logged in as Admin.
-2. Click **`💰 Capital Planner`** in the view toggle bar.
-3. Verify the 5-week deployment matrix and strategy breakdown table render accurately.
-4. Change capital base (e.g., ₹ 50,00,000) and verify real-time recalculation.
+1. In Vercel Console, open your project -> **Settings** -> **Domains**.
+2. Add your custom domain (e.g., `tts.yourdomain.com`).
+3. Configure your DNS provider with the CNAME/A records provided by Vercel.
+4. Update your Telegram Bot webhook URL if using a custom domain.
 
 ---
 
 ## Step 7: Ongoing Maintenance & Incident Recovery
 
-### 💾 Backup Strategy Data
-Admins can download a complete backup of parsed strategies at any time:
-1. Open `/admin.html`.
-2. Click **Export Strategies (`strategies.js`)**.
-3. Save the file locally or commit it to GitHub.
-
-### 🔄 Secret Rotation Protocol
-If credentials are compromised:
-1. Update `ADMIN_PASSWORD`, `JWT_SECRET`, or `ADMIN_JWT_SECRET` in Vercel Environment Variables.
-2. Click **Redeploy** in Vercel Dashboard. All existing sessions will automatically expire, requiring users to log in again.
-
----
-
-### 🎉 Production Ready!
-Your **TTS Strategy Calendar System** is fully deployed, secured, and ready for live production use!
+- **Export Database Backup:** Periodically open `/admin.html` -> **Whitelisted Users** and click `📥 Export JSON` to backup `whitelist.json`.
+- **Clear Audit Logs:** In Admin panel -> **Auth Audit Logs**, tap `🗑️ Clear Logs` if log size reaches 1,000 entries.
+- **Force Re-sync Database:** In Admin panel -> **Database Sync**, tap `🔄 Force Re-sync Vercel KV` to force-sync strategies, holidays, and whitelist from codebase.
