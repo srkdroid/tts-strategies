@@ -1622,15 +1622,34 @@ select:focus-visible,
     border: 1px solid var(--border-color);
 }
 
-/* Left Sidebar (25%) */
+/* Left Sidebar (Resizable) */
 .notes-sidebar {
-    width: 28%;
-    min-width: 260px;
-    max-width: 320px;
+    width: 280px;
+    min-width: 180px;
+    max-width: 650px;
     background: rgba(0, 0, 0, 0.25);
     border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
+    flex-shrink: 0;
+}
+
+/* Sidebar Resizer Handle */
+.notes-resizer {
+    width: 6px;
+    cursor: col-resize;
+    background: var(--border-color);
+    transition: background 0.15s, width 0.15s;
+    user-select: none;
+    -webkit-user-select: none;
+    z-index: 10;
+    flex-shrink: 0;
+}
+
+.notes-resizer:hover,
+.notes-resizer.resizing {
+    background: #a855f7;
+    width: 8px;
 }
 
 .notes-sidebar-header {

@@ -117,13 +117,7 @@ function renderNotesSidebar() {
                 itemTitle.className = "note-sidebar-item-title";
                 itemTitle.innerText = n.title;
 
-                const itemMeta = document.createElement("div");
-                itemMeta.className = "note-sidebar-item-meta";
-                const dateStr = n.updatedAt ? new Date(n.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-                itemMeta.innerText = dateStr;
-
                 item.appendChild(itemTitle);
-                item.appendChild(itemMeta);
                 groupDiv.appendChild(item);
             });
         }
@@ -444,4 +438,60 @@ function jumpToStrategyNote() {
             if (typeof showToast === 'function') showToast(`No strategy notes available yet for ${strat.name}.`, "info");
         }
     }
+}
+
+// Dynamic drag-to-resize support for notes sidebar panel
+function setupNotesSidebarResizer() {
+    const resizer = document.getElementById("notes-resizer");
+    const sidebar = document.querySelector(".notes-sidebar");
+    if (!resizer || !sidebar) return;
+
+    let isResizing = false;
+    let startX = 0;
+    let startWidth = 0;
+
+    const startDrag = (clientX) => {
+        isResizing = true;
+        startX = clientX;
+        startWidth = sidebar.getBoundingClientRect().width;
+        resizer.classList.add("resizing");
+        document.body.style.cursor = "col-resize";
+        document.body.style.userSelect = "none";
+    };
+
+    const doDrag = (clientX) => {
+        if (!isResizing) return;
+        const dx = clientX - startX;
+        const newWidth = Math.max(180, Math.min(650, startWidth + dx));
+        sidebar.style.width = `${newWidth}px`;
+    };
+
+    const stopDrag = () => {
+        if (isResizing) {
+            isResizing = false;
+            resizer.classList.remove("resizing");
+            document.body.style.cursor = "";
+            document.body.style.userSelect = "";
+        }
+    };
+
+    // Mouse Events
+    resizer.addEventListener("mousedown", (e) => startDrag(e.clientX));
+    document.addEventListener("mousemove", (e) => doDrag(e.clientX));
+    document.addEventListener("mouseup", stopDrag);
+
+    // Touch Events
+    resizer.addEventListener("touchstart", (e) => {
+        if (e.touches.length === 1) startDrag(e.touches[0].clientX);
+    });
+    document.addEventListener("touchmove", (e) => {
+        if (e.touches.length === 1) doDrag(e.touches[0].clientX);
+    });
+    document.addEventListener("touchend", stopDrag);
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupNotesSidebarResizer);
+} else {
+    setupNotesSidebarResizer();
 }
