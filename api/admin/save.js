@@ -17,7 +17,7 @@ function verifyAdminToken(token) {
         if (signature !== expectedSignature) return null;
         
         const { role, expires } = JSON.parse(data);
-        if (role !== 'admin' || Date.now() > expires) return null;
+        if (role !== 'admin' || !expires || Date.now() > expires) return null;
         return true;
     } catch (e) {
         return null;
@@ -219,13 +219,7 @@ module.exports = async (req, res) => {
             } 
             
             else if (action === 'clear_logs') {
-                try {
-                    await queryKV(['DEL', 'auth_audit_logs']);
-                } catch (dbErr) {
-                    console.warn("DB offline during logs clear, proceeding with local fallback file reset.");
-                }
-                const logsPath = path.join(process.cwd(), 'auth_logs.json');
-                fs.writeFileSync(logsPath, '[]', 'utf8');
+                await queryKV(['DEL', 'auth_audit_logs']);
                 return res.status(200).json({ success: true, message: 'Logs cleared successfully' });
             } 
             
@@ -240,33 +234,7 @@ module.exports = async (req, res) => {
                 
                 const whitelistPath = path.join(process.cwd(), 'whitelist.json');
                 
-                if (action === 'save_user') {
-                    let whitelist = {};
-                    if (fs.existsSync(whitelistPath)) {
-                        try {
-                            whitelist = JSON.parse(fs.readFileSync(whitelistPath, 'utf8'));
-                        } catch (e) {
-                            whitelist = {};
-                        }
-                    }
-                    whitelist[data.phone.trim()] = data.pin.trim();
-                    fs.writeFileSync(whitelistPath, JSON.stringify(whitelist, null, 2), 'utf8');
-                    return res.status(200).json({ success: true, message: `User ${data.phone} saved successfully to local file (KV offline)` });
-                }
-                
-                if (action === 'delete_user') {
-                    let whitelist = {};
-                    if (fs.existsSync(whitelistPath)) {
-                        try {
-                            whitelist = JSON.parse(fs.readFileSync(whitelistPath, 'utf8'));
-                        } catch (e) {
-                            whitelist = {};
-                        }
-                    }
-                    delete whitelist[data.phone.trim()];
-                    fs.writeFileSync(whitelistPath, JSON.stringify(whitelist, null, 2), 'utf8');
-                    return res.status(200).json({ success: true, message: `User ${data.phone} deleted successfully from local file (KV offline)` });
-                }
+
                 
                 return res.status(400).json({ 
                     error: 'Database is not connected to your Vercel project. Please link a Vercel KV database in your Vercel settings to enable editing.' 

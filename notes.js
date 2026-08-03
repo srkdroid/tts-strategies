@@ -182,7 +182,7 @@ function selectNote(noteId) {
     // Render Markdown using marked.js
     const renderedContainer = document.getElementById("note-rendered-content");
     if (typeof marked !== 'undefined' && marked.parse) {
-        renderedContainer.innerHTML = marked.parse(note.content || "");
+        renderedContainer.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(marked.parse(note.content || "")) : marked.parse(note.content || "");
     } else {
         renderedContainer.innerText = note.content || "";
     }
@@ -291,7 +291,7 @@ function updateEditorLivePreview() {
     const preview = document.getElementById("editor-live-preview");
     if (preview) {
         if (typeof marked !== 'undefined' && marked.parse) {
-            preview.innerHTML = marked.parse(raw || "");
+            preview.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(marked.parse(raw || "")) : marked.parse(raw || "");
         } else {
             preview.innerText = raw || "";
         }

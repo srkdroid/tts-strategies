@@ -2,6 +2,25 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
+// --- Rate Limiting ---
+const rateLimitMap = new Map();
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+function checkRateLimit(key) {
+    const now = Date.now();
+    const entry = rateLimitMap.get(key);
+    if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+        rateLimitMap.set(key, { windowStart: now, count: 1 });
+        return true; // allowed
+    }
+    entry.count++;
+    if (entry.count > RATE_LIMIT_MAX) {
+        return false; // blocked
+    }
+    return true; // allowed
+}
+
 const SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' && !process.env.VERCEL ? 'TTS_STRATEGIES_SECURE_KEY_2026_JULY' : undefined);
 if (!SECRET) {
     throw new Error("JWT_SECRET environment variable is missing");
@@ -61,16 +80,7 @@ async function logAuthEvent(phone, method) {
         await queryKV(['LPUSH', 'auth_audit_logs', JSON.stringify(logEntry)]);
         await queryKV(['LTRIM', 'auth_audit_logs', '0', '999']);
     } catch (e) {
-        const logsPath = path.join(process.cwd(), 'auth_logs.json');
-        let logs = [];
-        if (fs.existsSync(logsPath)) {
-            try {
-                logs = JSON.parse(fs.readFileSync(logsPath, 'utf8'));
-            } catch (err) {}
-        }
-        logs.unshift(logEntry);
-        if (logs.length > 100) logs = logs.slice(0, 100);
-        fs.writeFileSync(logsPath, JSON.stringify(logs, null, 4), 'utf8');
+        console.warn('Auth audit log write failed (KV offline):', e.message);
     }
 }
 
@@ -102,6 +112,12 @@ module.exports = async (req, res) => {
     if (req.method !== 'POST') {
         res.setHeader('Allow', ['POST']);
         return res.status(405).json({ error: 'Method Not Allowed' });
+    }
+
+    // Rate limit by IP
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
+    if (!checkRateLimit(`pin:${clientIp}`)) {
+        return res.status(429).json({ error: 'Too many login attempts. Please try again in 15 minutes.' });
     }
 
     try {

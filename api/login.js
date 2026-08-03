@@ -36,16 +36,7 @@ async function logAuthEvent(phone, method) {
         await queryKV(['LPUSH', 'auth_audit_logs', JSON.stringify(logEntry)]);
         await queryKV(['LTRIM', 'auth_audit_logs', '0', '999']);
     } catch (e) {
-        const logsPath = path.join(process.cwd(), 'auth_logs.json');
-        let logs = [];
-        if (fs.existsSync(logsPath)) {
-            try {
-                logs = JSON.parse(fs.readFileSync(logsPath, 'utf8'));
-            } catch (err) {}
-        }
-        logs.unshift(logEntry);
-        if (logs.length > 100) logs = logs.slice(0, 100);
-        fs.writeFileSync(logsPath, JSON.stringify(logs, null, 4), 'utf8');
+        console.warn('Auth audit log write failed (KV offline):', e.message);
     }
 }
 
@@ -209,7 +200,7 @@ module.exports = async (req, res) => {
 
             // B. Standard production flow: generate Telegram OTP token
             // Generate a secure 6-digit random token
-            const token = Math.floor(100000 + Math.random() * 900000).toString();
+            const token = crypto.randomInt(100000, 1000000).toString();
 
             const botUsername = process.env.TELEGRAM_BOT_USERNAME || 'TTSStrategiesBot';
 

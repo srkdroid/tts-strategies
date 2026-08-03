@@ -64,6 +64,16 @@ module.exports = async (req, res) => {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
+    // Verify Telegram webhook secret token
+    const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+    if (webhookSecret) {
+        const incomingSecret = req.headers['x-telegram-bot-api-secret-token'];
+        if (incomingSecret !== webhookSecret) {
+            console.warn('Webhook request rejected: invalid or missing secret token');
+            return res.status(403).json({ error: 'Forbidden: Invalid webhook secret' });
+        }
+    }
+
     try {
         const update = req.body || {};
         const message = update.message;
@@ -151,8 +161,8 @@ module.exports = async (req, res) => {
                     const pin = await queryKV(['HGET', 'whitelist', contactPhone]);
                     if (pin) whitelisted = true;
                 } catch (e) {
-                    // Local fallback mock
-                    whitelisted = true; 
+                    console.error('Whitelist check failed (KV error):', e.message);
+                    whitelisted = false; // Fail-closed: deny access on database error
                 }
 
                 if (whitelisted) {

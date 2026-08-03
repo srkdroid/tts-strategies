@@ -17,7 +17,7 @@ function verifyToken(token) {
         if (signature !== expectedSignature) return null;
         
         const { phone, expires } = JSON.parse(data);
-        if (Date.now() > expires) return null; // Expired
+        if (!expires || Date.now() > expires) return null; // Expired
         return phone;
     } catch (e) {
         return null;
@@ -40,7 +40,7 @@ function verifyAdminToken(token) {
         if (signature !== expectedSignature) return false;
         
         const parsed = JSON.parse(data);
-        if (parsed.expires < Date.now()) return false;
+        if (!parsed.expires || parsed.expires < Date.now()) return false;
         return parsed.role === 'admin';
     } catch (e) {
         return false;

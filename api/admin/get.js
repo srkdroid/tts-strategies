@@ -17,7 +17,7 @@ function verifyAdminToken(token) {
         if (signature !== expectedSignature) return null;
         
         const { role, expires } = JSON.parse(data);
-        if (role !== 'admin' || Date.now() > expires) return null;
+        if (role !== 'admin' || !expires || Date.now() > expires) return null;
         return true;
     } catch (e) {
         return null;

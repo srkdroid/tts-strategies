@@ -814,6 +814,15 @@ header {
     outline: none;
 }
 
+.admin-btn:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+.nav-tab:focus-visible {
+    outline: 2px solid #a855f7;
+    outline-offset: 2px;
+}
+
 .admin-btn:hover {
     background: rgba(255, 255, 255, 0.1);
 }

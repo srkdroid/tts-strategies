@@ -15,7 +15,7 @@ function verifyToken(token) {
         if (signature !== expectedSignature) return null;
         
         const { phone, expires } = JSON.parse(data);
-        if (Date.now() > expires) return null;
+        if (!expires || Date.now() > expires) return null;
         return phone;
     } catch (e) {
         return null;

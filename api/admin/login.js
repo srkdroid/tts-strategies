@@ -1,5 +1,24 @@
 const crypto = require('crypto');
 
+// --- Rate Limiting ---
+const rateLimitMap = new Map();
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+function checkRateLimit(key) {
+    const now = Date.now();
+    const entry = rateLimitMap.get(key);
+    if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+        rateLimitMap.set(key, { windowStart: now, count: 1 });
+        return true;
+    }
+    entry.count++;
+    if (entry.count > RATE_LIMIT_MAX) {
+        return false;
+    }
+    return true;
+}
+
 const SECRET = process.env.ADMIN_JWT_SECRET || (process.env.NODE_ENV !== 'production' && !process.env.VERCEL ? 'TTS_STRATEGIES_ADMIN_SECURE_KEY_2026' : undefined);
 if (!SECRET) {
     throw new Error("ADMIN_JWT_SECRET environment variable is missing");
@@ -22,6 +41,12 @@ module.exports = (req, res) => {
     if (req.method !== 'POST') {
         res.setHeader('Allow', ['POST']);
         return res.status(455).json({ error: 'Method Not Allowed' });
+    }
+
+    // Rate limit by IP
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
+    if (!checkRateLimit(`admin:${clientIp}`)) {
+        return res.status(429).json({ error: 'Too many login attempts. Please try again in 15 minutes.' });
     }
 
     try {
