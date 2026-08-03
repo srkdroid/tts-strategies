@@ -511,6 +511,12 @@ header {
     box-sizing: border-box;
 }
 
+/* Child & Nested Modals Stacking Context */
+#edit-strategy-modal,
+#whatsapp-sync-modal {
+    z-index: 2000;
+}
+
 .modal-content {
     background: var(--bg-modal-content);
     border: 1px solid var(--border-color);
