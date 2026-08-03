@@ -232,7 +232,7 @@ function openLinkedStrategyModal() {
                 shifted: false 
             });
         } else {
-            alert("Strategy details not found");
+            if (typeof showToast === 'function') showToast("Strategy details not found", "warning");
         }
     }
 }
@@ -351,7 +351,7 @@ async function saveNoteFromEditor() {
     const content = document.getElementById("editor-markdown-input").value;
 
     if (!title) {
-        alert("Please enter a Note Title.");
+        if (typeof showToast === 'function') showToast("Please enter a Note Title.", "warning");
         return;
     }
 
@@ -372,15 +372,15 @@ async function saveNoteFromEditor() {
         });
         const resJson = await response.json();
         if (response.ok) {
-            if (typeof showToast === 'function') showToast("💾 Note saved successfully!");
+            if (typeof showToast === 'function') showToast("💾 Note saved successfully!", "success");
             activeNoteId = notePayload.id;
             await fetchNotesData();
             cancelNoteEdit();
         } else {
-            alert(resJson.error || "Failed to save note");
+            if (typeof showToast === 'function') showToast(resJson.error || "Failed to save note", "error");
         }
     } catch (e) {
-        alert("Network error saving note");
+        if (typeof showToast === 'function') showToast("Network error saving note", "error");
     }
 }
 
@@ -399,14 +399,14 @@ async function deleteCurrentNote() {
         });
         const resJson = await response.json();
         if (response.ok) {
-            if (typeof showToast === 'function') showToast("🗑️ Note deleted!");
+            if (typeof showToast === 'function') showToast("🗑️ Note deleted!", "success");
             activeNoteId = null;
             await fetchNotesData();
         } else {
-            alert(resJson.error || "Failed to delete note");
+            if (typeof showToast === 'function') showToast(resJson.error || "Failed to delete note", "error");
         }
     } catch (e) {
-        alert("Network error deleting note");
+        if (typeof showToast === 'function') showToast("Network error deleting note", "error");
     }
 }
 
@@ -441,7 +441,7 @@ function jumpToStrategyNote() {
                 if (sel) sel.value = strat.id;
             }
         } else {
-            alert(`No strategy notes available yet for ${strat.name}.`);
+            if (typeof showToast === 'function') showToast(`No strategy notes available yet for ${strat.name}.`, "info");
         }
     }
 }

@@ -1,5 +1,27 @@
 // Options Trading Calendar App Logic
 
+// Sleek non-blocking toast notification helper
+function showToast(message, type = 'info', duration = 3500) {
+    let container = document.getElementById("toast-container");
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "toast-container";
+        container.className = "toast-container";
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+    const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
+    toast.innerHTML = `<span style="font-size: 1.1rem;">${icon}</span><span>${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.add("fade-out");
+        setTimeout(() => {
+            if (toast.parentNode) toast.remove();
+        }, 300);
+    }, duration);
+}
+
 // Test prices for strike calculations
 const indexSpotPrices = {
     "Nifty": 25000,
@@ -795,7 +817,7 @@ async function syncWhatsAppGroup() {
 
     if (!sessionId || !groupId) {
         switchDbTab('dispatch');
-        alert("⚠️ Please enter and save your OpenWA Session ID and Group ID in the Dispatch Settings tab first.");
+        showToast("⚠️ Please enter and save your OpenWA Session ID and Group ID in the Dispatch Settings tab first.", "warning");
         return;
     }
 
@@ -815,7 +837,7 @@ async function syncWhatsAppGroup() {
         const resJson = await response.json();
 
         if (!response.ok) {
-            alert(resJson.error || "WhatsApp Sync Failed");
+            showToast(resJson.error || "WhatsApp Sync Failed", "error");
             return;
         }
 
@@ -868,7 +890,7 @@ async function syncWhatsAppGroup() {
 
     } catch (err) {
         console.error("Sync error:", err);
-        alert("Network error executing WhatsApp Sync");
+        showToast("Network error executing WhatsApp Sync", "error");
     } finally {
         if (btn) {
             btn.disabled = false;
@@ -1399,7 +1421,7 @@ async function saveStrategyForm(event) {
     try {
         setup = JSON.parse(document.getElementById("edit-strat-legs").value);
     } catch (e) {
-        alert("Invalid Setup Legs JSON format! Please check brackets and quotes.");
+        showToast("Invalid Setup Legs JSON format! Please check brackets and quotes.", "warning");
         return;
     }
     
@@ -1490,7 +1512,7 @@ async function deleteStrategy(id) {
     const userInput = prompt(`To delete this strategy, please type its name to confirm:\n"${strategy.name}"`);
     if (userInput === null) return; // clicked Cancel
     if (userInput.trim() !== strategy.name) {
-        alert("Incorrect strategy name. Deletion canceled.");
+        showToast("Incorrect strategy name. Deletion canceled.", "warning");
         return;
     }
     
@@ -2015,7 +2037,7 @@ async function addNewHoliday() {
     const nameInput = document.getElementById("new-holiday-name").value.trim();
     
     if (!dateInput || !nameInput) {
-        alert("Please specify both a Date and Holiday Name.");
+        showToast("Please specify both a Date and Holiday Name.", "warning");
         return;
     }
     

@@ -2043,6 +2043,134 @@ select:focus-visible,
     background: #f8fafc !important;
 }
 
+/* ==========================================================================
+   Toast Notification System (CR-22) & Mobile Tuning (Package 3)
+   ========================================================================== */
+.toast-container {
+    position: fixed;
+    top: 1.25rem;
+    right: 1.25rem;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    pointer-events: none;
+}
+
+.toast {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.1rem;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    line-height: 1.4;
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #f8fafc;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+.toast.fade-out {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+}
+
+.toast-success {
+    border-left: 4px solid #10b981;
+    background: rgba(6, 78, 59, 0.92);
+    color: #ecfdf5;
+}
+
+.toast-error {
+    border-left: 4px solid #ef4444;
+    background: rgba(127, 29, 29, 0.92);
+    color: #fef2f2;
+}
+
+.toast-warning {
+    border-left: 4px solid #f59e0b;
+    background: rgba(120, 53, 15, 0.92);
+    color: #fffbeb;
+}
+
+.toast-info {
+    border-left: 4px solid #3b82f6;
+    background: rgba(30, 58, 138, 0.92);
+    color: #eff6ff;
+}
+
+.light-theme .toast {
+    background: rgba(255, 255, 255, 0.96);
+    color: #0f172a;
+    border-color: rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes toastSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-16px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Mobile Responsiveness Polish (< 768px) */
+@media (max-width: 768px) {
+    .toast-container {
+        top: 1rem;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        width: 92vw;
+    }
+
+    .modal-content {
+        width: 94vw !important;
+        max-height: 88vh !important;
+        padding: 1.2rem !important;
+        margin: 0 auto;
+        border-radius: 14px !important;
+    }
+
+    .modal-body {
+        overflow-y: auto;
+        max-height: calc(88vh - 100px);
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .legs-grid, .strike-example-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .dashboard-header {
+        padding: 0.75rem 1rem !important;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .nav-tabs-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 0.4rem;
+    }
+
+    .planner-table-container, .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
 
 
 
