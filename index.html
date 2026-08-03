@@ -383,23 +383,51 @@
             </article>
         </main>
 
-        <!-- 1. Strategy Catalog View Container -->
+        <!-- 1. Strategy Catalog View Container (Cards & Single Line List View) -->
         <main class="calendars-grid" id="catalog-view-container" style="display: none;">
             <article class="month-container" style="max-width: 100%;">
-                <div class="month-header-row" style="flex-wrap: wrap; gap: 1rem; justify-content: space-between;">
+                <div class="month-header-row" style="flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: center;">
                     <div>
                         <h2 class="month-title">📖 Strategy Master Catalog</h2>
                         <span style="font-size: 0.8rem; color: var(--text-secondary);">Explore all 0-Adjustment, Discretionary, and Adjustment strategies</span>
                     </div>
-                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                        <button class="admin-btn edit active" id="catalog-filter-all" onclick="filterCatalogCategory('all')">All Strategies</button>
-                        <button class="admin-btn edit" id="catalog-filter-0_adjustment" onclick="filterCatalogCategory('0_adjustment')">⚡ 0 Adjustment</button>
-                        <button class="admin-btn edit" id="catalog-filter-discretionary" onclick="filterCatalogCategory('discretionary')">🎯 Discretionary</button>
-                        <button class="admin-btn edit" id="catalog-filter-adjustments" onclick="filterCatalogCategory('adjustments')">🛠️ Adjustments</button>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                        <!-- Category Filters -->
+                        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                            <button class="admin-btn edit active" id="catalog-filter-all" onclick="filterCatalogCategory('all')">All Strategies</button>
+                            <button class="admin-btn edit" id="catalog-filter-0_adjustment" onclick="filterCatalogCategory('0_adjustment')">⚡ 0 Adjustment</button>
+                            <button class="admin-btn edit" id="catalog-filter-discretionary" onclick="filterCatalogCategory('discretionary')">🎯 Discretionary</button>
+                            <button class="admin-btn edit" id="catalog-filter-adjustments" onclick="filterCatalogCategory('adjustments')">🛠️ Adjustments</button>
+                        </div>
+                        <!-- View Layout Toggle (Card vs Single Line List) -->
+                        <div class="view-mode-toggle" style="margin: 0; padding: 2px;">
+                            <button id="catalog-layout-cards" class="toggle-btn active" onclick="switchCatalogLayout('cards')" style="padding: 0.35rem 0.75rem; font-size: 0.78rem;">🎴 Card View</button>
+                            <button id="catalog-layout-list" class="toggle-btn" onclick="switchCatalogLayout('list')" style="padding: 0.35rem 0.75rem; font-size: 0.78rem;">📋 Single Line List</button>
+                        </div>
                     </div>
                 </div>
+
+                <!-- A. Card View Grid Container -->
                 <div id="catalog-cards-grid" class="catalog-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; margin-top: 1.2rem;">
                     <!-- Populated dynamically by JS -->
+                </div>
+
+                <!-- B. Single Line List View Container -->
+                <div id="catalog-list-table-container" class="table-container planner-table-container" style="display: none; margin-top: 1.2rem;">
+                    <table class="admin-table planner-table">
+                        <thead>
+                            <tr>
+                                <th>Strategy Name & Category</th>
+                                <th>Index & Expiry</th>
+                                <th>DTE & Entry</th>
+                                <th>Setup Overview (Single Line)</th>
+                                <th style="text-align: center;">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="catalog-list-tbody">
+                            <!-- Populated dynamically by JS -->
+                        </tbody>
+                    </table>
                 </div>
             </article>
         </main>

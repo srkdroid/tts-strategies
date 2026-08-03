@@ -2739,6 +2739,18 @@ function openPlannerStrategyModal(appStrategyId) {
    ========================================================================== */
 
 let activeCatalogFilter = 'all';
+let activeCatalogLayout = 'cards';
+
+function switchCatalogLayout(layout) {
+    activeCatalogLayout = layout;
+    const cardsBtn = document.getElementById("catalog-layout-cards");
+    const listBtn = document.getElementById("catalog-layout-list");
+
+    if (cardsBtn) cardsBtn.classList.toggle("active", layout === "cards");
+    if (listBtn) listBtn.classList.toggle("active", layout === "list");
+
+    renderStrategyCatalog();
+}
 
 function filterCatalogCategory(category) {
     activeCatalogFilter = category;
@@ -2750,9 +2762,19 @@ function filterCatalogCategory(category) {
 }
 
 function renderStrategyCatalog() {
-    const grid = document.getElementById("catalog-cards-grid");
-    if (!grid) return;
-    grid.innerHTML = "";
+    const cardsGrid = document.getElementById("catalog-cards-grid");
+    const listContainer = document.getElementById("catalog-list-table-container");
+    const listTbody = document.getElementById("catalog-list-tbody");
+
+    if (!cardsGrid || !listContainer || !listTbody) return;
+
+    if (activeCatalogLayout === 'cards') {
+        cardsGrid.style.display = "grid";
+        listContainer.style.display = "none";
+    } else {
+        cardsGrid.style.display = "none";
+        listContainer.style.display = "block";
+    }
 
     const strats = window.strategiesData || [];
     const filtered = strats.filter(s => {
@@ -2761,52 +2783,90 @@ function renderStrategyCatalog() {
         return cat === activeCatalogFilter;
     });
 
-    if (filtered.length === 0) {
-        grid.innerHTML = `<div style="grid-column: 1 / -1; padding: 2rem; text-align: center; color: var(--text-secondary);">No strategies found in this category.</div>`;
-        return;
+    if (activeCatalogLayout === 'cards') {
+        cardsGrid.innerHTML = "";
+        if (filtered.length === 0) {
+            cardsGrid.innerHTML = `<div style="grid-column: 1 / -1; padding: 2rem; text-align: center; color: var(--text-secondary);">No strategies found in this category.</div>`;
+            return;
+        }
+
+        filtered.forEach(strat => {
+            const cat = strat.strategy_category || '0_adjustment';
+            const badgeText = cat === '0_adjustment' ? '⚡ 0 Adjustment' : cat === 'discretionary' ? '🎯 Discretionary' : '🛠️ Adjustment';
+            const badgeColor = cat === '0_adjustment' ? 'rgba(168, 85, 247, 0.18); color: #e9d5ff; border: 1px solid rgba(168, 85, 247, 0.4);' :
+                               cat === 'discretionary' ? 'rgba(59, 130, 246, 0.18); color: #bfdbfe; border: 1px solid rgba(59, 130, 246, 0.4);' :
+                               'rgba(245, 158, 11, 0.18); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.4);';
+
+            const card = document.createElement("div");
+            card.className = "catalog-card";
+            card.style.cssText = "background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.2rem; display: flex; flex-direction: column; justify-content: space-between; gap: 0.8rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s, border-color 0.2s;";
+            
+            const ceLegs = (strat.setup && strat.setup.CE) || [];
+            const peLegs = (strat.setup && strat.setup.PE) || [];
+
+            card.innerHTML = `
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-primary); font-weight: 700;">${strat.name}</h3>
+                        <span style="padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700; white-space: nowrap; ${badgeColor}">${badgeText}</span>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; font-size: 0.78rem; color: var(--text-secondary);">
+                        <span>📊 <strong>${strat.index}</strong></span>
+                        <span>•</span>
+                        <span>⏳ ${strat.dte}</span>
+                        <span>•</span>
+                        <span>📅 ${strat.expiry}</span>
+                    </div>
+                    <div style="font-size: 0.82rem; background: rgba(0,0,0,0.18); padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                        <span style="font-weight: 700; color: var(--text-primary); display: block; margin-bottom: 0.2rem;">Setup Overview:</span>
+                        <ul style="margin: 0; padding-left: 1.1rem; color: var(--text-secondary); font-size: 0.78rem;">
+                            ${ceLegs.length > 0 ? `<li>CE: ${ceLegs[0]}</li>` : ''}
+                            ${peLegs.length > 0 ? `<li>PE: ${peLegs[0]}</li>` : ''}
+                        </ul>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.4rem;">
+                    <button onclick="openCatalogStrategyDetails('${strat.id}')" class="admin-btn edit" style="font-size: 0.8rem; padding: 0.4rem 0.8rem; display: flex; align-items: center; gap: 0.3rem;">👁️ View Details</button>
+                </div>
+            `;
+            cardsGrid.appendChild(card);
+        });
+    } else {
+        // Single Line List View
+        listTbody.innerHTML = "";
+        if (filtered.length === 0) {
+            listTbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No strategies found in this category.</td></tr>`;
+            return;
+        }
+
+        filtered.forEach(strat => {
+            const cat = strat.strategy_category || '0_adjustment';
+            const badgeText = cat === '0_adjustment' ? '⚡ 0 Adj' : cat === 'discretionary' ? '🎯 Discretionary' : '🛠️ Adjustment';
+            const badgeColor = cat === '0_adjustment' ? 'rgba(168, 85, 247, 0.18); color: #e9d5ff; border: 1px solid rgba(168, 85, 247, 0.4);' :
+                               cat === 'discretionary' ? 'rgba(59, 130, 246, 0.18); color: #bfdbfe; border: 1px solid rgba(59, 130, 246, 0.4);' :
+                               'rgba(245, 158, 11, 0.18); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.4);';
+
+            const ceLegs = (strat.setup && strat.setup.CE) || [];
+            const peLegs = (strat.setup && strat.setup.PE) || [];
+            const setupSummary = [...ceLegs, ...peLegs].join(" • ");
+
+            const tr = document.createElement("tr");
+            tr.style.borderBottom = "1px solid var(--border-color)";
+            tr.innerHTML = `
+                <td>
+                    <strong style="color: var(--text-primary); font-size: 0.9rem; margin-right: 0.4rem;">${strat.name}</strong>
+                    <span style="padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; ${badgeColor}">${badgeText}</span>
+                </td>
+                <td><strong style="color: var(--text-primary);">${strat.index}</strong> • <span style="color: var(--text-secondary);">${strat.expiry}</span></td>
+                <td><span style="color: var(--text-secondary);">${strat.dte}</span> ${strat.day ? `• <span style="font-weight:600;">${strat.day} ${strat.time || ''}</span>` : ''}</td>
+                <td><span style="font-size: 0.8rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 380px; display: inline-block; vertical-align: middle;">${setupSummary || '-'}</span></td>
+                <td style="text-align: center;">
+                    <button onclick="openCatalogStrategyDetails('${strat.id}')" class="admin-btn edit" style="padding: 0.25rem 0.6rem; font-size: 0.76rem;">👁️ View Details</button>
+                </td>
+            `;
+            listTbody.appendChild(tr);
+        });
     }
-
-    filtered.forEach(strat => {
-        const cat = strat.strategy_category || '0_adjustment';
-        const badgeText = cat === '0_adjustment' ? '⚡ 0 Adjustment' : cat === 'discretionary' ? '🎯 Discretionary' : '🛠️ Adjustment';
-        const badgeColor = cat === '0_adjustment' ? 'rgba(168, 85, 247, 0.18); color: #e9d5ff; border: 1px solid rgba(168, 85, 247, 0.4);' :
-                           cat === 'discretionary' ? 'rgba(59, 130, 246, 0.18); color: #bfdbfe; border: 1px solid rgba(59, 130, 246, 0.4);' :
-                           'rgba(245, 158, 11, 0.18); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.4);';
-
-        const card = document.createElement("div");
-        card.className = "catalog-card";
-        card.style.cssText = "background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.2rem; display: flex; flex-direction: column; justify-content: space-between; gap: 0.8rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s, border-color 0.2s;";
-        
-        const ceLegs = (strat.setup && strat.setup.CE) || [];
-        const peLegs = (strat.setup && strat.setup.PE) || [];
-
-        card.innerHTML = `
-            <div>
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;">
-                    <h3 style="margin: 0; font-size: 1.15rem; color: var(--text-primary); font-weight: 700;">${strat.name}</h3>
-                    <span style="padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700; white-space: nowrap; ${badgeColor}">${badgeText}</span>
-                </div>
-                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; font-size: 0.78rem; color: var(--text-secondary);">
-                    <span>📊 <strong>${strat.index}</strong></span>
-                    <span>•</span>
-                    <span>⏳ ${strat.dte}</span>
-                    <span>•</span>
-                    <span>📅 ${strat.expiry}</span>
-                </div>
-                <div style="font-size: 0.82rem; background: rgba(0,0,0,0.18); padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--border-color);">
-                    <span style="font-weight: 700; color: var(--text-primary); display: block; margin-bottom: 0.2rem;">Setup Overview:</span>
-                    <ul style="margin: 0; padding-left: 1.1rem; color: var(--text-secondary); font-size: 0.78rem;">
-                        ${ceLegs.length > 0 ? `<li>CE: ${ceLegs[0]}</li>` : ''}
-                        ${peLegs.length > 0 ? `<li>PE: ${peLegs[0]}</li>` : ''}
-                    </ul>
-                </div>
-            </div>
-            <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.4rem;">
-                <button onclick="openCatalogStrategyDetails('${strat.id}')" class="admin-btn edit" style="font-size: 0.8rem; padding: 0.4rem 0.8rem; display: flex; align-items: center; gap: 0.3rem;">👁️ View Details</button>
-            </div>
-        `;
-        grid.appendChild(card);
-    });
 }
 
 function openCatalogStrategyDetails(strategyId) {
