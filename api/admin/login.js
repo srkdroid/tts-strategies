@@ -51,7 +51,6 @@ module.exports = (req, res) => {
         }
 
         if (password === ADMIN_PASS) {
-            rateLimitMap.delete(`admin:${clientIp}`);
             const token = generateAdminToken();
             
             // Set secure, short-lived HTTP-only admin cookie

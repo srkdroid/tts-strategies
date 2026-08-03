@@ -131,8 +131,6 @@ module.exports = async (req, res) => {
         if (storedPin !== pin.trim()) {
             return res.status(401).json({ error: 'Invalid PIN. Access denied.' });
         }
-        
-        rateLimitMap.delete(`login:${clientIp}`);
 
         // Generate secure JWT-like session token
         const sessionCookie = generateToken(cleanPhone);
