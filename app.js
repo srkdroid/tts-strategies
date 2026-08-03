@@ -1368,10 +1368,15 @@ function showToast(msg, isError = false) {
 
 // A. Strategy Creation / Editing Modals
 function openAddStrategyModal() {
-    document.getElementById("edit-modal-title").innerText = "Add Strategy";
+    document.getElementById("edit-modal-title").innerText = "Add New Strategy";
     document.getElementById("edit-strat-id").value = "";
     document.getElementById("edit-strategy-form").reset();
+    document.getElementById("edit-strat-legs").value = JSON.stringify({ CE: ["Sell 1 ATM+200"], PE: ["Sell 1 ATM-200"] }, null, 4);
     document.getElementById("edit-strategy-modal").style.display = "block";
+}
+
+function openNewStrategyModal() {
+    openAddStrategyModal();
 }
 
 function openEditStrategyModal(strategy) {
