@@ -74,7 +74,14 @@ function populateNotesStrategyDropdown() {
     });
 }
 
-// Render Sidebar List (Grouped 25%)
+let collapsedCategories = {}; // Tracks collapsed state per category name
+
+function toggleCategoryCollapse(catName) {
+    collapsedCategories[catName] = !collapsedCategories[catName];
+    renderNotesSidebar();
+}
+
+// Render Sidebar List (Grouped 25% with Collapsible Categories)
 function renderNotesSidebar() {
     const container = document.getElementById("notes-list-container");
     if (!container) return;
@@ -82,50 +89,81 @@ function renderNotesSidebar() {
 
     const filtered = allNotes.filter(n => {
         if (!notesSearchQuery) return true;
-        const matchTitle = n.title.toLowerCase().includes(notesSearchQuery);
+        const matchTitle = (n.title || "").toLowerCase().includes(notesSearchQuery);
         const matchContent = (n.content || "").toLowerCase().includes(notesSearchQuery);
-        return matchTitle || matchContent;
+        const matchCat = (n.category || "").toLowerCase().includes(notesSearchQuery);
+        return matchTitle || matchContent || matchCat;
     });
 
-    const genericNotes = filtered.filter(n => n.category === "Generic");
-    const strategyNotes = filtered.filter(n => n.category === "Strategy");
+    // Group all notes dynamically by their category field
+    const grouped = {};
+    filtered.forEach(n => {
+        let cat = (n.category || "Generic Notes").trim();
+        if (cat.toUpperCase() === "GENERIC NOTES" || cat.toUpperCase() === "GENERIC") cat = "📌 Generic Notes";
+        else if (cat.toUpperCase() === "STRATEGY NOTES" || cat.toUpperCase() === "STRATEGY" || cat.toUpperCase() === "0_ADJUSTMENT") cat = "⚡ Strategy Notes";
+        else if (cat.toUpperCase() === "DISCRETIONARY" || cat.toUpperCase() === "DISCRETIONARY NOTES") cat = "🎯 Discretionary Notes";
+        else if (cat.toUpperCase() === "ADJUSTMENTS" || cat.toUpperCase() === "REPAIR" || cat.toUpperCase() === "ADJUSTMENT NOTES") cat = "🛠️ Adjustment Notes";
+        else cat = `📁 ${cat}`;
 
-    // Helper to render group
-    const renderGroup = (title, icon, notesList) => {
+        if (!grouped[cat]) grouped[cat] = [];
+        grouped[cat].push(n);
+    });
+
+    const categoryKeys = Object.keys(grouped);
+
+    if (categoryKeys.length === 0) {
+        container.innerHTML = `<div style="padding: 1rem; text-align: center; color: var(--text-secondary); font-size: 0.82rem;">No notes found matching "${notesSearchQuery}".</div>`;
+        return;
+    }
+
+    // Auto-expand category containing activeNoteId if it's set
+    if (activeNoteId) {
+        for (const [catName, notesList] of Object.entries(grouped)) {
+            if (notesList.some(n => n.id === activeNoteId)) {
+                collapsedCategories[catName] = false;
+            }
+        }
+    }
+
+    categoryKeys.forEach(catName => {
+        const notesList = grouped[catName];
+        const isCollapsed = !!collapsedCategories[catName];
+
         const groupDiv = document.createElement("div");
         groupDiv.className = "note-category-group";
 
         const titleDiv = document.createElement("div");
         titleDiv.className = "note-category-title";
-        titleDiv.innerText = `${icon} ${title} (${notesList.length})`;
+        titleDiv.onclick = () => toggleCategoryCollapse(catName);
+        titleDiv.innerHTML = `
+            <span style="display: flex; align-items: center; gap: 0.4rem;">
+                <span>${catName}</span>
+                <span style="opacity: 0.75; font-size: 0.72rem;">(${notesList.length})</span>
+            </span>
+            <span style="font-size: 0.7rem; color: var(--text-secondary); transition: transform 0.2s;">${isCollapsed ? '▶' : '▼'}</span>
+        `;
         groupDiv.appendChild(titleDiv);
 
-        if (notesList.length === 0) {
-            const empty = document.createElement("div");
-            empty.style.padding = "0.4rem 0.8rem";
-            empty.style.fontSize = "0.75rem";
-            empty.style.color = "var(--text-secondary)";
-            empty.innerText = "No notes found";
-            groupDiv.appendChild(empty);
-        } else {
-            notesList.forEach(n => {
-                const item = document.createElement("div");
-                item.className = `note-sidebar-item${n.id === activeNoteId ? ' active' : ''}`;
-                item.onclick = () => selectNote(n.id);
+        const itemsContainer = document.createElement("div");
+        itemsContainer.style.display = isCollapsed ? "none" : "block";
 
-                const itemTitle = document.createElement("div");
-                itemTitle.className = "note-sidebar-item-title";
-                itemTitle.innerText = n.title;
+        notesList.forEach(n => {
+            const item = document.createElement("div");
+            item.className = `note-sidebar-item${n.id === activeNoteId ? ' active' : ''}`;
+            item.onclick = () => selectNote(n.id);
 
-                item.appendChild(itemTitle);
-                groupDiv.appendChild(item);
-            });
-        }
+            const itemTitle = document.createElement("div");
+            itemTitle.className = "note-sidebar-item-title";
+            itemTitle.innerText = n.title;
+            itemTitle.title = n.title;
+
+            item.appendChild(itemTitle);
+            itemsContainer.appendChild(item);
+        });
+
+        groupDiv.appendChild(itemsContainer);
         container.appendChild(groupDiv);
-    };
-
-    renderGroup("Generic Notes", "📌", genericNotes);
-    renderGroup("Strategy Notes", "🎯", strategyNotes);
+    });
 }
 
 // Select & Display Note in Main Viewer Pane (75%)
@@ -283,7 +321,8 @@ function cancelNoteEdit() {
 function onNoteCategoryChange(val) {
     const group = document.getElementById("editor-strategy-select-group");
     if (group) {
-        group.style.display = (val === "Strategy") ? "block" : "none";
+        const isStrategyCat = val === "Strategy" || val === "Discretionary" || val === "Adjustments" || val === "0_adjustment";
+        group.style.display = isStrategyCat ? "block" : "none";
     }
 }
 

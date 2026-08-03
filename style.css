@@ -1687,11 +1687,21 @@ select:focus-visible,
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-secondary);
-    padding: 0.4rem 0.6rem;
-    margin-bottom: 0.4rem;
+    padding: 0.45rem 0.6rem;
+    margin-bottom: 0.3rem;
     display: flex;
     align-items: center;
-    gap: 0.3rem;
+    justify-content: space-between;
+    gap: 0.4rem;
+    cursor: pointer;
+    border-radius: 6px;
+    user-select: none;
+    transition: background 0.15s, color 0.15s;
+}
+
+.note-category-title:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-primary);
 }
 
 .note-sidebar-item {
