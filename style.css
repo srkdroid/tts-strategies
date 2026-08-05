@@ -1085,9 +1085,9 @@ select:focus-visible,
 }
 
 .light-theme .beta-badge {
-    background: rgba(79, 70, 229, 0.08);
-    color: var(--primary-color);
-    border: 1px solid rgba(79, 70, 229, 0.18);
+    background: rgba(79, 70, 229, 0.12);
+    color: #4338ca;
+    border: 1px solid rgba(79, 70, 229, 0.3);
 }
 
 /* ─── Exit Date Visualization ────────────────────────────────────────────── */
