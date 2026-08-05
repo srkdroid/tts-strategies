@@ -3015,6 +3015,9 @@ function renderStrategyCatalog() {
             
             const ceLegs = (strat.setup && strat.setup.CE) || [];
             const peLegs = (strat.setup && strat.setup.PE) || [];
+            const ceHtml = ceLegs.map(leg => `<li><strong style="color: #60a5fa;">CE:</strong> ${leg}</li>`).join('');
+            const peHtml = peLegs.map(leg => `<li><strong style="color: #f87171;">PE:</strong> ${leg}</li>`).join('');
+            const allLegsHtml = (ceHtml || peHtml) ? (ceHtml + peHtml) : '<li>No legs specified</li>';
 
             card.innerHTML = `
                 <div>
@@ -3029,11 +3032,10 @@ function renderStrategyCatalog() {
                         <span>•</span>
                         <span>📅 ${strat.expiry}</span>
                     </div>
-                    <div style="font-size: 0.82rem; background: rgba(0,0,0,0.18); padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                    <div style="font-size: 0.82rem; background: rgba(0,0,0,0.18); padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid var(--border-color); max-height: 180px; overflow-y: auto;">
                         <span style="font-weight: 700; color: var(--text-primary); display: block; margin-bottom: 0.2rem;">Setup Overview:</span>
-                        <ul style="margin: 0; padding-left: 1.1rem; color: var(--text-secondary); font-size: 0.78rem;">
-                            ${ceLegs.length > 0 ? `<li>CE: ${ceLegs[0]}</li>` : ''}
-                            ${peLegs.length > 0 ? `<li>PE: ${peLegs[0]}</li>` : ''}
+                        <ul style="margin: 0; padding-left: 1.1rem; color: var(--text-secondary); font-size: 0.78rem; line-height: 1.5;">
+                            ${allLegsHtml}
                         </ul>
                     </div>
                 </div>
