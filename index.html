@@ -895,6 +895,19 @@
                     </div>
                 </div>
 
+                <!-- Bulk Permissions Toolbar -->
+                <div style="display: flex; gap: 0.5rem; align-items: center; background: rgba(0,0,0,0.15); padding: 0.6rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 1rem; flex-wrap: wrap;">
+                    <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-right: 0.5rem;">⚡ Bulk Access (All Users):</span>
+                    <button onclick="bulkToggleUserPermissions('catalog', true)" class="admin-btn edit" style="margin:0; padding: 0.3rem 0.6rem; font-size: 0.75rem; background: rgba(52, 211, 153, 0.15); border-color: rgba(52, 211, 153, 0.4); color: #34d399;" title="Enable Strategy Catalog for all whitelisted users">📖 Enable Catalog (All)</button>
+                    <button onclick="bulkToggleUserPermissions('catalog', false)" class="admin-btn logout" style="margin:0; padding: 0.3rem 0.6rem; font-size: 0.75rem;" title="Disable Strategy Catalog for all whitelisted users">📖 Disable Catalog (All)</button>
+                    <div style="height: 16px; width: 1px; background: var(--border-color); margin: 0 0.3rem;"></div>
+                    <button onclick="bulkToggleUserPermissions('journal', true)" class="admin-btn edit" style="margin:0; padding: 0.3rem 0.6rem; font-size: 0.75rem; background: rgba(52, 211, 153, 0.15); border-color: rgba(52, 211, 153, 0.4); color: #34d399;" title="Enable Trade Journal for all whitelisted users">📔 Enable Journal (All)</button>
+                    <button onclick="bulkToggleUserPermissions('journal', false)" class="admin-btn logout" style="margin:0; padding: 0.3rem 0.6rem; font-size: 0.75rem;" title="Disable Trade Journal for all whitelisted users">📔 Disable Journal (All)</button>
+                    <div style="height: 16px; width: 1px; background: var(--border-color); margin: 0 0.3rem;"></div>
+                    <button onclick="bulkToggleUserPermissions('all', true)" class="admin-btn add" style="margin:0; padding: 0.3rem 0.6rem; font-size: 0.75rem;" title="Enable both Catalog and Journal for all users">⚡ Enable All</button>
+                    <button onclick="bulkToggleUserPermissions('all', false)" class="admin-btn logout" style="margin:0; padding: 0.3rem 0.6rem; font-size: 0.75rem; background: rgba(239, 68, 68, 0.25);" title="Disable both Catalog and Journal for all users">🔒 Disable All</button>
+                </div>
+
                 <div class="table-scroll-container" style="flex-grow: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 10px;">
                     <table class="admin-table">
                         <thead>
@@ -1411,6 +1424,6 @@
     <script src="holidays.js"></script>
     <script src="capital-planner-data.js"></script>
     <script src="notes.js"></script>
-    <script src="app.js?v=2.1"></script>
+    <script src="app.js?v=2.2"></script>
 </body>
 </html>

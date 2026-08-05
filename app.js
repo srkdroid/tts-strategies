@@ -1931,6 +1931,59 @@ function toggleUserPermission(phone, feature, isChecked) {
     });
 }
 
+function bulkToggleUserPermissions(feature, enable) {
+    const actionName = enable ? "enable" : "disable";
+    let featureLabel = "Strategy Catalog & Trade Journal";
+    if (feature === 'catalog') featureLabel = "Strategy Catalog";
+    else if (feature === 'journal') featureLabel = "Trade Journal";
+
+    if (!confirm(`Are you sure you want to ${actionName} ${featureLabel} for ALL whitelisted users?`)) {
+        return;
+    }
+
+    if (typeof showToast === 'function') {
+        showToast(`Updating permissions for all users...`, "info");
+    }
+
+    fetch('/api/admin/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            action: 'bulk_update_user_permissions',
+            data: { feature, enable }
+        })
+    }).then(res => res.json()).then(resJson => {
+        if (resJson.success) {
+            Object.keys(whitelistData || {}).forEach(phone => {
+                if (!userPermissionsData[phone]) {
+                    userPermissionsData[phone] = { catalog: false, journal: false };
+                }
+                if (feature === 'all') {
+                    userPermissionsData[phone].catalog = enable;
+                    userPermissionsData[phone].journal = enable;
+                } else if (feature === 'catalog') {
+                    userPermissionsData[phone].catalog = enable;
+                } else if (feature === 'journal') {
+                    userPermissionsData[phone].journal = enable;
+                }
+            });
+
+            renderWhitelistTable();
+            if (typeof showToast === 'function') {
+                showToast(`Successfully ${actionName}d ${featureLabel} for all ${resJson.count || 0} users`, "success");
+            }
+        } else {
+            if (typeof showToast === 'function') {
+                showToast(resJson.error || "Failed to bulk update permissions", "error");
+            }
+        }
+    }).catch(e => {
+        if (typeof showToast === 'function') {
+            showToast("Network error bulk updating permissions", "error");
+        }
+    });
+}
+
 function renderWhitelistTable() {
     const tbody = document.getElementById("whitelist-table-body");
     if (!tbody) return;

@@ -225,6 +225,54 @@ module.exports = async (req, res) => {
                 }
                 await queryKV(['HSET', 'user_permissions', data.phone.trim(), JSON.stringify(data.permissions)]);
                 return res.status(200).json({ success: true, message: `Permissions updated for ${data.phone}` });
+            }
+
+            else if (action === 'bulk_update_user_permissions') {
+                const { feature, enable } = data || {};
+                if (!feature || typeof enable !== 'boolean') {
+                    return res.status(400).json({ error: 'Feature and boolean enable flag are required' });
+                }
+                
+                const whitelistRes = await queryKV(['HGETALL', 'whitelist']);
+                if (!whitelistRes || whitelistRes.length === 0) {
+                    return res.status(200).json({ success: true, count: 0, message: 'No whitelisted users found' });
+                }
+
+                const permRes = await queryKV(['HGETALL', 'user_permissions']);
+                const currentPermissions = {};
+                if (permRes && Array.isArray(permRes)) {
+                    for (let i = 0; i < permRes.length; i += 2) {
+                        try {
+                            currentPermissions[permRes[i]] = JSON.parse(permRes[i + 1]);
+                        } catch (e) {
+                            currentPermissions[permRes[i]] = { catalog: false, journal: false };
+                        }
+                    }
+                }
+
+                let count = 0;
+                for (let i = 0; i < whitelistRes.length; i += 2) {
+                    const phone = whitelistRes[i];
+                    const userPerm = currentPermissions[phone] || { catalog: false, journal: false };
+                    
+                    if (feature === 'all') {
+                        userPerm.catalog = enable;
+                        userPerm.journal = enable;
+                    } else if (feature === 'catalog') {
+                        userPerm.catalog = enable;
+                    } else if (feature === 'journal') {
+                        userPerm.journal = enable;
+                    }
+                    
+                    await queryKV(['HSET', 'user_permissions', phone, JSON.stringify(userPerm)]);
+                    count++;
+                }
+
+                return res.status(200).json({ 
+                    success: true, 
+                    count, 
+                    message: `Bulk updated ${feature} access for ${count} users` 
+                });
             } 
             
             else if (action === 'save_dispatch_settings') {
