@@ -1907,11 +1907,42 @@ async function clearAuthLogs() {
 
 let userPermissionsData = {};
 
+function updateHeaderPermissionCheckboxes() {
+    const entries = Object.keys(whitelistData || {});
+    const totalCount = entries.length;
+
+    let catalogEnabledCount = 0;
+    let journalEnabledCount = 0;
+
+    entries.forEach(phone => {
+        if (userPermissionsData[phone] && userPermissionsData[phone].catalog === true) {
+            catalogEnabledCount++;
+        }
+        if (userPermissionsData[phone] && userPermissionsData[phone].journal === true) {
+            journalEnabledCount++;
+        }
+    });
+
+    const headerCatalogCb = document.getElementById("header-select-all-catalog");
+    if (headerCatalogCb) {
+        headerCatalogCb.checked = (totalCount > 0 && catalogEnabledCount === totalCount);
+        headerCatalogCb.indeterminate = (catalogEnabledCount > 0 && catalogEnabledCount < totalCount);
+    }
+
+    const headerJournalCb = document.getElementById("header-select-all-journal");
+    if (headerJournalCb) {
+        headerJournalCb.checked = (totalCount > 0 && journalEnabledCount === totalCount);
+        headerJournalCb.indeterminate = (journalEnabledCount > 0 && journalEnabledCount < totalCount);
+    }
+}
+
 function toggleUserPermission(phone, feature, isChecked) {
     if (!userPermissionsData[phone]) {
         userPermissionsData[phone] = { catalog: false, journal: false };
     }
     userPermissionsData[phone][feature] = isChecked;
+
+    updateHeaderPermissionCheckboxes();
 
     fetch('/api/admin/save', {
         method: 'POST',
@@ -1938,6 +1969,7 @@ function bulkToggleUserPermissions(feature, enable) {
     else if (feature === 'journal') featureLabel = "Trade Journal";
 
     if (!confirm(`Are you sure you want to ${actionName} ${featureLabel} for ALL whitelisted users?`)) {
+        updateHeaderPermissionCheckboxes();
         return;
     }
 
@@ -1973,11 +2005,13 @@ function bulkToggleUserPermissions(feature, enable) {
                 showToast(`Successfully ${actionName}d ${featureLabel} for all ${resJson.count || 0} users`, "success");
             }
         } else {
+            updateHeaderPermissionCheckboxes();
             if (typeof showToast === 'function') {
                 showToast(resJson.error || "Failed to bulk update permissions", "error");
             }
         }
     }).catch(e => {
+        updateHeaderPermissionCheckboxes();
         if (typeof showToast === 'function') {
             showToast("Network error bulk updating permissions", "error");
         }
@@ -1991,6 +2025,8 @@ function renderWhitelistTable() {
     
     const entries = Object.entries(whitelistData || {});
     const totalCount = entries.length;
+    
+    updateHeaderPermissionCheckboxes();
     
     const countBadge = document.getElementById("admin-user-count-badge");
     if (countBadge) {
