@@ -50,20 +50,17 @@ function populateNotesStrategyDropdown() {
     const select = document.getElementById("editor-note-strategy-id");
     if (!select) return;
     select.innerHTML = "";
+
+    const noneOpt = document.createElement("option");
+    noneOpt.value = "";
+    noneOpt.innerText = "-- None (Generic / Unlinked) --";
+    select.appendChild(noneOpt);
     
     let strats = [];
     if (window.strategiesData && Array.isArray(window.strategiesData) && window.strategiesData.length > 0) {
         strats = window.strategiesData;
     } else if (typeof strategiesData !== 'undefined' && Array.isArray(strategiesData) && strategiesData.length > 0) {
         strats = strategiesData;
-    }
-
-    if (strats.length === 0) {
-        const placeholder = document.createElement("option");
-        placeholder.value = "";
-        placeholder.innerText = "-- Select Strategy --";
-        select.appendChild(placeholder);
-        return;
     }
 
     strats.forEach(st => {
@@ -198,10 +195,18 @@ function selectNote(noteId) {
 
     // Strategy cross-link badge
     const stratLinkBadge = document.getElementById("note-view-strategy-link");
-    if (note.category === 'Strategy' && note.strategyId) {
-        stratLinkBadge.style.display = "inline-flex";
-    } else {
-        stratLinkBadge.style.display = "none";
+    if (stratLinkBadge) {
+        if (note.strategyId) {
+            let stratName = "";
+            const strats = window.strategiesData || (typeof strategiesData !== 'undefined' ? strategiesData : []);
+            const foundStrat = strats.find(s => s.id === note.strategyId);
+            if (foundStrat) stratName = foundStrat.name;
+            
+            stratLinkBadge.innerText = stratName ? `🎯 Open Strategy: ${stratName}` : `🎯 Open Strategy Detail`;
+            stratLinkBadge.style.display = "inline-flex";
+        } else {
+            stratLinkBadge.style.display = "none";
+        }
     }
 
     const dateEl = document.getElementById("note-view-date");
@@ -327,8 +332,7 @@ function cancelNoteEdit() {
 function onNoteCategoryChange(val) {
     const group = document.getElementById("editor-strategy-select-group");
     if (group) {
-        const isStrategyCat = val === "Strategy" || val === "Discretionary" || val === "Adjustments" || val === "0_adjustment";
-        group.style.display = isStrategyCat ? "block" : "none";
+        group.style.display = "block";
     }
 }
 
@@ -386,7 +390,8 @@ function setupEditorPasteListener() {
 async function saveNoteFromEditor() {
     const title = document.getElementById("editor-note-title").value.trim();
     const category = document.getElementById("editor-note-category").value;
-    const strategyId = (category === "Strategy") ? document.getElementById("editor-note-strategy-id").value : null;
+    const stratSelect = document.getElementById("editor-note-strategy-id");
+    const strategyId = (stratSelect && stratSelect.value) ? stratSelect.value : null;
     const content = document.getElementById("editor-markdown-input").value;
 
     if (!title) {

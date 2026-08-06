@@ -1282,7 +1282,7 @@ function showStrategyDetails(dep) {
                 const li = document.createElement("div");
                 li.className = "leg-item pe-side";
                 li.innerText = leg;
-                legsContainer.appendChild(leg);
+                legsContainer.appendChild(li);
             });
         }
         
