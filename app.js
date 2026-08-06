@@ -724,7 +724,7 @@ function dispatchAdminTrade(mode) {
 
     // Build calculated legs
     const legs = [];
-    if (strategy.type.includes("Both") || (strategy.setup.PE && strategy.setup.CE)) {
+    if (strategy.type.includes("Both") || strategy.type.includes("Either") || (strategy.setup.PE && strategy.setup.CE)) {
         if (strategy.setup.PE) {
             strategy.setup.PE.forEach(st => {
                 legs.push(parseLegDetails(st, "PE", currentAtm));
@@ -1136,7 +1136,7 @@ function showStrategyDetails(dep) {
     document.getElementById("modal-index").innerText = strategy.index;
     document.getElementById("modal-expiry").innerText = strategy.expiry;
     document.getElementById("modal-dte").innerText = strategy.dte;
-    document.getElementById("modal-deploy-day").innerText = `${strategy.day} at ${strategy.time}`;
+    document.getElementById("modal-deploy-day").innerText = strategy.day === "Any" ? (strategy.time ? `Any Day at ${strategy.time}` : "Any Day") : `${strategy.day} at ${strategy.time}`;
     
     // Target deployment dates
     if (dep.isInactiveFallback) {
@@ -1223,39 +1223,43 @@ function showStrategyDetails(dep) {
             strikeExampleContainer.appendChild(roundingNotice);
         }
         
-        if (strategy.type.includes("Both") || (strategy.setup.PE && strategy.setup.CE)) {
-            const peStrikesTitle = document.createElement("h5");
-            peStrikesTitle.innerText = "PE Strikes";
-            strikeExampleContainer.appendChild(peStrikesTitle);
+        if (strategy.type.includes("Both") || strategy.type.includes("Either") || (strategy.setup && strategy.setup.PE && strategy.setup.CE)) {
+            const peSource = (strategy.setup && strategy.setup.PE) ? strategy.setup.PE : (strategy.strike_example ? strategy.strike_example.PE : null);
+            if (peSource && peSource.length > 0) {
+                const peStrikesTitle = document.createElement("h5");
+                peStrikesTitle.innerText = "PE Strikes";
+                strikeExampleContainer.appendChild(peStrikesTitle);
+                peSource.forEach(st => {
+                    const li = document.createElement("div");
+                    li.className = "leg-item pe-side";
+                    li.innerText = generateConcreteStrikeText(st, "PE", activeAtm, strategy);
+                    strikeExampleContainer.appendChild(li);
+                });
+            }
             
-            const peSource = (strategy.setup && strategy.setup.PE) ? strategy.setup.PE : strategy.strike_example.PE;
-            peSource.forEach(st => {
-                const li = document.createElement("div");
-                li.className = "leg-item pe-side";
-                li.innerText = generateConcreteStrikeText(st, "PE", activeAtm, strategy);
-                strikeExampleContainer.appendChild(li);
-            });
-            
-            const ceStrikesTitle = document.createElement("h5");
-            ceStrikesTitle.innerText = "CE Strikes";
-            strikeExampleContainer.appendChild(ceStrikesTitle);
-            
-            const ceSource = (strategy.setup && strategy.setup.CE) ? strategy.setup.CE : strategy.strike_example.CE;
-            ceSource.forEach(st => {
-                const li = document.createElement("div");
-                li.className = "leg-item ce-side";
-                li.innerText = generateConcreteStrikeText(st, "CE", activeAtm, strategy);
-                strikeExampleContainer.appendChild(li);
-            });
+            const ceSource = (strategy.setup && strategy.setup.CE) ? strategy.setup.CE : (strategy.strike_example ? strategy.strike_example.CE : null);
+            if (ceSource && ceSource.length > 0) {
+                const ceStrikesTitle = document.createElement("h5");
+                ceStrikesTitle.innerText = "CE Strikes";
+                strikeExampleContainer.appendChild(ceStrikesTitle);
+                ceSource.forEach(st => {
+                    const li = document.createElement("div");
+                    li.className = "leg-item ce-side";
+                    li.innerText = generateConcreteStrikeText(st, "CE", activeAtm, strategy);
+                    strikeExampleContainer.appendChild(li);
+                });
+            }
         } else {
             const side = strategy.type.split(" ")[0]; // CE or PE
-            const sideSource = (strategy.setup && strategy.setup[side]) ? strategy.setup[side] : strategy.strike_example[side];
-            sideSource.forEach(st => {
-                const li = document.createElement("div");
-                li.className = `leg-item ${side.toLowerCase()}-side`;
-                li.innerText = generateConcreteStrikeText(st, side, activeAtm, strategy);
-                strikeExampleContainer.appendChild(li);
-            });
+            const sideSource = (strategy.setup && strategy.setup[side]) ? strategy.setup[side] : (strategy.strike_example ? strategy.strike_example[side] : []);
+            if (sideSource) {
+                sideSource.forEach(st => {
+                    const li = document.createElement("div");
+                    li.className = `leg-item ${side.toLowerCase()}-side`;
+                    li.innerText = generateConcreteStrikeText(st, side, activeAtm, strategy);
+                    strikeExampleContainer.appendChild(li);
+                });
+            }
             
             if (strategy.strike_example && strategy.strike_example.notes) {
                 const note = document.createElement("p");
@@ -1266,31 +1270,35 @@ function showStrategyDetails(dep) {
         }
     }
 
-    if (strategy.type.includes("Both") || (strategy.setup.PE && strategy.setup.CE)) {
-        // Double Sided
-        const peTitle = document.createElement("h5");
-        peTitle.innerText = "PE Legs";
-        peTitle.style.color = "#ef4444";
-        legsContainer.appendChild(peTitle);
+    if (strategy.type.includes("Both") || strategy.type.includes("Either") || (strategy.setup && strategy.setup.PE && strategy.setup.CE)) {
+        // Multi-sided
+        if (strategy.setup && strategy.setup.PE && strategy.setup.PE.length > 0) {
+            const peTitle = document.createElement("h5");
+            peTitle.innerText = "PE Legs";
+            peTitle.style.color = "#ef4444";
+            legsContainer.appendChild(peTitle);
+            
+            strategy.setup.PE.forEach(leg => {
+                const li = document.createElement("div");
+                li.className = "leg-item pe-side";
+                li.innerText = leg;
+                legsContainer.appendChild(leg);
+            });
+        }
         
-        strategy.setup.PE.forEach(leg => {
-            const li = document.createElement("div");
-            li.className = "leg-item pe-side";
-            li.innerText = leg;
-            legsContainer.appendChild(li);
-        });
-        
-        const ceTitle = document.createElement("h5");
-        ceTitle.innerText = "CE Legs";
-        ceTitle.style.color = "#10b981";
-        legsContainer.appendChild(ceTitle);
-        
-        strategy.setup.CE.forEach(leg => {
-            const li = document.createElement("div");
-            li.className = "leg-item ce-side";
-            li.innerText = leg;
-            legsContainer.appendChild(li);
-        });
+        if (strategy.setup && strategy.setup.CE && strategy.setup.CE.length > 0) {
+            const ceTitle = document.createElement("h5");
+            ceTitle.innerText = "CE Legs";
+            ceTitle.style.color = "#10b981";
+            legsContainer.appendChild(ceTitle);
+            
+            strategy.setup.CE.forEach(leg => {
+                const li = document.createElement("div");
+                li.className = "leg-item ce-side";
+                li.innerText = leg;
+                legsContainer.appendChild(li);
+            });
+        }
     } else {
         // Single Sided
         const side = strategy.type.split(" ")[0]; // CE or PE
