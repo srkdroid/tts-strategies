@@ -1261,12 +1261,18 @@ function showStrategyDetails(dep) {
                 });
             }
             
-            if (strategy.strike_example && strategy.strike_example.notes) {
-                const note = document.createElement("p");
-                note.className = "setup-note";
-                note.innerHTML = `*Note:* ${strategy.strike_example.notes}`;
-                strikeExampleContainer.appendChild(note);
-            }
+        }
+
+        const strikeNoteText = (strategy.strike_example && strategy.strike_example.notes) || (strategy.setup && strategy.setup.notes);
+        if (strikeNoteText) {
+            const note = document.createElement("p");
+            note.className = "setup-note";
+            note.style.marginTop = "0.6rem";
+            note.style.fontSize = "0.78rem";
+            note.style.color = "#94a3b8";
+            note.style.fontStyle = "italic";
+            note.innerHTML = `*Note:* ${strikeNoteText}`;
+            strikeExampleContainer.appendChild(note);
         }
     }
 
@@ -1307,19 +1313,26 @@ function showStrategyDetails(dep) {
         sideTitle.style.color = side === "CE" ? "#10b981" : "#ef4444";
         legsContainer.appendChild(sideTitle);
         
-        strategy.setup[side].forEach(leg => {
-            const li = document.createElement("div");
-            li.className = `leg-item ${side.toLowerCase()}-side`;
-            li.innerText = leg;
-            legsContainer.appendChild(li);
-        });
-        
-        if (strategy.setup.notes) {
-            const note = document.createElement("p");
-            note.className = "setup-note";
-            note.innerHTML = `*Note:* ${strategy.setup.notes}`;
-            legsContainer.appendChild(note);
+        if (strategy.setup && strategy.setup[side]) {
+            strategy.setup[side].forEach(leg => {
+                const li = document.createElement("div");
+                li.className = `leg-item ${side.toLowerCase()}-side`;
+                li.innerText = leg;
+                legsContainer.appendChild(li);
+            });
         }
+    }
+
+    const legsNoteText = (strategy.setup && strategy.setup.notes) || (strategy.strike_example && strategy.strike_example.notes);
+    if (legsNoteText) {
+        const note = document.createElement("p");
+        note.className = "setup-note";
+        note.style.marginTop = "0.6rem";
+        note.style.fontSize = "0.78rem";
+        note.style.color = "#94a3b8";
+        note.style.fontStyle = "italic";
+        note.innerHTML = `*Note:* ${legsNoteText}`;
+        legsContainer.appendChild(note);
     }
     
     // Render Strikes
@@ -3026,6 +3039,9 @@ function renderStrategyCatalog() {
             const ceHtml = ceLegs.map(leg => `<li><strong style="color: #60a5fa;">CE:</strong> ${leg}</li>`).join('');
             const peHtml = peLegs.map(leg => `<li><strong style="color: #f87171;">PE:</strong> ${leg}</li>`).join('');
             const allLegsHtml = (ceHtml || peHtml) ? (ceHtml + peHtml) : '<li>No legs specified</li>';
+            
+            const cardNoteText = (strat.setup && strat.setup.notes) || (strat.strike_example && strat.strike_example.notes);
+            const cardNoteHtml = cardNoteText ? `<div style="margin-top: 0.4rem; font-style: italic; color: #94a3b8; font-size: 0.75rem;">*Note:* ${cardNoteText}</div>` : '';
 
             card.innerHTML = `
                 <div>
@@ -3045,6 +3061,7 @@ function renderStrategyCatalog() {
                         <ul style="margin: 0; padding-left: 1.1rem; color: var(--text-secondary); font-size: 0.78rem; line-height: 1.5;">
                             ${allLegsHtml}
                         </ul>
+                        ${cardNoteHtml}
                     </div>
                 </div>
                 <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.4rem;">
