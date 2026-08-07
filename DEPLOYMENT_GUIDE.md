@@ -10,7 +10,7 @@ This guide details the complete end-to-end deployment process for launching the 
 3. [Step 2: Create & Configure Telegram Bot (`@BotFather`)](#step-2-create--configure-telegram-bot-botfather)
 4. [Step 3: Deploy Project on Vercel](#step-3-deploy-project-on-vercel)
 5. [Step 4: Register Telegram Webhook Endpoint](#step-4-register-telegram-webhook-endpoint)
-6. [Step 5: Post-Deployment Initial Whitelist & Permission Setup](#step-5-post-deployment-initial-whitelist--permission-setup)
+6. [Step 5: Post-Deployment Initial Whitelist & Bulk Permission Setup](#step-5-post-deployment-initial-whitelist--bulk-permission-setup)
 7. [Step 6: Custom Domain & SSL Configuration](#step-6-custom-domain--ssl-configuration)
 8. [Step 7: Ongoing Maintenance & Incident Recovery](#step-7-ongoing-maintenance--incident-recovery)
 
@@ -102,17 +102,17 @@ curl -X POST "https://api.telegram.org/bot<BOT_TOKEN>/setWebhook" \
 
 ---
 
-## Step 5: Post-Deployment Initial Whitelist & Permission Setup
+## Step 5: Post-Deployment Initial Whitelist & Bulk Permission Setup
 
 1. **Access Admin Portal:**
    Navigate to `https://<YOUR-VERCEL-URL>/admin.html` and log in using your `ADMIN_PASSWORD`.
 2. **Import Whitelist & Initial Sync:**
    - Click **🔄 Sync from Codebase** to populate the Redis `whitelist` hash with initial phone numbers from `whitelist.json`.
    - Alternatively, tap **📱 Sync WhatsApp Group** to pull group members from OpenWA REST API.
-3. **Configure User Permissions:**
+3. **Configure User Permissions (Bulk or Individual):**
    - Go to the **Whitelisted Users** tab.
-   - For each user who should have access to `Strategy Catalog` or `Trade Journal`, check the corresponding boxes (`[x] Catalog` / `[x] Journal`).
-   - Changes save automatically to Redis (`user_permissions` hash).
+   - Use the **Table Header Select-All Checkboxes** (`📖 Strategy Catalog` and `📔 Trade Journal`) to toggle access for all users at once, or toggle individual user checkboxes.
+   - Changes persist immediately to Redis (`user_permissions` hash via `/api/admin/save.js`).
 
 ---
 
@@ -127,6 +127,7 @@ curl -X POST "https://api.telegram.org/bot<BOT_TOKEN>/setWebhook" \
 
 ## Step 7: Ongoing Maintenance & Incident Recovery
 
+- **Deploying Code Updates:** Push code changes to GitHub `main` branch (`git push origin main`). Vercel will automatically trigger a production deployment.
 - **Export Database Backup:** Periodically open `/admin.html` -> **Whitelisted Users** and click `📥 Export JSON` to backup `whitelist.json`.
 - **Clear Audit Logs:** In Admin panel -> **Auth Audit Logs**, tap `🗑️ Clear Logs` if log size reaches 1,000 entries.
 - **Force Re-sync Database:** In Admin panel -> **Database Sync**, tap `🔄 Force Re-sync Vercel KV` to force-sync strategies, holidays, and whitelist from codebase.

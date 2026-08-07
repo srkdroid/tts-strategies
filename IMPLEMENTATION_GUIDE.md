@@ -9,13 +9,14 @@ This guide provides a complete, step-by-step technical implementation reference,
 2. [Database Schema & Redis Key Structures](#2-database-schema--redis-key-structures)
 3. [User Access Control & Permission Flags](#3-user-access-control--permission-flags)
 4. [Authentication Engine (Telegram OTP & PIN Auth)](#4-authentication-engine-telegram-otp--pin-auth)
-5. [Admin Management, WhatsApp Sync & Security Controls](#5-admin-management-whatsapp-sync--security-controls)
-6. [Strategy Engine & Master Catalog (Card & List Views)](#6-strategy-engine--master-catalog-card--list-views)
-7. [Trade Journal & Multi-Level RoI Analytics Engine](#7-trade-journal--multi-level-roi-analytics-engine)
-8. [Knowledge Base & Notes System (Collapsible Accordion)](#8-knowledge-base--notes-system-collapsible-accordion)
-9. [Capital Allocation & Expected RoI Planner](#9-capital-allocation--expected-roi-planner)
-10. [App Guide & User Interface Experience](#10-app-guide--user-interface-experience)
-11. [Troubleshooting & Maintenance Checklist](#11-troubleshooting--maintenance-checklist)
+5. [Admin Management, WhatsApp Sync & Bulk Permissions](#5-admin-management-whatsapp-sync--bulk-permissions)
+6. [Strategy Engine & Master Catalog (Cards & List Views)](#6-strategy-engine--master-catalog-cards--list-views)
+7. [Initiate Trade Dispatch & Execution Controls](#7-initiate-trade-dispatch--execution-controls)
+8. [Trade Journal & Multi-Level RoI Analytics Engine](#8-trade-journal--multi-level-roi-analytics-engine)
+9. [Knowledge Base & Notes System (Cross-Linked Strategy Badge)](#9-knowledge-base--notes-system-cross-linked-strategy-badge)
+10. [Capital Allocation & Expected RoI Planner](#10-capital-allocation--expected-roi-planner)
+11. [App Guide, UI Design System & Theme Support](#11-app-guide-ui-design-system--theme-support)
+12. [Troubleshooting & Maintenance Checklist](#12-troubleshooting--maintenance-checklist)
 
 ---
 
@@ -67,8 +68,8 @@ All persistent data is stored in Upstash Redis. Below are the key data structure
 | `whitelist` | **Hash** | Mapping of normalized phone numbers (`+919876543210`) to 6-digit PINs (`123456`). |
 | `user_permissions` | **Hash** | Mapping of phone numbers to JSON feature permissions: `{"catalog": true, "journal": true}`. |
 | `user_trades:<phone>` | **KV JSON** | Array of trade objects recorded by the user in Trade Journal. |
-| `app_notes` | **KV JSON** | Array of strategy and generic notes markdown objects. |
-| `strategies` | **KV JSON** | Master strategy definitions array (Index, Expiry, DTE, Rules, Setup). |
+| `app_notes` | **KV JSON** | Array of strategy and generic notes markdown objects with `strategyId` cross-links. |
+| `strategies` | **KV JSON** | Master strategy definitions array (Index, Expiry, DTE, Rules, Setup Legs, Notes). |
 | `holidays` | **KV JSON** | Market trading holidays dictionary for calendar calculation. |
 | `auth_audit_logs` | **List** | Log entries: `{"phone":"+91...","method":"pin","timestamp":"..."}`. |
 
@@ -93,9 +94,9 @@ Access to **Strategy Catalog** and **Trade Journal** is strictly regulated per u
 3. **Server-Side Authorization Enforcement:**
    - `/api/data.js` returns `permissions` in `/api/check-auth`.
    - `/api/journal.js` verifies `permissions.journal === true` before serving or saving trade records. Returns `403 Forbidden` if unauthorized.
-4. **Admin Access:**
+4. **Admin Access & Bulk Management:**
    - Admins automatically receive full access (`{ catalog: true, journal: true }`).
-   - Admins manage user access via live toggle checkboxes in **App Management -> Whitelisted Users**.
+   - Admins can toggle individual permissions or use **Table Header Select-All Checkboxes** (`[x] Strategy Catalog` and `[x] Trade Journal`) for bulk updates across all whitelisted users.
 
 ---
 
@@ -109,37 +110,41 @@ Access to **Strategy Catalog** and **Trade Journal** is strictly regulated per u
    - User shares verified contact card. Webhook (`/api/telegram-webhook.js`) verifies contact number against `whitelist` hash and sets session.
 2. **6-Digit PIN Verification (`/loginpin.html`):**
    - User submits phone number and 6-digit PIN.
-   - `/api/login-pin.js` validates PIN against Redis `whitelist` hash.
+   - `/api/login-pin.js` validates PIN against Redis `whitelist` hash without IP rate-limiting locks.
    - Returns 30-day HTTP-only `session_token` cookie signed via HMAC-SHA256 (`JWT_SECRET`).
 
 ---
 
-## 5. Admin Management, WhatsApp Sync & Security Controls
+## 5. Admin Management, WhatsApp Sync & Bulk Permissions
 
 Accessed via `/admin.html` or top bar `⚙️ App Management` button (for logged-in Admins).
 
 ### 🛠️ Admin Facilities
-- **Whitelisted Users Management:**
+- **Whitelisted Users & Bulk Permissions:**
   - View all whitelisted phone numbers and PINs (`👁️ Show` / `🔒 Hide`).
-  - Toggle feature access checkboxes: `[x] Strategy Catalog` and `[x] Trade Journal`.
+  - Interactive table header select-all checkboxes (`📖 Strategy Catalog` and `📔 Trade Journal`) with full indeterminate state support.
+  - Action `bulk_update_user_permissions` in `/api/admin/save.js` updates all whitelisted user records in Redis KV.
   - Add new user, regenerate 6-digit PIN, or remove user.
   - Export active whitelist as `whitelist.json`.
 - **📱 WhatsApp Group Sync:**
   - Connects to OpenWA REST API endpoint to pull group participants and auto-whitelist numbers.
 - **Strategy & Holiday Configurator:**
-  - Edit or add strategies with strategy categories (`0_adjustment`, `discretionary`, `adjustments`).
-  - Set `z-index: 2000` to allow child modal dialogs (`+ Add New Strategy`) to stack cleanly above App Management modal.
+  - Edit or add strategies with expanded options:
+    - **Deployment Day:** `Mon`, `Tue`, `Wed`, `Thu`, `Fri`, or `Any`.
+    - **Position Type:** `Both sides`, `CE Only`, `PE Only`, or `Either CE or PE`.
+    - **Setup Notes:** Supports `"notes"` string inside Setup Legs JSON rendered universally for all strategy categories.
+  - `z-index: 2000` on `#edit-strategy-modal` ensures child forms stack above the App Management modal.
 - **Audit Logs:**
   - View real-time authentication logs with sorting and clear features.
 
 ---
 
-## 6. Strategy Engine & Master Catalog (Card & List Views)
+## 6. Strategy Engine & Master Catalog (Cards & List Views)
 
-### 🎴 Dual View Layouts
+### 🗂️ Dual View Layouts
 Users can toggle between two presentation modes in the Strategy Catalog:
-1. **🎴 Card View:** Rich grid cards displaying strategy details, index badges, DTE entry windows, setup overview, and rule highlights.
-2. **📋 Single Line List View:** Compact, high-density table view rendering Strategy Name, Category Badge, Index/Expiry, DTE/Entry, Overview snippet, and View Details action button.
+1. **🗂️ Cards View:** Rich grid cards displaying strategy details, index badges, DTE entry windows, setup overview (mapping all CE & PE legs with color badges `CE:` `#60a5fa` / `PE:` `#f87171` inside scrollable containers), setup notes, and rule highlights.
+2. **📋 List View:** High-density table view rendering Strategy Name, Category Badge, Index/Expiry, DTE/Entry, Setup Overview snippet, and View Details action button.
 
 ### 📊 Strategy Classification
 - `⚡ 0-Adjustment Strategies` (Non-Discretionary rule-based strategies)
@@ -148,7 +153,16 @@ Users can toggle between two presentation modes in the Strategy Catalog:
 
 ---
 
-## 7. Trade Journal & Multi-Level RoI Analytics Engine
+## 7. Initiate Trade Dispatch & Execution Controls
+
+Inside the Strategy Details modal, an admin control card labeled **`⚡ Initiate Trade`** provides instant operational execution actions:
+- `🚀 Webhook`: Dispatches strategy payload to configured Webhook URL.
+- `🔗 Open App`: Opens external trading platform URL pre-populated with strategy parameters.
+- `📋 Copy JSON`: Copies strategy setup legs and execution parameters to clipboard.
+
+---
+
+## 8. Trade Journal & Multi-Level RoI Analytics Engine
 
 ### 📔 Trade Journal Features
 - **Record Live Trades:** Record strategy name, entry/exit dates, margin utilized, status (`OPEN` / `CLOSED`), leg strikes/quantities/entry/exit prices, brokerage, taxes, and 3-way operational notes.
@@ -164,7 +178,7 @@ Computes real-time performance metrics across 4 structured analytical levels:
 
 ---
 
-## 8. Knowledge Base & Notes System (Collapsible Accordion)
+## 9. Knowledge Base & Notes System (Cross-Linked Strategy Badge)
 
 ### 📝 Resizable Notes System
 - **Normalized Category Grouping:** Left-hand sidebar categorizes all notes into normalized category headers:
@@ -172,30 +186,40 @@ Computes real-time performance metrics across 4 structured analytical levels:
   - `⚡ STRATEGY (N)`
   - `🎯 DISCRETIONARY (N)`
   - `🛠️ ADJUSTMENTS (N)`
-- **Collapsible & Expandable Accordion:** Interactive section headers with arrow indicators (`▼` expanded / `▶` collapsed). Clicking a header toggles list items. Selecting a note auto-expands its parent category.
+- **Collapsible Accordion:** Interactive section headers with arrow indicators (`▼` expanded / `▶` collapsed). Selecting a note auto-expands its parent category.
+- **Associated Strategy Cross-Linking:**
+  - Dropdown includes default `-- None (Generic / Unlinked) --` option.
+  - Preserves `strategyId` association across all note categories (`Strategy`, `Discretionary`, `Adjustments`, `Generic`).
+  - Note Reader view displays **`🎯 Open Strategy: <Strategy Name>`** badge whenever `strategyId` is set, allowing 1-click modal navigation.
 - **Pro Tip Editor:** Markdown editor with live preview and direct clipboard screenshot paste (`Ctrl + V`).
 
 ---
 
-## 9. Capital Allocation & Expected RoI Planner
+## 10. Capital Allocation & Expected RoI Planner
 
 Integrated sub-tab calculating capital requirements, margin buffers, peak margin utilization, and target RoI across portfolio tiers (Monthly, Bi-Weekly, STBT, Discretionary).
 
 ---
 
-## 10. App Guide & User Interface Experience
+## 11. App Guide, UI Design System & Theme Support
 
-- **❓ App Guide Modal:** Comprehensive documentation modal accessible from top bar covering all 9 major features.
+- **❓ App Guide Modal:** Comprehensive documentation modal accessible from top bar covering all major features.
 - **Logged-In User Badge:** Header bar badge displaying `👤 <phone_number>` next to `🚪 Logout`.
-- **Theme Support:** Modern dark theme default with glassmorphism and full light-theme CSS overrides.
+- **Theme Support & Beta Badge:**
+  - Modern dark theme default with glassmorphism and light-theme CSS overrides.
+  - High-contrast `.light-theme .beta-badge` styling (`#4338ca` text with explicit `-webkit-text-fill-color` override).
+- **Cache Invalidation:** Version query string `?v=3.0` on script and stylesheet links in `index.html`.
 
 ---
 
-## 11. Troubleshooting & Maintenance Checklist
+## 12. Troubleshooting & Maintenance Checklist
 
 | Symptom | Cause | Resolution |
 |---|---|---|
 | Strategy Catalog / Journal hidden | User permission flag disabled | Admin enables `[x] Catalog` or `[x] Journal` in App Management -> Whitelisted Users. |
 | Timeframe dropdown text unreadable | Missing option text contrast | Fixed with global `select option` high-contrast styling in `style.css`. |
 | Add Strategy modal behind App Management | Z-index stacking issue | Fixed with `z-index: 2000` on `#edit-strategy-modal`. |
-| Analytics table empty | JavaScript exception in loop | Resolved with `sWinRate` calculation guard in `app.js`. |
+| Beta badge text invisible in light theme | WebKit `-webkit-text-fill-color: transparent` inherited from `h1` | Fixed with explicit `-webkit-text-fill-color: #4338ca` in `style.css`. |
+| View Details modal unresponsive | `TypeError: legsContainer.appendChild(leg)` (string instead of Node) | Fixed to `legsContainer.appendChild(li)` in `app.js`. |
+| Note strategy link missing | Category restricted to `'Strategy'` | Updated `renderNoteViewer()` to show `🎯 Open Strategy` whenever `note.strategyId` exists. |
+| Setup note missing in multi-leg modal | Setup note renderer trapped inside single-sided `else` block | Moved setup note rendering outside `if/else` block in `app.js`. |
