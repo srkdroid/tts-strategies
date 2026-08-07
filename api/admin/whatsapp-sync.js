@@ -59,7 +59,12 @@ async function queryKV(command) {
 
 function normalizePhoneDigits(raw) {
     if (!raw) return '';
-    // Strip everything except digits
+    if (typeof raw === 'object') {
+        if (raw.user) return String(raw.user).replace(/\D/g, '');
+        if (raw.number) return String(raw.number).replace(/\D/g, '');
+        if (raw._serialized) return String(raw._serialized).replace(/\D/g, '');
+        if (raw.id) return normalizePhoneDigits(raw.id);
+    }
     return String(raw).replace(/\D/g, '');
 }
 
@@ -135,7 +140,7 @@ module.exports = async (req, res) => {
         }
 
         const groupData = await openwaResponse.json();
-        const participants = groupData.participants || [];
+        const participants = groupData.participants || (groupData.groupMetadata && groupData.groupMetadata.participants) || groupData.members || (Array.isArray(groupData) ? groupData : []);
 
         if (!Array.isArray(participants)) {
             return res.status(400).json({ error: 'Invalid response from OpenWA: participants list missing' });
@@ -153,10 +158,14 @@ module.exports = async (req, res) => {
         // Build digit-only index of existing whitelist
         // Key: digits, Value: original phone string in whitelist
         const existingDigitsMap = {};
+        const existing10DigitMap = {};
         Object.keys(whitelistMap).forEach(phone => {
             const digits = normalizePhoneDigits(phone);
             if (digits) {
                 existingDigitsMap[digits] = phone;
+                if (digits.length >= 10) {
+                    existing10DigitMap[digits.slice(-10)] = phone;
+                }
             }
         });
 
@@ -166,21 +175,40 @@ module.exports = async (req, res) => {
         let alreadySyncedCount = 0;
 
         for (const p of participants) {
-            const rawNum = p.number || p.id || '';
-            const digits = normalizePhoneDigits(rawNum);
+            let rawNum = '';
+            let participantName = '';
+
+            if (typeof p === 'string') {
+                rawNum = p;
+            } else if (p && typeof p === 'object') {
+                participantName = p.name || p.pushname || p.formattedName || p.shortName || '';
+                rawNum = p.number || p.user || p.phone || (typeof p.id === 'string' ? p.id : (p.id ? (p.id.user || p.id._serialized) : '')) || '';
+            }
+
+            let digits = normalizePhoneDigits(rawNum);
             if (!digits) continue;
 
+            // If 10 digits (e.g. 9044228822), default to +91 country code for Indian numbers
+            if (digits.length === 10) {
+                digits = '91' + digits;
+            }
+
+            const suffix10 = digits.length >= 10 ? digits.slice(-10) : digits;
             groupDigitsSet.add(digits);
+            groupDigitsSet.add(suffix10);
+
+            const existingPhone = existingDigitsMap[digits] || (digits.length >= 10 ? existing10DigitMap[suffix10] : null);
             const formattedPhone = '+' + digits;
 
-            if (!existingDigitsMap[digits]) {
+            if (!existingPhone) {
                 // Not in whitelist -> Auto-add with random 6-digit PIN
                 const pin = generateRandomPin();
                 await queryKV(['HSET', 'whitelist', formattedPhone, pin]);
                 
                 // Record addition
-                newlyAdded.push({ phone: formattedPhone, pin: pin, name: p.name || '' });
+                newlyAdded.push({ phone: formattedPhone, pin: pin, name: participantName });
                 existingDigitsMap[digits] = formattedPhone;
+                if (suffix10) existing10DigitMap[suffix10] = formattedPhone;
                 whitelistMap[formattedPhone] = pin;
             } else {
                 alreadySyncedCount++;
@@ -191,7 +219,8 @@ module.exports = async (req, res) => {
         const missingInGroup = [];
         Object.keys(whitelistMap).forEach(phone => {
             const digits = normalizePhoneDigits(phone);
-            if (digits && !groupDigitsSet.has(digits)) {
+            const suffix10 = digits.length >= 10 ? digits.slice(-10) : digits;
+            if (digits && !groupDigitsSet.has(digits) && !groupDigitsSet.has(suffix10)) {
                 missingInGroup.push(phone);
             }
         });
