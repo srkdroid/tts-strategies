@@ -100,6 +100,21 @@ function calculateTradePnL(trade) {
     return trade;
 }
 
+async function logActivity(phone, eventType, details, meta) {
+    try {
+        const logEntry = {
+            id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            phone,
+            eventType,
+            details,
+            meta: meta || {},
+            timestamp: new Date().toISOString()
+        };
+        await queryKV(['LPUSH', 'user_activity_logs', JSON.stringify(logEntry)]);
+        await queryKV(['LTRIM', 'user_activity_logs', 0, 1999]);
+    } catch (e) {}
+}
+
 module.exports = async (req, res) => {
     try {
         const cookies = parseCookies(req.headers.cookie);
@@ -170,13 +185,15 @@ module.exports = async (req, res) => {
                 if (!trade.createdAt) trade.createdAt = trade.updatedAt;
 
                 const existingIdx = currentTrades.findIndex(t => t.id === trade.id);
-                if (existingIdx !== -1) {
+                const isNew = existingIdx === -1;
+                if (!isNew) {
                     currentTrades[existingIdx] = trade;
                 } else {
                     currentTrades.unshift(trade);
                 }
 
                 await queryKV(['SET', kvKey, JSON.stringify(currentTrades)]);
+                logActivity(phone, isNew ? 'JOURNAL_ADD_TRADE' : 'JOURNAL_EDIT_TRADE', `${isNew ? 'Added new trade' : 'Updated trade'}: ${trade.strategyName || 'Trade'} (${trade.status || 'OPEN'})`, { tradeId: trade.id, strategyName: trade.strategyName, pnl: trade.pnlNet });
                 return res.status(200).json({ success: true, message: 'Trade saved successfully', trade });
             }
 
@@ -216,12 +233,15 @@ module.exports = async (req, res) => {
                 currentTrades[existingIdx] = trade;
 
                 await queryKV(['SET', kvKey, JSON.stringify(currentTrades)]);
+                logActivity(phone, 'JOURNAL_EXIT_TRADE', `Closed trade: ${trade.strategyName || 'Trade'} with Net P&L ₹${(trade.pnlNet || 0).toLocaleString('en-IN')}`, { tradeId: trade.id, strategyName: trade.strategyName, pnl: trade.pnlNet });
                 return res.status(200).json({ success: true, message: 'Trade position closed successfully', trade });
             }
 
             if (action === 'delete_trade') {
+                const deletedTrade = currentTrades.find(t => t.id === data.id);
                 currentTrades = currentTrades.filter(t => t.id !== data.id);
                 await queryKV(['SET', kvKey, JSON.stringify(currentTrades)]);
+                logActivity(phone, 'JOURNAL_DELETE_TRADE', `Deleted trade record: ${deletedTrade ? deletedTrade.strategyName : data.id}`, { tradeId: data.id });
                 return res.status(200).json({ success: true, message: 'Trade record deleted successfully' });
             }
 

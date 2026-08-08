@@ -1634,6 +1634,8 @@ function switchDbTab(tab) {
     document.getElementById("tab-holidays-btn").classList.toggle("active", tab === 'holidays');
     document.getElementById("tab-strategies-btn").classList.toggle("active", tab === 'strategies');
     document.getElementById("tab-logs-btn").classList.toggle("active", tab === 'logs');
+    const activityBtn = document.getElementById("tab-activity-btn");
+    if (activityBtn) activityBtn.classList.toggle("active", tab === 'activity');
     const dispatchBtn = document.getElementById("tab-dispatch-btn");
     if (dispatchBtn) dispatchBtn.classList.toggle("active", tab === 'dispatch');
     
@@ -1641,6 +1643,8 @@ function switchDbTab(tab) {
     document.getElementById("tab-holidays-content").style.display = tab === 'holidays' ? 'flex' : 'none';
     document.getElementById("tab-strategies-content").style.display = tab === 'strategies' ? 'flex' : 'none';
     document.getElementById("tab-logs-content").style.display = tab === 'logs' ? 'flex' : 'none';
+    const activityContent = document.getElementById("tab-activity-content");
+    if (activityContent) activityContent.style.display = tab === 'activity' ? 'flex' : 'none';
     const dispatchContent = document.getElementById("tab-dispatch-content");
     if (dispatchContent) dispatchContent.style.display = tab === 'dispatch' ? 'flex' : 'none';
     
@@ -1650,6 +1654,8 @@ function switchDbTab(tab) {
         renderStrategiesTable();
     } else if (tab === 'dispatch') {
         loadAdminDispatchSettings();
+    } else if (tab === 'activity') {
+        fetchAdminActivityLogs();
     }
 }
 
@@ -2461,6 +2467,10 @@ function switchViewMode(mode) {
         mode = "calendar";
     }
 
+    if (typeof trackUserActivity === 'function') {
+        trackUserActivity('PAGE_VIEW', `Navigated to ${mode.toUpperCase()} view`, { mode });
+    }
+
     currentFlowViewMode = mode;
     
     const calendarBtn = document.getElementById("mode-calendar-btn");
@@ -3110,6 +3120,9 @@ function renderStrategyCatalog() {
 
 function openCatalogStrategyDetails(strategyId) {
     const strat = (window.strategiesData || []).find(s => s.id === strategyId);
+    if (typeof trackUserActivity === 'function') {
+        trackUserActivity('VIEW_STRATEGY_DETAILS', `Opened details for strategy: ${strat ? strat.name : strategyId}`, { strategyId });
+    }
     if (strat && typeof showStrategyDetails === 'function') {
         showStrategyDetails({
             strategy: strat,
@@ -3870,6 +3883,128 @@ function renderAnalyticsView() {
                 tfTbody.appendChild(tr);
             });
         }
+    }
+}
+
+/* ─── User Activity & Audit Tracking Client Helpers ─────────────────────── */
+
+let adminActivityLogsCache = [];
+
+function trackUserActivity(eventType, details, meta) {
+    try {
+        const payload = JSON.stringify({ eventType, details, meta });
+        if (navigator.sendBeacon) {
+            const blob = new Blob([payload], { type: 'application/json' });
+            navigator.sendBeacon('/api/track', blob);
+        } else {
+            fetch('/api/track', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: payload
+            }).catch(() => {});
+        }
+    } catch (e) {}
+}
+
+async function fetchAdminActivityLogs() {
+    const tbody = document.getElementById("activity-logs-tbody");
+    if (tbody) tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 1.5rem; color: var(--text-secondary);">Loading activity feed...</td></tr>`;
+
+    try {
+        const res = await fetch(`/api/admin/get-activity?_t=${Date.now()}`);
+        if (!res.ok) {
+            if (tbody) tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 1.5rem; color: #fca5a5;">Failed to fetch activity logs (${res.status})</td></tr>`;
+            return;
+        }
+        const data = await res.json();
+        adminActivityLogsCache = data.logs || [];
+        filterAdminActivityLogs();
+    } catch (err) {
+        if (tbody) tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 1.5rem; color: #fca5a5;">Error loading activity logs: ${err.message}</td></tr>`;
+    }
+}
+
+function filterAdminActivityLogs() {
+    const phoneInput = document.getElementById("activity-search-phone");
+    const typeSelect = document.getElementById("activity-filter-type");
+    const countLabel = document.getElementById("activity-logs-count-label");
+    const tbody = document.getElementById("activity-logs-tbody");
+    if (!tbody) return;
+
+    const phoneQuery = phoneInput ? phoneInput.value.trim().toLowerCase() : "";
+    const typeQuery = typeSelect ? typeSelect.value : "ALL";
+
+    let filtered = adminActivityLogsCache.filter(item => {
+        if (!item) return false;
+        const matchesPhone = !phoneQuery || (item.phone && item.phone.toLowerCase().includes(phoneQuery));
+        let matchesType = true;
+        if (typeQuery !== "ALL") {
+            if (typeQuery === "JOURNAL") {
+                matchesType = item.eventType && item.eventType.startsWith("JOURNAL");
+            } else if (typeQuery === "NOTE") {
+                matchesType = item.eventType && item.eventType.includes("NOTE");
+            } else {
+                matchesType = item.eventType === typeQuery;
+            }
+        }
+        return matchesPhone && matchesType;
+    });
+
+    if (countLabel) countLabel.innerText = `Showing ${filtered.length} of ${adminActivityLogsCache.length} activity log entries`;
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 1.5rem; color: var(--text-secondary);">No matching user activity logs found.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = filtered.map(item => {
+        const d = item.timestamp ? new Date(item.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-';
+        let badgeBg = 'rgba(59, 130, 246, 0.18)';
+        let badgeColor = '#bfdbfe';
+        let badgeBorder = 'rgba(59, 130, 246, 0.4)';
+
+        if (item.eventType && item.eventType.startsWith('JOURNAL')) {
+            badgeBg = 'rgba(16, 185, 129, 0.18)';
+            badgeColor = '#a7f3d0';
+            badgeBorder = 'rgba(16, 185, 129, 0.4)';
+        } else if (item.eventType && item.eventType.includes('NOTE')) {
+            badgeBg = 'rgba(245, 158, 11, 0.18)';
+            badgeColor = '#fde68a';
+            badgeBorder = 'rgba(245, 158, 11, 0.4)';
+        } else if (item.eventType === 'VIEW_STRATEGY_DETAILS') {
+            badgeBg = 'rgba(168, 85, 247, 0.18)';
+            badgeColor = '#e9d5ff';
+            badgeBorder = 'rgba(168, 85, 247, 0.4)';
+        }
+
+        return `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 0.55rem 0.8rem; font-family: monospace; white-space: nowrap; color: var(--text-secondary);">${d}</td>
+                <td style="padding: 0.55rem 0.8rem; font-weight: 700; color: var(--text-primary); font-family: monospace;">${item.phone || 'Unknown'}</td>
+                <td style="padding: 0.55rem 0.8rem;">
+                    <span style="padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700; background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeBorder};">${item.eventType || 'ACTIVITY'}</span>
+                </td>
+                <td style="padding: 0.55rem 0.8rem; color: var(--text-primary);">${item.details || '-'}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+async function clearAdminActivityLogs() {
+    if (!confirm("Are you sure you want to clear all recorded user activity logs? This action cannot be undone.")) return;
+
+    try {
+        const res = await fetch('/api/admin/clear-activity', { method: 'POST' });
+        if (res.ok) {
+            if (typeof showToast === 'function') showToast("🧹 Activity logs cleared!");
+            adminActivityLogsCache = [];
+            filterAdminActivityLogs();
+        } else {
+            const data = await res.json();
+            alert("Failed to clear activity logs: " + (data.error || 'Unknown error'));
+        }
+    } catch (err) {
+        alert("Error clearing activity logs: " + err.message);
     }
 }
 

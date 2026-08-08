@@ -879,6 +879,7 @@
                 <button id="tab-holidays-btn" class="tab-nav-btn" onclick="switchDbTab('holidays')">Market Holidays</button>
                 <button id="tab-strategies-btn" class="tab-nav-btn" onclick="switchDbTab('strategies')">Manage Strategies</button>
                 <button id="tab-logs-btn" class="tab-nav-btn" onclick="switchDbTab('logs')">Auth Audit Logs</button>
+                <button id="tab-activity-btn" class="tab-nav-btn" onclick="switchDbTab('activity')">📊 User Activity Audit</button>
                 <button id="tab-dispatch-btn" class="tab-nav-btn" onclick="switchDbTab('dispatch')">Dispatch Settings</button>
             </div>
 
@@ -1048,6 +1049,44 @@
                 </div>
                 
                 <button onclick="saveAdminDispatchSettings()" class="admin-btn add" style="align-self: flex-start; margin-top: 0.5rem;">💾 Save Dispatch & OpenWA Settings</button>
+            </div>
+
+            <!-- Tab Content: User Activity Audit -->
+            <div id="tab-activity-content" class="admin-tab-content" style="display: none; flex-direction: column; flex-grow: 1; overflow: hidden;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.8rem;">
+                    <div>
+                        <h4 style="margin: 0; font-size: 1rem; color: var(--text-primary);">📊 User Activity & Audit Stream</h4>
+                        <p style="margin: 0.2rem 0 0 0; font-size: 0.78rem; color: var(--text-secondary);">Real-time stream of page views, strategy details lookups, notes activity, and trade journal updates.</p>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                        <input type="text" id="activity-search-phone" oninput="filterAdminActivityLogs()" placeholder="🔍 Filter phone..." style="width: 150px; padding: 0.4rem 0.6rem; font-size: 0.8rem; border-radius: 6px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: #fff;">
+                        <select id="activity-filter-type" onchange="filterAdminActivityLogs()" style="padding: 0.4rem 0.6rem; font-size: 0.8rem; border-radius: 6px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: #fff;">
+                            <option value="ALL">All Event Types</option>
+                            <option value="PAGE_VIEW">Page Views</option>
+                            <option value="VIEW_STRATEGY_DETAILS">Strategy Details</option>
+                            <option value="JOURNAL">Trade Journal Updates</option>
+                            <option value="NOTE">Notes Activity</option>
+                        </select>
+                        <button onclick="fetchAdminActivityLogs()" class="admin-btn edit" style="margin:0; padding: 0.4rem 0.8rem; font-size: 0.8rem;">🔄 Refresh</button>
+                        <button onclick="clearAdminActivityLogs()" class="admin-btn logout" style="margin:0; padding: 0.4rem 0.8rem; font-size: 0.8rem;">🗑️ Clear Logs</button>
+                    </div>
+                </div>
+                <div style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.6rem;" id="activity-logs-count-label">Showing 0 activity log entries</div>
+                <div class="table-scroll-container" style="flex-grow: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 10px;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>User Phone</th>
+                                <th>Event Type</th>
+                                <th>Details / Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="activity-logs-tbody">
+                            <tr><td colspan="4" style="text-align: center; padding: 1.5rem; color: var(--text-secondary);">Loading activity stream...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -1423,6 +1462,6 @@
     <script src="holidays.js"></script>
     <script src="capital-planner-data.js"></script>
     <script src="notes.js?v=2.9"></script>
-    <script src="app.js?v=3.0"></script>
+    <script src="app.js?v=3.1"></script>
 </body>
 </html>
