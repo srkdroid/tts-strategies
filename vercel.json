@@ -29,5 +29,11 @@
         }
       ]
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/admin/:action*",
+      "destination": "/api/admin.js?action=:action*"
+    }
   ]
 }
