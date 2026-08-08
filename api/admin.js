@@ -168,13 +168,20 @@ module.exports = async (req, res) => {
                 }
             } catch (e) {}
 
+            let dispatch_settings = null;
+            try {
+                const dsRes = await queryKV(['GET', 'dispatch_settings']);
+                if (dsRes) { try { dispatch_settings = JSON.parse(dsRes); } catch(err){} }
+            } catch (e) {}
+
             return res.status(200).json({
                 success: true,
                 whitelist,
                 permissions,
                 auditLogs,
                 strategies,
-                holidays
+                holidays,
+                dispatch_settings
             });
         }
 
@@ -191,18 +198,74 @@ module.exports = async (req, res) => {
                 return res.status(200).json({ success: true, message: 'Auth audit logs cleared' });
             }
 
-            if (saveType === 'whitelist') {
-                await queryKV(['DEL', 'whitelist']);
-                if (data && typeof data === 'object') {
+            if (saveType === 'save_note' || saveType === 'notes') {
+                let notesList = [];
+                const kvNotes = await queryKV(['GET', 'notes']);
+                if (kvNotes) {
+                    try { notesList = JSON.parse(kvNotes); } catch(e){}
+                }
+                if (!Array.isArray(notesList)) notesList = [];
+                const notePayload = data;
+                if (!notePayload || !notePayload.id) return res.status(400).json({ error: 'Missing note payload' });
+
+                const idx = notesList.findIndex(n => n && n.id === notePayload.id);
+                if (idx >= 0) {
+                    notesList[idx] = notePayload;
+                } else {
+                    notesList.unshift(notePayload);
+                }
+                await queryKV(['SET', 'notes', JSON.stringify(notesList)]);
+                return res.status(200).json({ success: true, message: 'Note saved' });
+            }
+
+            if (saveType === 'delete_note') {
+                let notesList = [];
+                const kvNotes = await queryKV(['GET', 'notes']);
+                if (kvNotes) {
+                    try { notesList = JSON.parse(kvNotes); } catch(e){}
+                }
+                if (Array.isArray(notesList)) {
+                    notesList = notesList.filter(n => n && n.id !== (data ? data.id : null));
+                    await queryKV(['SET', 'notes', JSON.stringify(notesList)]);
+                }
+                return res.status(200).json({ success: true, message: 'Note deleted' });
+            }
+
+            if (saveType === 'save_dispatch_settings' || saveType === 'dispatch_settings') {
+                await queryKV(['SET', 'dispatch_settings', JSON.stringify(data)]);
+                return res.status(200).json({ success: true, message: 'Dispatch settings saved' });
+            }
+
+            if (saveType === 'save_user' || saveType === 'whitelist') {
+                if (data && data.phone && data.pin) {
+                    await queryKV(['HSET', 'whitelist', data.phone, String(data.pin)]);
+                } else if (data && typeof data === 'object') {
+                    await queryKV(['DEL', 'whitelist']);
                     for (const [phone, pin] of Object.entries(data)) {
                         await queryKV(['HSET', 'whitelist', phone, String(pin)]);
                     }
                 }
-                return res.status(200).json({ success: true, message: 'Whitelist saved' });
+                return res.status(200).json({ success: true, message: 'User/whitelist saved' });
             }
 
-            if (saveType === 'user_permissions') {
-                if (data && typeof data === 'object') {
+            if (saveType === 'delete_user') {
+                if (data && data.phone) {
+                    await queryKV(['HDEL', 'whitelist', data.phone]);
+                    await queryKV(['HDEL', 'user_permissions', data.phone]);
+                }
+                return res.status(200).json({ success: true, message: 'User deleted' });
+            }
+
+            if (saveType === 'sync_whitelist') {
+                await queryKV(['DEL', 'whitelist']);
+                await queryKV(['DEL', 'user_permissions']);
+                return res.status(200).json({ success: true, message: 'Whitelist reset to codebase defaults' });
+            }
+
+            if (saveType === 'save_user_permissions' || saveType === 'user_permissions') {
+                if (data && data.phone && data.permissions) {
+                    await queryKV(['HSET', 'user_permissions', data.phone, JSON.stringify(data.permissions)]);
+                } else if (data && typeof data === 'object') {
                     for (const [phone, flags] of Object.entries(data)) {
                         await queryKV(['HSET', 'user_permissions', phone, JSON.stringify(flags)]);
                     }
@@ -241,14 +304,24 @@ module.exports = async (req, res) => {
                 return res.status(200).json({ success: true, message: `Bulk updated ${feature} permission`, permissions: updatedPerms });
             }
 
-            if (saveType === 'strategies') {
+            if (saveType === 'save_strategies' || saveType === 'strategies') {
                 await queryKV(['SET', 'strategies', JSON.stringify(data)]);
                 return res.status(200).json({ success: true, message: 'Strategies saved' });
             }
 
-            if (saveType === 'holidays') {
+            if (saveType === 'sync_strategies') {
+                await queryKV(['DEL', 'strategies']);
+                return res.status(200).json({ success: true, message: 'Strategies reset to codebase defaults' });
+            }
+
+            if (saveType === 'save_holidays' || saveType === 'holidays') {
                 await queryKV(['SET', 'holidays', JSON.stringify(data)]);
                 return res.status(200).json({ success: true, message: 'Holidays saved' });
+            }
+
+            if (saveType === 'sync_holidays') {
+                await queryKV(['DEL', 'holidays']);
+                return res.status(200).json({ success: true, message: 'Holidays reset to codebase defaults' });
             }
 
             return res.status(400).json({ error: 'Unknown save type' });
