@@ -3891,6 +3891,7 @@ function renderAnalyticsView() {
 let adminActivityLogsCache = [];
 
 function trackUserActivity(eventType, details, meta) {
+    if (window.isAdminMode) return; // Do not log admin activity
     try {
         const payload = JSON.stringify({ eventType, details, meta });
         if (navigator.sendBeacon) {
@@ -3936,6 +3937,7 @@ function filterAdminActivityLogs() {
 
     let filtered = adminActivityLogsCache.filter(item => {
         if (!item) return false;
+        if (item.phone === 'Admin' || (item.phone && item.phone.toLowerCase() === 'admin')) return false;
         const matchesPhone = !phoneQuery || (item.phone && item.phone.toLowerCase().includes(phoneQuery));
         let matchesType = true;
         if (typeQuery !== "ALL") {

@@ -82,15 +82,12 @@ module.exports = async (req, res) => {
 
     try {
         const cookies = parseCookies(req.headers.cookie);
-        let phone = verifyToken(cookies['session_token']);
+        const phone = verifyToken(cookies['session_token']);
         const isAdmin = verifyAdminToken(cookies['admin_token']);
 
-        if (!phone && isAdmin) {
-            phone = "Admin";
-        }
-
-        if (!phone) {
-            return res.status(401).json({ error: 'Unauthorized session' });
+        if (isAdmin || !phone || phone === 'Admin' || (phone && phone.toLowerCase() === 'admin')) {
+            // Admin activity logging is not required
+            return res.status(200).json({ success: true, skipped: true });
         }
 
         let body = req.body;

@@ -101,6 +101,7 @@ function calculateTradePnL(trade) {
 }
 
 async function logActivity(phone, eventType, details, meta) {
+    if (!phone || phone === 'Admin' || (typeof phone === 'string' && phone.toLowerCase() === 'admin')) return;
     try {
         const logEntry = {
             id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
