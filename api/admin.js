@@ -183,9 +183,14 @@ module.exports = async (req, res) => {
             if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
             let body = req.body || {};
             if (typeof body === 'string') { try { body = JSON.parse(body); } catch(e){} }
-            const { type, data } = body;
+            const saveType = type || body.action;
 
-            if (type === 'whitelist') {
+            if (saveType === 'clear_logs' || saveType === 'clear_auth_logs') {
+                await queryKV(['DEL', 'auth_audit_logs']);
+                return res.status(200).json({ success: true, message: 'Auth audit logs cleared' });
+            }
+
+            if (saveType === 'whitelist') {
                 await queryKV(['DEL', 'whitelist']);
                 if (data && typeof data === 'object') {
                     for (const [phone, pin] of Object.entries(data)) {
@@ -195,7 +200,7 @@ module.exports = async (req, res) => {
                 return res.status(200).json({ success: true, message: 'Whitelist saved' });
             }
 
-            if (type === 'user_permissions') {
+            if (saveType === 'user_permissions') {
                 if (data && typeof data === 'object') {
                     for (const [phone, flags] of Object.entries(data)) {
                         await queryKV(['HSET', 'user_permissions', phone, JSON.stringify(flags)]);
@@ -204,7 +209,7 @@ module.exports = async (req, res) => {
                 return res.status(200).json({ success: true, message: 'Permissions saved' });
             }
 
-            if (type === 'bulk_update_user_permissions') {
+            if (saveType === 'bulk_update_user_permissions') {
                 const { feature, enabled } = data || {};
                 if (!feature || typeof enabled !== 'boolean') {
                     return res.status(400).json({ error: 'Invalid feature or enabled flag' });
@@ -235,12 +240,12 @@ module.exports = async (req, res) => {
                 return res.status(200).json({ success: true, message: `Bulk updated ${feature} permission`, permissions: updatedPerms });
             }
 
-            if (type === 'strategies') {
+            if (saveType === 'strategies') {
                 await queryKV(['SET', 'strategies', JSON.stringify(data)]);
                 return res.status(200).json({ success: true, message: 'Strategies saved' });
             }
 
-            if (type === 'holidays') {
+            if (saveType === 'holidays') {
                 await queryKV(['SET', 'holidays', JSON.stringify(data)]);
                 return res.status(200).json({ success: true, message: 'Holidays saved' });
             }

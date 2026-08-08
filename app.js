@@ -1911,7 +1911,7 @@ async function clearAuthLogs() {
         const response = await fetch('/api/admin/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'clear_logs' })
+            body: JSON.stringify({ type: 'clear_logs', action: 'clear_logs' })
         });
         
         const data = await response.json();
