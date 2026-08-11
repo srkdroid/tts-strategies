@@ -1092,6 +1092,10 @@ function showStrategyDetails(dep) {
     const strategy = dep.strategy;
     const modal = document.getElementById("strategy-modal");
     
+    if (typeof trackUserActivity === 'function' && strategy) {
+        trackUserActivity('VIEW_STRATEGY_DETAILS', `Opened details for strategy: ${strategy.name}`, { strategyId: strategy.id });
+    }
+    
     document.getElementById("modal-strategy-name").innerText = strategy.name;
     document.getElementById("modal-sheet-type").innerText = strategy.sheet;
     document.getElementById("modal-sheet-type").className = `badge ${strategy.sheet.toLowerCase()}`;
@@ -2992,6 +2996,10 @@ function switchCatalogLayout(layout) {
     if (cardsBtn) cardsBtn.classList.toggle("active", layout === "cards");
     if (listBtn) listBtn.classList.toggle("active", layout === "list");
 
+    if (typeof trackUserActivity === 'function') {
+        trackUserActivity('CATALOG_LAYOUT', `Switched catalog layout to ${layout.toUpperCase()}`, { layout });
+    }
+
     renderStrategyCatalog();
 }
 
@@ -3167,6 +3175,10 @@ function filterJournalTab(tab) {
         const btn = document.getElementById(`journal-tab-${t.toLowerCase()}`);
         if (btn) btn.classList.toggle('active', t === tab);
     });
+
+    if (typeof trackUserActivity === 'function') {
+        trackUserActivity('JOURNAL_TAB', `Switched Trade Journal filter to ${tab.toUpperCase()}`, { tab });
+    }
 
     const tradesTableContainer = document.getElementById("journal-trades-table-container");
     const analyticsContainer = document.getElementById("journal-analytics-dashboard-container");

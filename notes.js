@@ -187,6 +187,10 @@ function selectNote(noteId) {
         return;
     }
 
+    if (typeof trackUserActivity === 'function') {
+        trackUserActivity('NOTE_VIEW', `Viewed note: ${note.title}`, { noteId: note.id, category: note.category });
+    }
+
     document.getElementById("note-view-title").innerText = note.title;
     
     const catBadge = document.getElementById("note-view-category");
