@@ -32,30 +32,19 @@ const server = http.createServer((req, res) => {
                 }
             }
 
-            // Route to appropriate serverless function file
-            let apiFile = '';
-            if (pathname === '/api/login') apiFile = './api/login.js';
-            else if (pathname === '/api/login-pin') apiFile = './api/login-pin.js';
-            else if (pathname === '/api/data') apiFile = './api/data.js';
-            else if (pathname === '/api/admin/login') apiFile = './api/admin/login.js';
-            else if (pathname === '/api/admin/get') apiFile = './api/admin/get.js';
-            else if (pathname === '/api/admin/save') apiFile = './api/admin/save.js';
-            else if (pathname === '/api/admin/logout') apiFile = './api/admin/logout.js';
-            else if (pathname === '/api/logout') apiFile = './api/logout.js';
-
-            if (apiFile) {
-                try {
-                    const resolvedPath = path.resolve(apiFile);
-                    // Clear require cache for easy hot reloading on local edits
-                    delete require.cache[resolvedPath];
-                    const handler = require(apiFile);
-                    await handler(req, res);
-                } catch (err) {
-                    console.error("Local API Handler Error:", err);
-                    res.status(500).json({ error: 'Internal Server Error' });
-                }
-            } else {
-                res.status(404).json({ error: 'API Endpoint Not Found' });
+            try {
+                const apiFile = './api/index.js';
+                const resolvedPath = path.resolve(apiFile);
+                delete require.cache[resolvedPath];
+                // Also clear sub-module cache for local hot reloading
+                Object.keys(require.cache).forEach(k => {
+                    if (k.includes('_lib')) delete require.cache[k];
+                });
+                const handler = require(apiFile);
+                await handler(req, res);
+            } catch (err) {
+                console.error("Local API Handler Error:", err);
+                res.status(500).json({ error: 'Internal Server Error' });
             }
         });
     } else {

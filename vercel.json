@@ -33,7 +33,11 @@
   "rewrites": [
     {
       "source": "/api/admin/:action*",
-      "destination": "/api/admin.js?action=:action*"
+      "destination": "/api/index.js?route=admin&action=:action*"
+    },
+    {
+      "source": "/api/:endpoint*",
+      "destination": "/api/index.js?route=:endpoint*"
     }
   ]
 }
