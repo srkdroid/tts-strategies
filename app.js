@@ -1823,6 +1823,11 @@ function renderAuditLogsTable() {
             methodSpan.style.background = "rgba(245, 158, 11, 0.15)";
             methodSpan.style.color = "#f59e0b";
             methodSpan.style.border = "1px solid rgba(245, 158, 11, 0.3)";
+        } else if (log.method === 'session') {
+            methodSpan.innerText = "Active Session";
+            methodSpan.style.background = "rgba(16, 185, 129, 0.15)";
+            methodSpan.style.color = "#10b981";
+            methodSpan.style.border = "1px solid rgba(16, 185, 129, 0.3)";
         } else {
             methodSpan.innerText = "Telegram OTP";
             methodSpan.style.background = "rgba(59, 130, 246, 0.15)";

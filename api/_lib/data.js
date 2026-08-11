@@ -131,6 +131,20 @@ module.exports = async (req, res) => {
             return res.status(401).json({ error: 'Unauthorized. Please login first.' });
         }
 
+        // Log active session auth event once per 15 minutes per user
+        if (userPhone && !isAdmin && userPhone !== 'Admin' && userPhone.toLowerCase() !== 'admin') {
+            try {
+                const lockKey = `auth_session_log:${userPhone}`;
+                const hasLogged = await queryKV(['GET', lockKey]);
+                if (!hasLogged) {
+                    await queryKV(['SET', lockKey, '1', 'EX', '900']);
+                    const logEntry = { phone: userPhone, method: 'session', timestamp: new Date().toISOString() };
+                    await queryKV(['LPUSH', 'auth_audit_logs', JSON.stringify(logEntry)]);
+                    await queryKV(['LTRIM', 'auth_audit_logs', 0, 999]);
+                }
+            } catch (e) {}
+        }
+
         let strategiesData = null;
         let holidaysData = null;
 
