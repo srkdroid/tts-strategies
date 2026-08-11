@@ -169,6 +169,13 @@ module.exports = async (req, res) => {
                     // Update auth session to verified in KV
                     await queryKV(['SET', `auth_token:${token}`, JSON.stringify({ phone: contactPhone, verified: true }), 'EX', '300']);
                     
+                    // Log auth audit event
+                    try {
+                        const logEntry = { phone: contactPhone, method: 'telegram', timestamp: new Date().toISOString() };
+                        await queryKV(['LPUSH', 'auth_audit_logs', JSON.stringify(logEntry)]);
+                        await queryKV(['LTRIM', 'auth_audit_logs', 0, 999]);
+                    } catch (e) {}
+
                     // Map Telegram Chat ID to phone number for future one-click widget logins
                     await queryKV(['SET', `tg_user:${fromId}`, contactPhone]);
 

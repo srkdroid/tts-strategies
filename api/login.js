@@ -34,7 +34,7 @@ async function logAuthEvent(phone, method) {
     const logEntry = { phone, method, timestamp };
     try {
         await queryKV(['LPUSH', 'auth_audit_logs', JSON.stringify(logEntry)]);
-        await queryKV(['LTRIM', 'auth_audit_logs', '0', '999']);
+        await queryKV(['LTRIM', 'auth_audit_logs', 0, 999]);
     } catch (e) {
         console.warn('Auth audit log write failed (KV offline):', e.message);
     }
