@@ -2562,7 +2562,7 @@ function switchViewMode(mode) {
         }
     });
 
-    if (mode === "notes" && typeof fetchNotesData === 'function' && !window.preventFetchNotesDataReset) fetchNotesData();
+    if (mode === "notes" && typeof fetchNotesData === 'function') fetchNotesData();
     if (mode === "planner") renderCapitalPlannerView();
     if (mode === "catalog") renderStrategyCatalog();
     if (mode === "journal") fetchUserTradesData();
