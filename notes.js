@@ -514,42 +514,50 @@ function jumpToStrategyNote() {
     }
 }
 
-function openNoteByTitleSearch(titleKeyword) {
+async function openNoteByTitleSearch(titleKeyword) {
     if (typeof hideModal === 'function') hideModal();
-    if (typeof switchViewMode === 'function') switchViewMode('notes');
 
     if (!allNotes || allNotes.length === 0) {
         if (typeof fetchNotesData === 'function') {
-            fetchNotesData();
-            setTimeout(() => openNoteByTitleSearch(titleKeyword), 400);
-            return;
+            await fetchNotesData();
         }
     }
 
     const searchStr = (titleKeyword || "").toLowerCase().trim();
+    const searchTerms = [
+        searchStr,
+        "priority sequencing",
+        "intraday allocation",
+        "monthly, weekly",
+        "trading strategies — monthly",
+        "capital allocation",
+        "allocation"
+    ];
     
-    // 1. Try exact match
-    let note = allNotes.find(n => n.title && n.title.toLowerCase().trim() === searchStr);
+    let note = null;
+
+    // 1. Search note titles
+    for (const term of searchTerms) {
+        if (!term) continue;
+        note = allNotes.find(n => n.title && n.title.toLowerCase().includes(term));
+        if (note) break;
+    }
     
-    // 2. Try phrase includes match
+    // 2. Fallback: Search note content
     if (!note) {
-        note = allNotes.find(n => n.title && n.title.toLowerCase().includes(searchStr));
+        for (const term of searchTerms) {
+            if (!term) continue;
+            note = allNotes.find(n => n.content && n.content.toLowerCase().includes(term));
+            if (note) break;
+        }
     }
 
-    // 3. Fallback targeted match for Capital Allocation Guidance note keywords
-    if (!note && (searchStr.includes("trading") || searchStr.includes("allocation") || searchStr.includes("priority"))) {
-        note = allNotes.find(n => n.title && (
-            n.title.toLowerCase().includes("priority sequencing") ||
-            n.title.toLowerCase().includes("intraday allocation") ||
-            n.title.toLowerCase().includes("monthly, weekly") ||
-            n.title.toLowerCase().includes("allocation")
-        ));
-    }
+    if (typeof switchViewMode === 'function') switchViewMode('notes');
 
     if (note) {
         selectNote(note.id);
     } else {
-        if (typeof showToast === 'function') showToast(`Note matching "${titleKeyword}" not found.`, "info");
+        if (typeof showToast === 'function') showToast(`Note matching "${titleKeyword}" not found.`, "warning");
     }
 }
 
