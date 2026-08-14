@@ -112,7 +112,7 @@ function renderNotesSidebar() {
         grouped[cat].push(n);
     });
 
-    const categoryPriority = ['Generic', 'Strategy', 'Discretionary', 'Adjustments'];
+    const categoryPriority = ['📌 Generic', '⚡ Strategy', '🎯 Discretionary', '🛠️ Adjustments'];
     const categoryKeys = Object.keys(grouped).sort((a, b) => {
         const idxA = categoryPriority.indexOf(a);
         const idxB = categoryPriority.indexOf(b);
