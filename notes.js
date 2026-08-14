@@ -112,7 +112,15 @@ function renderNotesSidebar() {
         grouped[cat].push(n);
     });
 
-    const categoryKeys = Object.keys(grouped);
+    const categoryPriority = ['Generic', 'Strategy', 'Discretionary', 'Adjustments'];
+    const categoryKeys = Object.keys(grouped).sort((a, b) => {
+        const idxA = categoryPriority.indexOf(a);
+        const idxB = categoryPriority.indexOf(b);
+        const prioA = idxA >= 0 ? idxA : categoryPriority.length;
+        const prioB = idxB >= 0 ? idxB : categoryPriority.length;
+        if (prioA !== prioB) return prioA - prioB;
+        return a.localeCompare(b);
+    });
 
     if (categoryKeys.length === 0) {
         container.innerHTML = `<div style="padding: 1rem; text-align: center; color: var(--text-secondary); font-size: 0.82rem;">No notes found matching "${notesSearchQuery}".</div>`;
