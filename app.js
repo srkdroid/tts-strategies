@@ -656,6 +656,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     // Render initial view
     updateCalendars();
+    if (typeof renderCapitalPlannerView === 'function') {
+        renderCapitalPlannerView();
+    }
     
     // Fetch Notes Data
     if (typeof fetchNotesData === 'function') {
@@ -2830,7 +2833,8 @@ function renderCapitalFlow() {
 // -------------------------------------------------------------
 
 function renderCapitalPlannerView() {
-    if (typeof capitalPlannerMasterData === 'undefined') return;
+    const masterData = window.capitalPlannerMasterData || (typeof capitalPlannerMasterData !== 'undefined' ? capitalPlannerMasterData : null);
+    if (!masterData || !masterData.buckets) return;
 
     const capitalInput = document.getElementById("planner-capital-input");
     const totalCapital = capitalInput ? parseFloat(capitalInput.value) || 5000000 : 5000000;
@@ -2842,7 +2846,7 @@ function renderCapitalPlannerView() {
 
     // 1. Render Week-wise Heatmap Matrix
     let heatmapHtml = "";
-    capitalPlannerMasterData.buckets.forEach(bucket => {
+    masterData.buckets.forEach(bucket => {
         const badgeStyle = bucket.id === "p1" ? "background: rgba(168, 85, 247, 0.18); color: #e9d5ff; border: 1px solid rgba(168, 85, 247, 0.4);" :
                            bucket.id === "p2" ? "background: rgba(59, 130, 246, 0.18); color: #bfdbfe; border: 1px solid rgba(59, 130, 246, 0.4);" :
                            "background: rgba(16, 185, 129, 0.18); color: #a7f3d0; border: 1px solid rgba(16, 185, 129, 0.4);";
@@ -2869,7 +2873,7 @@ function renderCapitalPlannerView() {
     let grandMaxPotential = 0;
     let grandExpectedNetProfit = 0;
 
-    capitalPlannerMasterData.buckets.forEach(bucket => {
+    masterData.buckets.forEach(bucket => {
         const winRateInput = document.getElementById(`winrate-input-${bucket.id}`);
         const winRate = winRateInput ? parseFloat(winRateInput.value) || bucket.defaultWinRate : bucket.defaultWinRate;
         const winRateDecimal = winRate / 100;

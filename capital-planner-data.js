@@ -158,3 +158,5 @@ const capitalPlannerMasterData = {
         }
     ]
 };
+
+window.capitalPlannerMasterData = capitalPlannerMasterData;
