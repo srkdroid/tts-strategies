@@ -514,6 +514,82 @@ function jumpToStrategyNote() {
     }
 }
 
+async function openCapitalAllocationGuidanceNote() {
+    if (typeof hideModal === 'function') hideModal();
+
+    if (!allNotes || allNotes.length === 0) {
+        if (typeof fetchNotesData === 'function') {
+            await fetchNotesData();
+        }
+    }
+
+    // Reset notes search query and input value to ensure the target note is visible
+    notesSearchQuery = "";
+    const searchInput = document.getElementById("notes-search-input");
+    if (searchInput) searchInput.value = "";
+
+    // Switch view mode without triggering fetchNotesData reset
+    window.preventFetchNotesDataReset = true;
+    if (typeof switchViewMode === 'function') switchViewMode('notes');
+    window.preventFetchNotesDataReset = false;
+
+    // Trigger re-rendering of the sidebar with cleared search query
+    renderNotesSidebar();
+
+    const searchTerms = [
+        "priority sequencing",
+        "intraday allocation",
+        "monthly, weekly",
+        "trading strategies",
+        "capital allocation",
+        "allocation"
+    ];
+
+    let targetNote = null;
+    for (const term of searchTerms) {
+        targetNote = allNotes.find(n => n.title && n.title.toLowerCase().includes(term));
+        if (targetNote) break;
+    }
+
+    if (!targetNote) {
+        for (const term of searchTerms) {
+            targetNote = allNotes.find(n => n.content && n.content.toLowerCase().includes(term));
+            if (targetNote) break;
+        }
+    }
+
+    if (targetNote) {
+        // Ensure category is expanded
+        let rawCat = (targetNote.category || "Generic").trim();
+        let catUpper = rawCat.toUpperCase();
+        let catName = "📌 Generic";
+        if (catUpper === "STRATEGY NOTES" || catUpper === "STRATEGY" || catUpper === "0_ADJUSTMENT") catName = "⚡ Strategy";
+        else if (catUpper === "DISCRETIONARY" || catUpper === "DISCRETIONARY NOTES") catName = "🎯 Discretionary";
+        else if (catUpper === "ADJUSTMENTS" || catUpper === "REPAIR" || catUpper === "ADJUSTMENT NOTES") catName = "🛠️ Adjustments";
+        else {
+            let cleanCat = rawCat.replace(/\s+Notes?$/i, "");
+            catName = `📁 ${cleanCat}`;
+        }
+        collapsedCategories[catName] = false;
+        
+        selectNote(targetNote.id);
+    } else {
+        if (typeof showToast === 'function') {
+            showToast("Capital Allocation Guidance note not found.", "warning");
+        }
+        if (allNotes.length > 0) {
+            selectNote(allNotes[0].id);
+        }
+    }
+}
+
+function openNoteByTitleSearch(titleKeyword) {
+    return openCapitalAllocationGuidanceNote();
+}
+
+window.openCapitalAllocationGuidanceNote = openCapitalAllocationGuidanceNote;
+window.openNoteByTitleSearch = openNoteByTitleSearch;
+
 // Dynamic drag-to-resize support for notes sidebar panel
 function setupNotesSidebarResizer() {
     const resizer = document.getElementById("notes-resizer");

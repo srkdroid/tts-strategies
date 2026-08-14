@@ -217,8 +217,9 @@
                         <p style="margin: 0.3rem 0 0 0; font-size: 0.88rem; color: var(--text-secondary);">Simulate 100% week-by-week capital utilization, win rates, and expected net returns.</p>
                     </div>
 
-                    <!-- Interactive Inputs -->
-                    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <!-- Interactive Inputs & Note Guidance Link -->
+                    <div style="display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap;">
+                        <button onclick="openCapitalAllocationGuidanceNote()" class="admin-btn edit" style="margin: 0; padding: 0.45rem 0.85rem; font-size: 0.82rem; background: rgba(168, 85, 247, 0.18); border: 1px solid rgba(168, 85, 247, 0.4); color: #e9d5ff; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer; border-radius: 6px;" title="View operational guidance note">📘 Capital Allocation Guidance</button>
                         <div style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-card); padding: 0.4rem 0.8rem; border-radius: 8px; border: 1px solid var(--border-color);">
                             <label for="planner-capital-input" style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary);">Total Capital (₹):</label>
                             <input type="number" id="planner-capital-input" value="5000000" step="500000" min="100000" onchange="recalculateCapitalPlanner()" style="width: 130px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.35rem 0.6rem; border-radius: 6px; font-weight: 600; font-size: 0.9rem;">
@@ -1505,7 +1506,7 @@
     <!-- Script imports -->
     <script src="holidays.js"></script>
     <script src="capital-planner-data.js?v=3.0"></script>
-    <script src="notes.js?v=5.1"></script>
-    <script src="app.js?v=5.1"></script>
+    <script src="notes.js?v=5.2"></script>
+    <script src="app.js?v=5.2"></script>
 </body>
 </html>
