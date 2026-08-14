@@ -514,7 +514,7 @@ function jumpToStrategyNote() {
     }
 }
 
-async function openNoteByTitleSearch(titleKeyword) {
+async function openCapitalAllocationGuidanceNote() {
     if (typeof hideModal === 'function') hideModal();
 
     if (!allNotes || allNotes.length === 0) {
@@ -523,43 +523,49 @@ async function openNoteByTitleSearch(titleKeyword) {
         }
     }
 
-    const searchStr = (titleKeyword || "").toLowerCase().trim();
-    const searchTerms = [
-        searchStr,
-        "priority sequencing",
-        "intraday allocation",
-        "monthly, weekly",
-        "trading strategies — monthly",
-        "capital allocation",
-        "allocation"
-    ];
+    // 1. Target exact guidance note title or keywords
+    let note = allNotes.find(n => n.id === "note-master-general-rules" || 
+        (n.title && n.title.toLowerCase().includes("trading strategies"))
+    );
     
-    let note = null;
-
-    // 1. Search note titles
-    for (const term of searchTerms) {
-        if (!term) continue;
-        note = allNotes.find(n => n.title && n.title.toLowerCase().includes(term));
-        if (note) break;
-    }
-    
-    // 2. Fallback: Search note content
     if (!note) {
-        for (const term of searchTerms) {
-            if (!term) continue;
-            note = allNotes.find(n => n.content && n.content.toLowerCase().includes(term));
-            if (note) break;
-        }
+        note = allNotes.find(n => n.title && (
+            n.title.toLowerCase().includes("priority sequencing") ||
+            n.title.toLowerCase().includes("intraday allocation") ||
+            n.title.toLowerCase().includes("monthly, weekly") ||
+            n.title.toLowerCase().includes("allocation")
+        ));
+    }
+
+    if (!note) {
+        note = allNotes.find(n => n.content && (
+            n.content.toLowerCase().includes("priority sequencing") ||
+            n.content.toLowerCase().includes("intraday allocation") ||
+            n.content.toLowerCase().includes("allocation")
+        ));
+    }
+
+    // Fallback to first Generic category note
+    if (!note && allNotes.length > 0) {
+        note = allNotes.find(n => n.category === "Generic") || allNotes[0];
     }
 
     if (typeof switchViewMode === 'function') switchViewMode('notes');
 
     if (note) {
+        activeNoteId = note.id;
         selectNote(note.id);
     } else {
-        if (typeof showToast === 'function') showToast(`Note matching "${titleKeyword}" not found.`, "warning");
+        if (typeof showToast === 'function') showToast("Capital Allocation Guidance note not found.", "warning");
     }
 }
+
+async function openNoteByTitleSearch(titleKeyword) {
+    return openCapitalAllocationGuidanceNote();
+}
+
+window.openCapitalAllocationGuidanceNote = openCapitalAllocationGuidanceNote;
+window.openNoteByTitleSearch = openNoteByTitleSearch;
 
 // Dynamic drag-to-resize support for notes sidebar panel
 function setupNotesSidebarResizer() {
