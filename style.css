@@ -2417,7 +2417,7 @@ select:focus-visible,
 
     .view-mode-toggle {
         display: grid !important;
-        grid-template-columns: 1fr 1fr 1fr !important;
+        grid-template-columns: 1fr 1fr !important;
         gap: 0.4rem !important;
         width: 100% !important;
     }

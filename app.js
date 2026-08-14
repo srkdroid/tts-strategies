@@ -2514,19 +2514,19 @@ function switchViewMode(mode) {
     
     const calendarBtn = document.getElementById("mode-calendar-btn");
     const flowBtn = document.getElementById("mode-flow-btn");
-    const plannerBtn = document.getElementById("mode-planner-btn");
 
     const headerNotesBtn = document.getElementById("header-notes-btn");
     const headerCatalogBtn = document.getElementById("header-catalog-btn");
     const headerJournalBtn = document.getElementById("header-journal-btn");
+    const headerPlannerBtn = document.getElementById("header-planner-btn");
 
     if (calendarBtn) calendarBtn.classList.toggle("active", mode === "calendar");
     if (flowBtn) flowBtn.classList.toggle("active", mode === "flow");
-    if (plannerBtn) plannerBtn.classList.toggle("active", mode === "planner");
 
     if (headerNotesBtn) headerNotesBtn.classList.toggle("active", mode === "notes");
     if (headerCatalogBtn) headerCatalogBtn.classList.toggle("active", mode === "catalog");
     if (headerJournalBtn) headerJournalBtn.classList.toggle("active", mode === "journal");
+    if (headerPlannerBtn) headerPlannerBtn.classList.toggle("active", mode === "planner");
 
     // Update Mobile Nav buttons
     ['calendar', 'flow', 'planner', 'notes', 'catalog', 'journal'].forEach(m => {

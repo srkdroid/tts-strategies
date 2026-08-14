@@ -38,6 +38,7 @@
                 <button id="header-notes-btn" onclick="switchViewMode('notes')" class="header-btn header-btn-notes">📝 Notes</button>
                 <button id="header-catalog-btn" onclick="switchViewMode('catalog')" class="header-btn header-btn-notes" style="background: rgba(168, 85, 247, 0.18); border-color: rgba(168, 85, 247, 0.4); color: #e9d5ff;">📖 Strategy Catalog</button>
                 <button id="header-journal-btn" onclick="switchViewMode('journal')" class="header-btn header-btn-notes" style="background: rgba(16, 185, 129, 0.18); border-color: rgba(16, 185, 129, 0.4); color: #a7f3d0;">📔 Trade Journal</button>
+                <button id="header-planner-btn" onclick="switchViewMode('planner')" class="header-btn header-btn-notes" style="background: rgba(245, 158, 11, 0.18); border-color: rgba(245, 158, 11, 0.4); color: #fcd34d;">💰 Capital Planner</button>
                 <div id="current-time-display">Date: 28/07/2026</div>
                 <button id="theme-toggle-btn" class="header-btn header-btn-theme" title="Toggle Theme">☀️</button>
                 <div id="user-info-display" style="display: none; font-size: 0.78rem; font-weight: 700; color: var(--text-primary); background: rgba(255, 255, 255, 0.08); padding: 0.35rem 0.65rem; border-radius: 6px; border: 1px solid var(--border-color); align-items: center; gap: 0.35rem;">
@@ -119,11 +120,10 @@
                     </div>
                 </div>
             </div>
-            <!-- View Mode Toggle (Calendar, Capital Flow & Capital Planner - Admin Only) -->
+            <!-- View Mode Toggle (Calendar & Capital Flow) -->
             <div class="view-mode-toggle">
                 <button id="mode-calendar-btn" class="toggle-btn" onclick="switchViewMode('calendar')">📅 Calendar</button>
                 <button id="mode-flow-btn" class="toggle-btn active" onclick="switchViewMode('flow')">📊 Capital Flow</button>
-                <button id="mode-planner-btn" class="toggle-btn" onclick="switchViewMode('planner')">💰 Capital Planner</button>
             </div>
         </section>
 
@@ -1493,7 +1493,7 @@
     <!-- Script imports -->
     <script src="holidays.js"></script>
     <script src="capital-planner-data.js"></script>
-    <script src="notes.js?v=3.4"></script>
-    <script src="app.js?v=3.7"></script>
+    <script src="notes.js?v=3.5"></script>
+    <script src="app.js?v=3.8"></script>
 </body>
 </html>
