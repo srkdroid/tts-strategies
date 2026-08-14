@@ -514,73 +514,61 @@ function jumpToStrategyNote() {
     }
 }
 
-async function openCapitalAllocationGuidanceNote() {
+function openCapitalAllocationGuidanceNote() {
     if (typeof hideModal === 'function') hideModal();
 
-    if (!allNotes || allNotes.length === 0) {
-        if (typeof fetchNotesData === 'function') {
-            await fetchNotesData();
+    // 1. Switch to Notes view mode first
+    if (typeof switchViewMode === 'function') {
+        switchViewMode('notes');
+    }
+
+    // 2. Poll for DOM elements to be ready, then trigger click
+    let attempts = 0;
+    const trySelectNoteItem = () => {
+        const sidebarItems = document.querySelectorAll(".note-sidebar-item");
+        if (sidebarItems.length === 0) {
+            attempts++;
+            if (attempts < 30) { // Try for up to 3 seconds
+                setTimeout(trySelectNoteItem, 100);
+            }
+            return;
         }
-    }
 
-    if (!allNotes || allNotes.length === 0) {
-        if (typeof switchViewMode === 'function') switchViewMode('notes');
-        if (typeof showToast === 'function') showToast("No notes available in Knowledge Base.", "info");
-        return;
-    }
+        const keywords = [
+            "priority sequencing",
+            "trading strategies",
+            "allocation with priority",
+            "intraday allocation",
+            "capital allocation",
+            "allocation"
+        ];
 
-    const keywords = [
-        "priority sequencing",
-        "intraday allocation",
-        "monthly, weekly",
-        "trading strategies",
-        "capital allocation",
-        "allocation",
-        "sequencing",
-        "priority",
-        "general margin"
-    ];
-
-    let bestNote = null;
-    let highestScore = 0;
-
-    allNotes.forEach(n => {
-        let score = 0;
-        const titleLower = (n.title || "").toLowerCase();
-        const contentLower = (n.content || "").toLowerCase();
-        const catLower = (n.category || "").toLowerCase();
-
-        keywords.forEach((kw, index) => {
-            const weight = keywords.length - index;
-            if (titleLower.includes(kw)) score += weight * 10;
-            if (contentLower.includes(kw)) score += weight * 2;
-            if (catLower.includes(kw)) score += weight * 1;
-        });
-
-        if (score > highestScore) {
-            highestScore = score;
-            bestNote = n;
+        let foundItem = null;
+        
+        // Find best match by checking sidebar titles
+        for (const kw of keywords) {
+            for (const item of sidebarItems) {
+                const titleEl = item.querySelector(".note-sidebar-item-title");
+                if (titleEl && titleEl.innerText.toLowerCase().includes(kw)) {
+                    foundItem = item;
+                    break;
+                }
+            }
+            if (foundItem) break;
         }
-    });
 
-    // If score > 0, we found the best matching guidance note
-    if (!bestNote || highestScore === 0) {
-        bestNote = allNotes.find(n => (n.category || "").toLowerCase().includes("generic"));
-    }
+        // Trigger click if found
+        if (foundItem) {
+            foundItem.click();
+        } else {
+            console.warn("Guidance note matching allocation terms not found in sidebar list.");
+        }
+    };
 
-    if (bestNote) {
-        activeNoteId = bestNote.id;
-        window.preventFetchNotesDataReset = true;
-        if (typeof switchViewMode === 'function') switchViewMode('notes');
-        window.preventFetchNotesDataReset = false;
-        selectNote(bestNote.id);
-    } else {
-        if (typeof switchViewMode === 'function') switchViewMode('notes');
-        if (typeof showToast === 'function') showToast("Capital Allocation Guidance note not found.", "info");
-    }
+    trySelectNoteItem();
 }
 
-async function openNoteByTitleSearch(titleKeyword) {
+function openNoteByTitleSearch(titleKeyword) {
     return openCapitalAllocationGuidanceNote();
 }
 
