@@ -550,12 +550,14 @@ async function openCapitalAllocationGuidanceNote() {
         note = allNotes.find(n => n.category === "Generic") || allNotes[0];
     }
 
-    if (typeof switchViewMode === 'function') switchViewMode('notes');
-
     if (note) {
         activeNoteId = note.id;
+        window.preventFetchNotesDataReset = true;
+        if (typeof switchViewMode === 'function') switchViewMode('notes');
+        window.preventFetchNotesDataReset = false;
         selectNote(note.id);
     } else {
+        if (typeof switchViewMode === 'function') switchViewMode('notes');
         if (typeof showToast === 'function') showToast("Capital Allocation Guidance note not found.", "warning");
     }
 }
