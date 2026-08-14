@@ -510,7 +510,29 @@ function jumpToStrategyNote() {
             }
         } else {
             if (typeof showToast === 'function') showToast(`No strategy notes available yet for ${strat.name}.`, "info");
+    }
+}
+
+function openNoteByTitleSearch(titleKeyword) {
+    if (typeof hideModal === 'function') hideModal();
+    if (typeof switchViewMode === 'function') switchViewMode('notes');
+
+    const searchStr = (titleKeyword || "").toLowerCase();
+
+    if (!allNotes || allNotes.length === 0) {
+        if (typeof fetchNotesData === 'function') {
+            fetchNotesData();
+            setTimeout(() => openNoteByTitleSearch(titleKeyword), 350);
+            return;
         }
+    }
+
+    const note = allNotes.find(n => n.title && n.title.toLowerCase().includes(searchStr));
+
+    if (note) {
+        selectNote(note.id);
+    } else {
+        if (typeof showToast === 'function') showToast(`Note matching "${titleKeyword}" not found.`, "info");
     }
 }
 
