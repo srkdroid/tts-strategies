@@ -615,13 +615,33 @@ document.addEventListener("DOMContentLoaded", async () => {
             headerJournalBtn.style.display = canJournal ? "inline-flex" : "none";
         }
 
+        const mobileNavCatalog = document.getElementById("mobile-nav-catalog-btn");
+        const mobileNavJournal = document.getElementById("mobile-nav-journal-btn");
+        const mobileNavPlanner = document.getElementById("mobile-nav-planner-btn");
+        if (mobileNavCatalog) mobileNavCatalog.style.display = canCatalog ? "flex" : "none";
+        if (mobileNavJournal) mobileNavJournal.style.display = canJournal ? "flex" : "none";
+        if (mobileNavPlanner) mobileNavPlanner.style.display = window.isAdminMode ? "flex" : "none";
+
         const userInfoDisplay = document.getElementById("user-info-display");
         const userPhoneNumber = document.getElementById("user-phone-number");
+        const mobileUserInfo = document.getElementById("mobile-user-info");
+        const mobileUserPhone = document.getElementById("mobile-user-phone");
+        const mobileUserLogout = document.getElementById("mobile-user-logout-btn");
+
         if (userPhoneNumber && resJson.userPhone) {
             userPhoneNumber.innerText = resJson.userPhone;
         }
+        if (mobileUserPhone && resJson.userPhone) {
+            mobileUserPhone.innerText = resJson.userPhone;
+        }
         if (userInfoDisplay && resJson.userPhone) {
             userInfoDisplay.style.display = "inline-flex";
+        }
+        if (mobileUserInfo && resJson.userPhone) {
+            mobileUserInfo.style.display = "block";
+        }
+        if (mobileUserLogout) {
+            mobileUserLogout.style.display = "flex";
         }
     } catch (error) {
         console.error('Authentication check failed:', error);
@@ -2463,6 +2483,16 @@ async function logoutUser() {
 
 /* ─── Capital Flow Timeline View Helpers ──────────────────────────────────── */
 
+function toggleMobileMenu(forceClose) {
+    const overlay = document.getElementById("mobile-nav-overlay");
+    if (!overlay) return;
+    if (forceClose === true || overlay.classList.contains("open")) {
+        overlay.classList.remove("open");
+    } else {
+        overlay.classList.add("open");
+    }
+}
+
 function switchViewMode(mode) {
     const canCatalog = window.isAdminMode || (window.userPermissions && window.userPermissions.catalog === true);
     const canJournal = window.isAdminMode || (window.userPermissions && window.userPermissions.journal === true);
@@ -2497,6 +2527,15 @@ function switchViewMode(mode) {
     if (headerNotesBtn) headerNotesBtn.classList.toggle("active", mode === "notes");
     if (headerCatalogBtn) headerCatalogBtn.classList.toggle("active", mode === "catalog");
     if (headerJournalBtn) headerJournalBtn.classList.toggle("active", mode === "journal");
+
+    // Update Mobile Nav buttons
+    ['calendar', 'flow', 'planner', 'notes', 'catalog', 'journal'].forEach(m => {
+        const mBtn = document.getElementById(`mobile-nav-${m}-btn`);
+        if (mBtn) mBtn.classList.toggle("active", mode === m);
+    });
+
+    // Close mobile menu on view switch
+    toggleMobileMenu(true);
     
     const calContainer = document.getElementById("calendar-view-container");
     const flowContainer = document.getElementById("capital-flow-view-container");

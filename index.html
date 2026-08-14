@@ -28,12 +28,12 @@
         </div>
 
         <!-- Main Header -->
-        <header>
+        <header class="main-header">
             <div class="header-title">
                 <h1 style="display: inline-flex; align-items: center;">TTS Options Strategy Calendar <span class="beta-badge">Beta</span></h1>
                 <p>Interactive deployment guide considering Indian F&O expiries & trading holidays</p>
             </div>
-            <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+            <div class="header-actions-desktop" style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
                 <button id="header-guide-btn" onclick="openAppGuideModal()" class="header-btn header-btn-guide">❓ App Guide</button>
                 <button id="header-notes-btn" onclick="switchViewMode('notes')" class="header-btn header-btn-notes">📝 Notes</button>
                 <button id="header-catalog-btn" onclick="switchViewMode('catalog')" class="header-btn header-btn-notes" style="background: rgba(168, 85, 247, 0.18); border-color: rgba(168, 85, 247, 0.4); color: #e9d5ff;">📖 Strategy Catalog</button>
@@ -45,11 +45,42 @@
                 </div>
                 <button id="user-logout-btn" onclick="logoutUser()" class="header-btn header-btn-logout" style="display: none;">🚪 Logout</button>
             </div>
+            <button id="mobile-menu-toggle" class="mobile-menu-toggle" onclick="toggleMobileMenu()" aria-label="Toggle Mobile Navigation">
+                <span>☰</span> Menu
+            </button>
         </header>
 
+        <!-- Mobile Navigation Drawer Overlay -->
+        <div id="mobile-nav-overlay" class="mobile-nav-overlay">
+            <div class="mobile-nav-drawer">
+                <div class="mobile-nav-header">
+                    <h3>Navigation</h3>
+                    <button class="mobile-nav-close" onclick="toggleMobileMenu()">&times;</button>
+                </div>
+                <div class="mobile-nav-section">
+                    <div class="mobile-nav-label">Views</div>
+                    <button id="mobile-nav-calendar-btn" class="mobile-nav-btn active" onclick="switchViewMode('calendar')">📅 Calendar View</button>
+                    <button id="mobile-nav-flow-btn" class="mobile-nav-btn" onclick="switchViewMode('flow')">📊 Capital Flow View</button>
+                    <button id="mobile-nav-planner-btn" class="mobile-nav-btn" style="display: none;" onclick="switchViewMode('planner')">💰 Capital Planner (Admin)</button>
+                    <button id="mobile-nav-notes-btn" class="mobile-nav-btn" onclick="switchViewMode('notes')">📝 Notes & Knowledge Base</button>
+                    <button id="mobile-nav-catalog-btn" class="mobile-nav-btn" onclick="switchViewMode('catalog')">📖 Strategy Catalog</button>
+                    <button id="mobile-nav-journal-btn" class="mobile-nav-btn" onclick="switchViewMode('journal')">📔 Trade Journal</button>
+                </div>
+                <div class="mobile-nav-section">
+                    <div class="mobile-nav-label">Utilities</div>
+                    <button class="mobile-nav-btn" onclick="openAppGuideModal(); toggleMobileMenu();">❓ App User Guide</button>
+                    <button class="mobile-nav-btn" onclick="document.getElementById('theme-toggle-btn').click();">☀️ / 🌙 Toggle Theme</button>
+                    <div id="mobile-user-info" style="display: none; padding: 0.6rem 0.8rem; font-size: 0.85rem; font-weight: 700; color: var(--text-primary); background: rgba(255, 255, 255, 0.06); border-radius: 8px; margin-top: 0.5rem;">
+                        👤 Signed in as <span id="mobile-user-phone"></span>
+                    </div>
+                    <button id="mobile-user-logout-btn" class="mobile-nav-btn logout" style="display: none;" onclick="logoutUser()">🚪 Logout</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Filters Section -->
-        <section class="filters-bar" style="display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: nowrap;">
-            <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: nowrap;">
+        <section class="filters-bar">
+            <div class="filters-left-group" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
                 <div class="filter-group">
                     <label for="filter-index">Index</label>
                     <select id="filter-index">
@@ -313,6 +344,7 @@
                     <section class="notes-main-pane">
                         <!-- Reader Mode -->
                         <div id="note-viewer-pane" class="note-pane-content">
+                            <button id="note-view-back-btn" class="mobile-notes-back-btn" onclick="showNotesMobileSidebar()">&larr; Back to Notes List</button>
                             <div class="note-header-bar" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.8rem;">
                                 <div>
                                     <h2 id="note-view-title" style="margin: 0 0 0.4rem 0; font-size: 1.3rem;">Select a Note</h2>
@@ -1461,7 +1493,7 @@
     <!-- Script imports -->
     <script src="holidays.js"></script>
     <script src="capital-planner-data.js"></script>
-    <script src="notes.js?v=3.2"></script>
-    <script src="app.js?v=3.5"></script>
+    <script src="notes.js?v=3.3"></script>
+    <script src="app.js?v=3.6"></script>
 </body>
 </html>

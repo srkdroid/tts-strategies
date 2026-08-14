@@ -177,6 +177,13 @@ function renderNotesSidebar() {
     });
 }
 
+function showNotesMobileSidebar() {
+    const sidebar = document.querySelector(".notes-sidebar");
+    if (sidebar) {
+        sidebar.scrollIntoView({ behavior: "smooth" });
+    }
+}
+
 // Select & Display Note in Main Viewer Pane (75%)
 function selectNote(noteId) {
     activeNoteId = noteId;
@@ -188,6 +195,11 @@ function selectNote(noteId) {
 
     if (viewerPane) viewerPane.style.display = "block";
     if (editorPane) editorPane.style.display = "none";
+
+    // Auto-scroll to note content on mobile screens
+    if (window.innerWidth <= 768 && viewerPane) {
+        viewerPane.scrollIntoView({ behavior: "smooth" });
+    }
 
     if (!note) {
         document.getElementById("note-view-title").innerText = "Note Not Found";
@@ -506,7 +518,7 @@ function jumpToStrategyNote() {
 function setupNotesSidebarResizer() {
     const resizer = document.getElementById("notes-resizer");
     const sidebar = document.querySelector(".notes-sidebar");
-    if (!resizer || !sidebar) return;
+    if (!resizer || !sidebar || window.innerWidth <= 768) return;
 
     let isResizing = false;
     let startX = 0;
