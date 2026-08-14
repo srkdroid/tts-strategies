@@ -523,31 +523,20 @@ async function openCapitalAllocationGuidanceNote() {
         }
     }
 
-    // 1. Target exact guidance note title or keywords
-    let note = allNotes.find(n => n.id === "note-master-general-rules" || 
-        (n.title && n.title.toLowerCase().includes("trading strategies"))
-    );
+    // Target note titled "Trading strategies — monthly, weekly, and intraday allocation with priority sequencing"
+    let note = allNotes.find(n => n.title && (
+        n.title.toLowerCase().includes("trading strategies") ||
+        n.title.toLowerCase().includes("priority sequencing") ||
+        n.title.toLowerCase().includes("intraday allocation") ||
+        n.title.toLowerCase().includes("monthly, weekly")
+    ));
     
-    if (!note) {
-        note = allNotes.find(n => n.title && (
-            n.title.toLowerCase().includes("priority sequencing") ||
-            n.title.toLowerCase().includes("intraday allocation") ||
-            n.title.toLowerCase().includes("monthly, weekly") ||
-            n.title.toLowerCase().includes("allocation")
-        ));
-    }
-
     if (!note) {
         note = allNotes.find(n => n.content && (
             n.content.toLowerCase().includes("priority sequencing") ||
             n.content.toLowerCase().includes("intraday allocation") ||
-            n.content.toLowerCase().includes("allocation")
+            n.content.toLowerCase().includes("allocation with priority")
         ));
-    }
-
-    // Fallback to first Generic category note
-    if (!note && allNotes.length > 0) {
-        note = allNotes.find(n => n.category === "Generic") || allNotes[0];
     }
 
     if (note) {
@@ -558,7 +547,7 @@ async function openCapitalAllocationGuidanceNote() {
         selectNote(note.id);
     } else {
         if (typeof switchViewMode === 'function') switchViewMode('notes');
-        if (typeof showToast === 'function') showToast("Capital Allocation Guidance note not found.", "warning");
+        if (typeof showToast === 'function') showToast('Guidance note "Trading strategies..." not found in Notes.', "info");
     }
 }
 
