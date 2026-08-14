@@ -61,7 +61,7 @@
                     <div class="mobile-nav-label">Views</div>
                     <button id="mobile-nav-calendar-btn" class="mobile-nav-btn active" onclick="switchViewMode('calendar')">📅 Calendar View</button>
                     <button id="mobile-nav-flow-btn" class="mobile-nav-btn" onclick="switchViewMode('flow')">📊 Capital Flow View</button>
-                    <button id="mobile-nav-planner-btn" class="mobile-nav-btn" style="display: none;" onclick="switchViewMode('planner')">💰 Capital Planner (Admin)</button>
+                    <button id="mobile-nav-planner-btn" class="mobile-nav-btn" onclick="switchViewMode('planner')">💰 Capital Allocation Planner</button>
                     <button id="mobile-nav-notes-btn" class="mobile-nav-btn" onclick="switchViewMode('notes')">📝 Notes & Knowledge Base</button>
                     <button id="mobile-nav-catalog-btn" class="mobile-nav-btn" onclick="switchViewMode('catalog')">📖 Strategy Catalog</button>
                     <button id="mobile-nav-journal-btn" class="mobile-nav-btn" onclick="switchViewMode('journal')">📔 Trade Journal</button>
@@ -123,7 +123,7 @@
             <div class="view-mode-toggle">
                 <button id="mode-calendar-btn" class="toggle-btn" onclick="switchViewMode('calendar')">📅 Calendar</button>
                 <button id="mode-flow-btn" class="toggle-btn active" onclick="switchViewMode('flow')">📊 Capital Flow</button>
-                <button id="mode-planner-btn" class="toggle-btn" style="display: none;" onclick="switchViewMode('planner')">💰 Capital Planner</button>
+                <button id="mode-planner-btn" class="toggle-btn" onclick="switchViewMode('planner')">💰 Capital Planner</button>
             </div>
         </section>
 
@@ -228,7 +228,7 @@
                 </div>
 
                 <!-- KPI Summary Dashboard Cards -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.8rem;">
+                <div class="planner-kpi-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.8rem;">
                     
                     <div class="planner-kpi-card" style="background: var(--bg-modal-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 1rem;">
                         <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.05em; display: block; margin-bottom: 0.3rem;">Total Account Capital</span>
@@ -1493,7 +1493,7 @@
     <!-- Script imports -->
     <script src="holidays.js"></script>
     <script src="capital-planner-data.js"></script>
-    <script src="notes.js?v=3.3"></script>
-    <script src="app.js?v=3.6"></script>
+    <script src="notes.js?v=3.4"></script>
+    <script src="app.js?v=3.7"></script>
 </body>
 </html>

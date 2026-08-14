@@ -589,13 +589,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         isAdminMode = !!resJson.isAdmin;
         window.isAdminMode = isAdminMode;
         const plannerBtn = document.getElementById("mode-planner-btn");
+        if (plannerBtn) plannerBtn.style.display = "inline-flex";
+
         if (isAdminMode) {
             document.getElementById("admin-bar").style.display = "flex";
             document.getElementById("admin-user-info").innerText = `Logged in as Admin (${resJson.userPhone})`;
-            if (plannerBtn) plannerBtn.style.display = "inline-flex";
             fetchAdminDbData();
         } else {
-            if (plannerBtn) plannerBtn.style.display = "none";
             const userLogoutBtn = document.getElementById("user-logout-btn");
             if (userLogoutBtn) userLogoutBtn.style.display = "block";
         }
@@ -620,7 +620,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const mobileNavPlanner = document.getElementById("mobile-nav-planner-btn");
         if (mobileNavCatalog) mobileNavCatalog.style.display = canCatalog ? "flex" : "none";
         if (mobileNavJournal) mobileNavJournal.style.display = canJournal ? "flex" : "none";
-        if (mobileNavPlanner) mobileNavPlanner.style.display = window.isAdminMode ? "flex" : "none";
+        if (mobileNavPlanner) mobileNavPlanner.style.display = "flex";
 
         const userInfoDisplay = document.getElementById("user-info-display");
         const userPhoneNumber = document.getElementById("user-phone-number");
