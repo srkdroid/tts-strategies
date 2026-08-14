@@ -16,8 +16,8 @@ async function fetchNotesData() {
             }
             throw new Error('Failed to fetch notes');
         }
-        const resJson = await response.json();
         allNotes = resJson.notes || [];
+        window.allNotes = allNotes;
         if (typeof resJson.isAdmin !== 'undefined') {
             window.isAdminMode = !!resJson.isAdmin;
         }
@@ -523,10 +523,18 @@ async function openCapitalAllocationGuidanceNote() {
         }
     }
 
+    // Reset notes search query and input value to ensure the target note is visible
+    notesSearchQuery = "";
+    const searchInput = document.getElementById("notes-search-input");
+    if (searchInput) searchInput.value = "";
+
     // Switch view mode without triggering fetchNotesData reset
     window.preventFetchNotesDataReset = true;
     if (typeof switchViewMode === 'function') switchViewMode('notes');
     window.preventFetchNotesDataReset = false;
+
+    // Trigger re-rendering of the sidebar with cleared search query
+    renderNotesSidebar();
 
     const searchTerms = [
         "priority sequencing",
@@ -551,13 +559,24 @@ async function openCapitalAllocationGuidanceNote() {
     }
 
     if (targetNote) {
+        // Ensure category is expanded
+        let rawCat = (targetNote.category || "Generic").trim();
+        let catUpper = rawCat.toUpperCase();
+        let catName = "📌 Generic";
+        if (catUpper === "STRATEGY NOTES" || catUpper === "STRATEGY" || catUpper === "0_ADJUSTMENT") catName = "⚡ Strategy";
+        else if (catUpper === "DISCRETIONARY" || catUpper === "DISCRETIONARY NOTES") catName = "🎯 Discretionary";
+        else if (catUpper === "ADJUSTMENTS" || catUpper === "REPAIR" || catUpper === "ADJUSTMENT NOTES") catName = "🛠️ Adjustments";
+        else {
+            let cleanCat = rawCat.replace(/\s+Notes?$/i, "");
+            catName = `📁 ${cleanCat}`;
+        }
+        collapsedCategories[catName] = false;
+        
         selectNote(targetNote.id);
     } else {
         const titles = allNotes.map(n => n.title).join(" | ");
         console.warn("Notes titles loaded:", titles);
-        if (typeof showToast === 'function') {
-            showToast("Guidance note not found in: " + titles, "warning");
-        }
+        alert("Guidance note not found in list: " + (titles || "No notes loaded"));
     }
 }
 
