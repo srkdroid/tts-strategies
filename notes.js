@@ -510,6 +510,7 @@ function jumpToStrategyNote() {
             }
         } else {
             if (typeof showToast === 'function') showToast(`No strategy notes available yet for ${strat.name}.`, "info");
+        }
     }
 }
 
