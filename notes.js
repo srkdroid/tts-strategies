@@ -518,17 +518,33 @@ function openNoteByTitleSearch(titleKeyword) {
     if (typeof hideModal === 'function') hideModal();
     if (typeof switchViewMode === 'function') switchViewMode('notes');
 
-    const searchStr = (titleKeyword || "").toLowerCase();
-
     if (!allNotes || allNotes.length === 0) {
         if (typeof fetchNotesData === 'function') {
             fetchNotesData();
-            setTimeout(() => openNoteByTitleSearch(titleKeyword), 350);
+            setTimeout(() => openNoteByTitleSearch(titleKeyword), 400);
             return;
         }
     }
 
-    const note = allNotes.find(n => n.title && n.title.toLowerCase().includes(searchStr));
+    const searchStr = (titleKeyword || "").toLowerCase().trim();
+    
+    // 1. Try exact match
+    let note = allNotes.find(n => n.title && n.title.toLowerCase().trim() === searchStr);
+    
+    // 2. Try phrase includes match
+    if (!note) {
+        note = allNotes.find(n => n.title && n.title.toLowerCase().includes(searchStr));
+    }
+
+    // 3. Fallback targeted match for Capital Allocation Guidance note keywords
+    if (!note && (searchStr.includes("trading") || searchStr.includes("allocation") || searchStr.includes("priority"))) {
+        note = allNotes.find(n => n.title && (
+            n.title.toLowerCase().includes("priority sequencing") ||
+            n.title.toLowerCase().includes("intraday allocation") ||
+            n.title.toLowerCase().includes("monthly, weekly") ||
+            n.title.toLowerCase().includes("allocation")
+        ));
+    }
 
     if (note) {
         selectNote(note.id);
