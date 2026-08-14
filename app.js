@@ -2554,7 +2554,7 @@ function switchViewMode(mode) {
     if (catalogContainer) catalogContainer.style.display = mode === "catalog" ? "block" : "none";
     if (journalContainer) journalContainer.style.display = mode === "journal" ? "block" : "none";
     
-    [calendarBtn, flowBtn, plannerBtn].forEach(btn => {
+    [calendarBtn, flowBtn].forEach(btn => {
         if (btn) {
             btn.style.background = "";
             btn.style.color = "";
