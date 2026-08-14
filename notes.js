@@ -16,6 +16,7 @@ async function fetchNotesData() {
             }
             throw new Error('Failed to fetch notes');
         }
+        const resJson = await response.json();
         allNotes = resJson.notes || [];
         window.allNotes = allNotes;
         if (typeof resJson.isAdmin !== 'undefined') {
@@ -576,7 +577,12 @@ async function openCapitalAllocationGuidanceNote() {
     } else {
         const titles = allNotes.map(n => n.title).join(" | ");
         console.warn("Notes titles loaded:", titles);
-        alert("Guidance note not found in list: " + (titles || "No notes loaded"));
+        if (typeof showToast === 'function') {
+            showToast("Capital Allocation Guidance note not found.", "warning");
+        }
+        if (allNotes.length > 0) {
+            selectNote(allNotes[0].id);
+        }
     }
 }
 
