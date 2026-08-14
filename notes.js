@@ -523,31 +523,60 @@ async function openCapitalAllocationGuidanceNote() {
         }
     }
 
-    // Target note titled "Trading strategies — monthly, weekly, and intraday allocation with priority sequencing"
-    let note = allNotes.find(n => n.title && (
-        n.title.toLowerCase().includes("trading strategies") ||
-        n.title.toLowerCase().includes("priority sequencing") ||
-        n.title.toLowerCase().includes("intraday allocation") ||
-        n.title.toLowerCase().includes("monthly, weekly")
-    ));
-    
-    if (!note) {
-        note = allNotes.find(n => n.content && (
-            n.content.toLowerCase().includes("priority sequencing") ||
-            n.content.toLowerCase().includes("intraday allocation") ||
-            n.content.toLowerCase().includes("allocation with priority")
-        ));
+    if (!allNotes || allNotes.length === 0) {
+        if (typeof switchViewMode === 'function') switchViewMode('notes');
+        if (typeof showToast === 'function') showToast("No notes available in Knowledge Base.", "info");
+        return;
     }
 
-    if (note) {
-        activeNoteId = note.id;
+    const keywords = [
+        "priority sequencing",
+        "intraday allocation",
+        "monthly, weekly",
+        "trading strategies",
+        "capital allocation",
+        "allocation",
+        "sequencing",
+        "priority",
+        "general margin"
+    ];
+
+    let bestNote = null;
+    let highestScore = 0;
+
+    allNotes.forEach(n => {
+        let score = 0;
+        const titleLower = (n.title || "").toLowerCase();
+        const contentLower = (n.content || "").toLowerCase();
+        const catLower = (n.category || "").toLowerCase();
+
+        keywords.forEach((kw, index) => {
+            const weight = keywords.length - index;
+            if (titleLower.includes(kw)) score += weight * 10;
+            if (contentLower.includes(kw)) score += weight * 2;
+            if (catLower.includes(kw)) score += weight * 1;
+        });
+
+        if (score > highestScore) {
+            highestScore = score;
+            bestNote = n;
+        }
+    });
+
+    // If score > 0, we found the best matching guidance note
+    if (!bestNote || highestScore === 0) {
+        bestNote = allNotes.find(n => (n.category || "").toLowerCase().includes("generic"));
+    }
+
+    if (bestNote) {
+        activeNoteId = bestNote.id;
         window.preventFetchNotesDataReset = true;
         if (typeof switchViewMode === 'function') switchViewMode('notes');
         window.preventFetchNotesDataReset = false;
-        selectNote(note.id);
+        selectNote(bestNote.id);
     } else {
         if (typeof switchViewMode === 'function') switchViewMode('notes');
-        if (typeof showToast === 'function') showToast('Guidance note "Trading strategies..." not found in Notes.', "info");
+        if (typeof showToast === 'function') showToast("Capital Allocation Guidance note not found.", "info");
     }
 }
 
