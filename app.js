@@ -960,51 +960,66 @@ async function syncWhatsAppGroup() {
         }
 
         // Populate and open WhatsApp Sync Audit Results Modal
-        document.getElementById("wa-sync-group-name").innerText = `Group: ${resJson.groupName} (${resJson.totalParticipants} total members)`;
-        document.getElementById("wa-stat-added").innerText = resJson.newlyAddedCount;
-        document.getElementById("wa-stat-missing").innerText = resJson.missingInGroupCount;
-        document.getElementById("wa-stat-synced").innerText = resJson.alreadySyncedCount;
+        const groupNameEl = document.getElementById("wa-sync-group-name");
+        if (groupNameEl) groupNameEl.innerText = `Group: ${resJson.groupName || groupId} (${resJson.totalParticipants || 0} total members)`;
+
+        const statAddedEl = document.getElementById("wa-stat-added");
+        if (statAddedEl) statAddedEl.innerText = resJson.newlyAddedCount || 0;
+
+        const statMissingEl = document.getElementById("wa-stat-missing");
+        if (statMissingEl) statMissingEl.innerText = resJson.missingInGroupCount || 0;
+
+        const statSyncedEl = document.getElementById("wa-stat-synced");
+        if (statSyncedEl) statSyncedEl.innerText = resJson.alreadySyncedCount || 0;
 
         // Render Newly Added
         const addedContainer = document.getElementById("wa-added-container");
-        addedContainer.innerHTML = "";
-        if (resJson.newlyAdded.length === 0) {
-            addedContainer.innerHTML = "<div style='padding: 0.8rem; font-size: 0.8rem; color: var(--text-secondary); text-align: center;'>No new users added (all group members already in whitelist).</div>";
-        } else {
-            const table = document.createElement("table");
-            table.className = "admin-table";
-            table.innerHTML = `<thead><tr><th>Phone Number</th><th>Generated PIN</th><th>Name</th></tr></thead>`;
-            const tbody = document.createElement("tbody");
-            resJson.newlyAdded.forEach(u => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `<td><strong>${u.phone}</strong></td><td style="font-family: monospace; color: #34d399; font-weight: 700;">${u.pin}</td><td>${u.name || '-'}</td>`;
-                tbody.appendChild(tr);
-            });
-            table.appendChild(tbody);
-            addedContainer.appendChild(table);
+        if (addedContainer) {
+            addedContainer.innerHTML = "";
+            const newlyAdded = resJson.newlyAdded || [];
+            if (newlyAdded.length === 0) {
+                addedContainer.innerHTML = "<div style='padding: 0.8rem; font-size: 0.8rem; color: var(--text-secondary); text-align: center;'>No new users added (all group members already in whitelist).</div>";
+            } else {
+                const table = document.createElement("table");
+                table.className = "admin-table";
+                table.innerHTML = `<thead><tr><th>Phone Number</th><th>Generated PIN</th><th>Name</th></tr></thead>`;
+                const tbody = document.createElement("tbody");
+                newlyAdded.forEach(u => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `<td><strong>${u.phone}</strong></td><td style="font-family: monospace; color: #34d399; font-weight: 700;">${u.pin}</td><td>${u.name || '-'}</td>`;
+                    tbody.appendChild(tr);
+                });
+                table.appendChild(tbody);
+                addedContainer.appendChild(table);
+            }
         }
 
         // Render Missing in Group
         const missingContainer = document.getElementById("wa-missing-container");
-        missingContainer.innerHTML = "";
-        if (resJson.missingInGroup.length === 0) {
-            missingContainer.innerHTML = "<div style='padding: 0.8rem; font-size: 0.8rem; color: var(--text-secondary); text-align: center;'>All whitelisted users are present in the WhatsApp group.</div>";
-        } else {
-            const table = document.createElement("table");
-            table.className = "admin-table";
-            table.innerHTML = `<thead><tr><th>Whitelisted Phone Number</th><th>Status</th></tr></thead>`;
-            const tbody = document.createElement("tbody");
-            resJson.missingInGroup.forEach(phone => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `<td><strong>${phone}</strong></td><td><span class="badge biweekly" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3);">App Whitelisted Only</span></td>`;
-                tbody.appendChild(tr);
-            });
-            table.appendChild(tbody);
-            missingContainer.appendChild(table);
+        if (missingContainer) {
+            missingContainer.innerHTML = "";
+            const missingInGroup = resJson.missingInGroup || [];
+            if (missingInGroup.length === 0) {
+                missingContainer.innerHTML = "<div style='padding: 0.8rem; font-size: 0.8rem; color: var(--text-secondary); text-align: center;'>All whitelisted users are present in the WhatsApp group.</div>";
+            } else {
+                const table = document.createElement("table");
+                table.className = "admin-table";
+                table.innerHTML = `<thead><tr><th>Whitelisted Phone Number</th><th>Status</th></tr></thead>`;
+                const tbody = document.createElement("tbody");
+                missingInGroup.forEach(phone => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `<td><strong>${phone}</strong></td><td><span class="badge biweekly" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3);">App Whitelisted Only</span></td>`;
+                    tbody.appendChild(tr);
+                });
+                table.appendChild(tbody);
+                missingContainer.appendChild(table);
+            }
         }
 
-        document.getElementById("whatsapp-sync-modal").style.display = "flex";
-        showToast(`📱 WhatsApp Group Synced! ${resJson.newlyAddedCount} users added to whitelist.`);
+        const syncModal = document.getElementById("whatsapp-sync-modal");
+        if (syncModal) syncModal.style.display = "flex";
+
+        showToast(`📱 WhatsApp Group Synced! ${resJson.newlyAddedCount || 0} users added to whitelist.`);
 
     } catch (err) {
         console.error("Sync error:", err);
