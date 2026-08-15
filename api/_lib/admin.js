@@ -240,9 +240,16 @@ module.exports = async (req, res) => {
                 if (data && data.phone && data.pin) {
                     await queryKV(['HSET', 'whitelist', data.phone, String(data.pin)]);
                 } else if (data && typeof data === 'object') {
-                    await queryKV(['DEL', 'whitelist']);
-                    for (const [phone, pin] of Object.entries(data)) {
-                        await queryKV(['HSET', 'whitelist', phone, String(pin)]);
+                    const entries = Object.entries(data);
+                    if (entries.length > 0) {
+                        const hsetArgs = ['HSET', 'whitelist'];
+                        entries.forEach(([phone, pin]) => {
+                            hsetArgs.push(phone, String(pin));
+                        });
+                        await queryKV(['DEL', 'whitelist']);
+                        await queryKV(hsetArgs);
+                    } else {
+                        await queryKV(['DEL', 'whitelist']);
                     }
                 }
                 return res.status(200).json({ success: true, message: 'User/whitelist saved' });
@@ -331,9 +338,24 @@ module.exports = async (req, res) => {
         if (action === 'whatsapp-sync') {
             if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
             let body = req.body || {};
-            if (typeof body === 'string') { try { body = JSON.parse(body); } catch(e){} }
             const { baseUrl, apiKey, sessionId, groupId } = body;
             if (!baseUrl || !sessionId || !groupId) return res.status(400).json({ error: 'Missing OpenWA credentials' });
+
+            let parsedUrl;
+            try {
+                parsedUrl = new URL(baseUrl.trim());
+            } catch(e) {
+                return res.status(400).json({ error: 'Invalid OpenWA baseUrl URL format' });
+            }
+            if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') {
+                return res.status(400).json({ error: 'OpenWA baseUrl must use HTTP or HTTPS protocol' });
+            }
+            const hostname = parsedUrl.hostname.toLowerCase();
+            const blockedHosts = ['localhost', '127.0.0.1', '0.0.0.0', '169.254.169.254', '[::1]', '::1'];
+            const isPrivateIp = /^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/.test(hostname);
+            if (blockedHosts.includes(hostname) || isPrivateIp || hostname.endsWith('.internal') || hostname.endsWith('.local')) {
+                return res.status(400).json({ error: 'SSRF Protection: Access to private/loopback/internal network endpoints is prohibited' });
+            }
 
             let cleanBase = baseUrl.trim().replace(/\/+$/, '');
             if (!cleanBase.endsWith('/api')) cleanBase += '/api';

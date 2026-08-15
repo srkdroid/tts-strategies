@@ -286,6 +286,22 @@ function renderCalendar(containerId, year, month, deployments, activeFilters) {
     const container = document.getElementById(containerId);
     container.innerHTML = "";
     
+    // Pre-index deployments by actualDate and exitDate for O(1) day-cell lookups
+    const deploysByActualDate = new Map();
+    const deploysByExitDate = new Map();
+    (deployments || []).forEach(dep => {
+        if (dep.actualDate) {
+            const actKey = formatDateString(dep.actualDate);
+            if (!deploysByActualDate.has(actKey)) deploysByActualDate.set(actKey, []);
+            deploysByActualDate.get(actKey).push(dep);
+        }
+        if (dep.exitDate) {
+            const exitKey = formatDateString(dep.exitDate);
+            if (!deploysByExitDate.has(exitKey)) deploysByExitDate.set(exitKey, []);
+            deploysByExitDate.get(exitKey).push(dep);
+        }
+    });
+
     // First day of the month
     const firstDay = new Date(year, month, 1);
     // Day of the week of the first day (0 = Sunday, ..., 6 = Saturday)
@@ -356,8 +372,8 @@ function renderCalendar(containerId, year, month, deployments, activeFilters) {
                 cell.classList.add("weekend");
             }
         } else {
-            // Find deployments on this day
-            const dayDeployments = deployments.filter(dep => formatDateString(dep.actualDate) === dateStr);
+            // Find deployments on this day via Map lookup
+            const dayDeployments = deploysByActualDate.get(dateStr) || [];
             
             // Filter according to active filters
             const showDeploys = activeFilters.view === "both" || activeFilters.view === "deploy";
@@ -417,14 +433,14 @@ function renderCalendar(containerId, year, month, deployments, activeFilters) {
                 cell.appendChild(badge);
             });
             
-            // Exit dot: find filtered deployments whose exitDate falls on this day
+            // Exit dot: find filtered deployments whose exitDate falls on this day via Map lookup
             const showExits = activeFilters.view === "both" || activeFilters.view === "exit";
-            const exitingToday = showExits ? deployments.filter(dep => {
-                if (!dep.exitDate) return false;
+            const exitsOnThisDay = deploysByExitDate.get(dateStr) || [];
+            const exitingToday = showExits ? exitsOnThisDay.filter(dep => {
                 const matchesIndex = activeFilters.index === "all" || dep.strategy.index.startsWith(activeFilters.index);
                 const matchesType = activeFilters.type === "all" || dep.strategy.sheet === activeFilters.type;
                 const matchesPortfolio = !activeFilters.portfolioOnly || starredStrategies.has(dep.strategy.id);
-                return matchesIndex && matchesType && matchesPortfolio && formatDateString(dep.exitDate) === dateStr;
+                return matchesIndex && matchesType && matchesPortfolio;
             }) : [];
             
             if (exitingToday.length > 0) {
@@ -3242,9 +3258,13 @@ function filterJournalTab(tab) {
     }
 }
 
+let journalSearchDebounceTimer = null;
 function onJournalSearchInput(query) {
     journalSearchQuery = (query || '').toLowerCase();
-    renderJournalTradesTable();
+    clearTimeout(journalSearchDebounceTimer);
+    journalSearchDebounceTimer = setTimeout(() => {
+        renderJournalTradesTable();
+    }, 200);
 }
 
 function renderJournalTradesTable() {
@@ -3982,7 +4002,17 @@ async function fetchAdminActivityLogs() {
     }
 }
 
-function filterAdminActivityLogs() {
+let adminActivitySearchDebounceTimer = null;
+function filterAdminActivityLogs(immediate = false) {
+    if (!immediate) {
+        clearTimeout(adminActivitySearchDebounceTimer);
+        adminActivitySearchDebounceTimer = setTimeout(() => executeFilterAdminActivityLogs(), 200);
+    } else {
+        executeFilterAdminActivityLogs();
+    }
+}
+
+function executeFilterAdminActivityLogs() {
     const phoneInput = document.getElementById("activity-search-phone");
     const typeSelect = document.getElementById("activity-filter-type");
     const countLabel = document.getElementById("activity-logs-count-label");

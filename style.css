@@ -184,6 +184,42 @@ header {
     color: #ffffff;
 }
 
+.header-btn-catalog {
+    background: var(--color-monthly-bg);
+    border: 1px solid var(--color-monthly);
+    color: var(--color-monthly-text);
+}
+
+.header-btn-catalog.active {
+    background: var(--color-monthly);
+    border-color: var(--color-monthly);
+    color: #ffffff;
+}
+
+.header-btn-journal {
+    background: var(--color-stbt-bg);
+    border: 1px solid var(--color-stbt);
+    color: var(--color-stbt-text);
+}
+
+.header-btn-journal.active {
+    background: var(--color-stbt);
+    border-color: var(--color-stbt);
+    color: #ffffff;
+}
+
+.header-btn-planner {
+    background: var(--color-shifted-bg);
+    border: 1px solid var(--color-shifted);
+    color: var(--color-shifted-text);
+}
+
+.header-btn-planner.active {
+    background: var(--color-shifted);
+    border-color: var(--color-shifted);
+    color: #ffffff;
+}
+
 .header-btn-theme {
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid var(--border-color);

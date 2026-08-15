@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TTS Options Strategy Calendar</title>
-    <link rel="stylesheet" href="style.css?v=5.4">
+    <link rel="stylesheet" href="style.css?v=5.5">
     <link rel="icon" type="image/png" href="favicon.png">
     <!-- Marked.js Markdown Parser & DOMPurify Sanitizer (Pinned with SRI) -->
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous"></script>
@@ -36,9 +36,9 @@
             <div class="header-actions-desktop" style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
                 <button id="header-guide-btn" onclick="openAppGuideModal()" class="header-btn header-btn-guide">❓ App Guide</button>
                 <button id="header-notes-btn" onclick="switchViewMode('notes')" class="header-btn header-btn-notes">📝 Notes</button>
-                <button id="header-catalog-btn" onclick="switchViewMode('catalog')" class="header-btn header-btn-notes" style="background: rgba(168, 85, 247, 0.18); border-color: rgba(168, 85, 247, 0.4); color: #e9d5ff;">📖 Strategy Catalog</button>
-                <button id="header-journal-btn" onclick="switchViewMode('journal')" class="header-btn header-btn-notes" style="background: rgba(16, 185, 129, 0.18); border-color: rgba(16, 185, 129, 0.4); color: #a7f3d0;">📔 Trade Journal</button>
-                <button id="header-planner-btn" onclick="switchViewMode('planner')" class="header-btn header-btn-notes" style="background: rgba(245, 158, 11, 0.18); border-color: rgba(245, 158, 11, 0.4); color: #fcd34d;">💰 Capital Planner</button>
+                <button id="header-catalog-btn" onclick="switchViewMode('catalog')" class="header-btn header-btn-catalog">📖 Strategy Catalog</button>
+                <button id="header-journal-btn" onclick="switchViewMode('journal')" class="header-btn header-btn-journal">📔 Trade Journal</button>
+                <button id="header-planner-btn" onclick="switchViewMode('planner')" class="header-btn header-btn-planner">💰 Capital Planner</button>
                 <div id="current-time-display">Date: 28/07/2026</div>
                 <button id="theme-toggle-btn" class="header-btn header-btn-theme" title="Toggle Theme">☀️</button>
                 <div id="user-info-display" style="display: none; font-size: 0.78rem; font-weight: 700; color: var(--text-primary); background: rgba(255, 255, 255, 0.08); padding: 0.35rem 0.65rem; border-radius: 6px; border: 1px solid var(--border-color); align-items: center; gap: 0.35rem;">
@@ -151,8 +151,10 @@
             </div>
         </section>
 
-        <!-- Calendars Grid -->
-        <main class="calendars-grid" id="calendar-view-container" style="display: none;">
+        <!-- Main Application Viewport -->
+        <main id="main-content" class="dashboard-main">
+            <!-- Calendars Grid -->
+            <section class="calendars-grid" id="calendar-view-container" style="display: none;">
             <!-- Current Month Container -->
             <article class="month-container">
                 <div class="month-header-row">
@@ -185,10 +187,10 @@
                     <div class="calendar-grid" id="calendar-june"></div>
                 </div>
             </article>
-        </main>
+            </section>
 
-        <!-- Capital Flow Timeline Grid -->
-        <main class="calendars-grid" id="capital-flow-view-container">
+            <!-- Capital Flow Timeline Grid -->
+            <section class="calendars-grid" id="capital-flow-view-container">
             <article class="month-container" style="max-width: 100%;">
                 <div class="month-header-row">
                     <h2 class="month-title" id="flow-month-title">July 2026 (Capital Flow)</h2>
@@ -204,10 +206,10 @@
                     </div>
                 </div>
             </article>
-        </main>
+            </section>
 
-        <!-- Capital Allocation & Expected RoI Planner Container -->
-        <main class="calendars-grid" id="capital-planner-view-container" style="display: none;">
+            <!-- Capital Allocation & Expected RoI Planner Container -->
+            <section class="calendars-grid" id="capital-planner-view-container" style="display: none;">
             <article class="month-container" style="max-width: 100%; padding: 1.5rem; box-sizing: border-box;">
                 
                 <!-- Section Header & Controls -->
@@ -321,10 +323,10 @@
                 </div>
 
             </article>
-        </main>
+            </section>
 
-        <!-- Knowledge Base & Strategy Notes Container (25/75 Split View) -->
-        <main class="calendars-grid" id="notes-view-container" style="display: none;">
+            <!-- Knowledge Base & Strategy Notes Container (25/75 Split View) -->
+            <section class="calendars-grid" id="notes-view-container" style="display: none;">
             <article class="month-container" style="max-width: 100%; padding: 0;">
                 <div class="notes-layout-wrapper">
                     <!-- Left Sidebar (25%) -->
@@ -417,10 +419,10 @@
                     </section>
                 </div>
             </article>
-        </main>
+            </section>
 
-        <!-- 1. Strategy Catalog View Container (Cards & Single Line List View) -->
-        <main class="calendars-grid" id="catalog-view-container" style="display: none;">
+            <!-- 1. Strategy Catalog View Container (Cards & Single Line List View) -->
+            <section class="calendars-grid" id="catalog-view-container" style="display: none;">
             <article class="month-container" style="max-width: 100%;">
                 <div class="month-header-row" style="flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: center;">
                     <div>
@@ -466,10 +468,10 @@
                     </table>
                 </div>
             </article>
-        </main>
+            </section>
 
-        <!-- 2. Trade Journal View Container (Includes Analytics Sub-Tab) -->
-        <main class="calendars-grid" id="journal-view-container" style="display: none;">
+            <!-- 2. Trade Journal View Container (Includes Analytics Sub-Tab) -->
+            <section class="calendars-grid" id="journal-view-container" style="display: none;">
             <article class="month-container" style="max-width: 100%;">
                 <div class="month-header-row" style="flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: center;">
                     <div>
@@ -622,11 +624,12 @@
                     </div>
                 </div>
             </article>
+            </section>
         </main>
     </div>
 
     <!-- Strategy Detail Modal -->
-    <div id="strategy-modal" class="modal">
+    <div id="strategy-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-strategy-name">
         <div class="modal-content">
             <div class="modal-header">
                 <div class="modal-header-left" style="display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;">
@@ -635,7 +638,7 @@
                     <button id="modal-portfolio-btn" class="admin-btn edit" style="margin: 0; padding: 0.25rem 0.6rem; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.2rem;"></button>
                     <button id="modal-notes-btn" onclick="jumpToStrategyNote()" class="admin-btn edit" style="margin: 0; padding: 0.25rem 0.6rem; font-size: 0.75rem; display: none; align-items: center; gap: 0.2rem; background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.4); color: #93c5fd;">📖 Notes</button>
                 </div>
-                <span class="close-btn" onclick="hideModal()">&times;</span>
+                <button type="button" class="close-btn" onclick="hideModal()" aria-label="Close dialog">&times;</button>
             </div>
             
             <!-- Holiday Shifting Notice -->
@@ -762,11 +765,11 @@
     </div>
 
     <!-- Edit/Add Strategy Modal -->
-    <div id="edit-strategy-modal" class="modal" style="z-index: 2000;">
+    <div id="edit-strategy-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title" style="z-index: 2000;">
         <div class="modal-content" style="max-width: 800px;">
             <div class="modal-header">
-                <h2 id="edit-modal-title">Edit Strategy</h2>
-                <span class="close-btn" onclick="closeEditStrategyModal()">&times;</span>
+                <h2 id="edit-modal-title" style="margin: 0; font-size: 1.3rem;">Edit Strategy Parameters</h2>
+                <button type="button" class="close-btn" onclick="closeEditStrategyModal()" aria-label="Close dialog">&times;</button>
             </div>
             <form id="edit-strategy-form" onsubmit="saveStrategyForm(event)">
                 <input type="hidden" id="edit-strat-id">
@@ -899,11 +902,11 @@
     </div>
 
     <!-- DB Management Modal -->
-    <div id="db-management-modal" class="modal">
+    <div id="db-management-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="db-modal-title">
         <div class="modal-content" style="max-width: 900px; height: 85vh; display: flex; flex-direction: column;">
             <div class="modal-header">
-                <h2>App Management</h2>
-                <span class="close-btn" onclick="closeDbManagementModal()">&times;</span>
+                <h2 id="db-modal-title" style="margin: 0; font-size: 1.3rem; display: flex; align-items: center; gap: 0.5rem;">⚙️ System Admin & Database Console</h2>
+                <button type="button" class="close-btn" onclick="closeDbManagementModal()" aria-label="Close dialog">&times;</button>
             </div>
             
             <!-- Modal Tabs Nav -->
@@ -1125,17 +1128,11 @@
     </div>
 
     <!-- WhatsApp Sync & Audit Results Modal -->
-    <div id="whatsapp-sync-modal" class="modal">
+    <div id="whatsapp-sync-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="whatsapp-modal-title">
         <div class="modal-content" style="max-width: 650px; max-height: 85vh; display: flex; flex-direction: column;">
             <div class="modal-header">
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <span style="font-size: 1.4rem;">📱</span>
-                    <div>
-                        <h2 style="margin: 0; font-size: 1.2rem;">WhatsApp Group Whitelist Audit</h2>
-                        <span id="wa-sync-group-name" style="font-size: 0.8rem; color: var(--text-secondary);">Group: -</span>
-                    </div>
-                </div>
-                <span class="close-btn" onclick="closeWhatsAppSyncModal()">&times;</span>
+                <h2 id="whatsapp-modal-title" style="margin: 0; font-size: 1.3rem; display: flex; align-items: center; gap: 0.5rem;">💬 WhatsApp Community Sync (OpenWA)</h2>
+                <button type="button" class="close-btn" onclick="closeWhatsAppSyncModal()" aria-label="Close dialog">&times;</button>
             </div>
             
             <div style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 1.2rem; padding-right: 0.4rem;">
@@ -1184,13 +1181,13 @@
     </div>
 
     <!-- User Features Guide Modal -->
-    <div id="app-guide-modal" class="modal">
+    <div id="app-guide-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="guide-modal-title">
         <div class="modal-content" style="max-width: 780px;">
             <div class="modal-header">
                 <div class="modal-header-left" style="display: flex; align-items: center; gap: 0.6rem;">
-                    <h2 style="margin: 0; font-size: 1.5rem; background: linear-gradient(to right, #f472b6, #a855f7, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">📖 TTS Strategy Calendar — User Guide</h2>
+                    <h2 id="guide-modal-title" style="margin: 0; font-size: 1.35rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem;">❓ TTS Strategy Calendar — User Guide</h2>
                 </div>
-                <span class="close-btn" onclick="closeAppGuideModal()">&times;</span>
+                <button type="button" class="close-btn" onclick="closeAppGuideModal()" aria-label="Close dialog">&times;</button>
             </div>
             
             <div style="padding: 1rem 0; display: flex; flex-direction: column; gap: 1.2rem; max-height: 70vh; overflow-y: auto;">
@@ -1317,14 +1314,11 @@
     </div>
 
     <!-- New / Edit Trade Journal Modal -->
-    <div id="trade-modal" class="modal" style="display: none;">
+    <div id="trade-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="trade-modal-title" style="display: none;">
         <div class="modal-content" style="max-width: 720px; width: 94vw;">
             <div class="modal-header">
-                <div>
-                    <h2 id="trade-modal-title" style="margin: 0; font-size: 1.3rem;">📔 Record New Trade</h2>
-                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Select a strategy to auto-populate legs, customize quantities, and record margin</span>
-                </div>
-                <button class="close-btn" onclick="closeTradeModal()">&times;</button>
+                <h2 id="trade-modal-title" style="margin: 0; font-size: 1.25rem; display: flex; align-items: center; gap: 0.4rem;">📝 Record Live Strategy Trade</h2>
+                <button type="button" class="close-btn" onclick="closeTradeModal()" aria-label="Close dialog">&times;</button>
             </div>
             
             <form id="trade-form" onsubmit="saveTradeFromModal(event)" class="modal-body" style="display: flex; flex-direction: column; gap: 1rem; padding: 1rem 0;">
@@ -1433,14 +1427,14 @@
     </div>
 
     <!-- Trade Exit Modal -->
-    <div id="trade-exit-modal" class="modal" style="display: none;">
+    <div id="trade-exit-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="trade-exit-modal-title" style="display: none;">
         <div class="modal-content" style="max-width: 650px; width: 94vw;">
             <div class="modal-header">
                 <div>
-                    <h2 style="margin: 0; font-size: 1.3rem;">🏁 Close Trade Position & Log Exit</h2>
+                    <h2 id="trade-exit-modal-title" style="margin: 0; font-size: 1.3rem;">🏁 Close Trade Position & Log Exit</h2>
                     <span style="font-size: 0.8rem; color: var(--text-secondary);">Enter leg exit prices and brokerage to compute Net P&L & Realized RoI %</span>
                 </div>
-                <button class="close-btn" onclick="closeTradeExitModal()">&times;</button>
+                <button type="button" class="close-btn" onclick="closeTradeExitModal()" aria-label="Close dialog">&times;</button>
             </div>
 
             <form id="trade-exit-form" onsubmit="confirmTradeExit(event)" class="modal-body" style="display: flex; flex-direction: column; gap: 1rem; padding: 1rem 0;">
@@ -1504,9 +1498,9 @@
     </div>
 
     <!-- Script imports -->
-    <script src="holidays.js?v=5.4"></script>
-    <script src="capital-planner-data.js?v=5.4"></script>
-    <script src="notes.js?v=5.4"></script>
-    <script src="app.js?v=5.4"></script>
+    <script src="holidays.js?v=5.5"></script>
+    <script src="capital-planner-data.js?v=5.5"></script>
+    <script src="notes.js?v=5.5"></script>
+    <script src="app.js?v=5.5"></script>
 </body>
 </html>

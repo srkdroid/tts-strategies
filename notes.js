@@ -39,10 +39,14 @@ async function fetchNotesData() {
     }
 }
 
-// Search Handler
+// Search Handler with debouncing
+let notesSearchDebounceTimer = null;
 function onNotesSearchInput(val) {
     notesSearchQuery = (val || "").trim().toLowerCase();
-    renderNotesSidebar();
+    clearTimeout(notesSearchDebounceTimer);
+    notesSearchDebounceTimer = setTimeout(() => {
+        renderNotesSidebar();
+    }, 200);
 }
 
 // Populate Strategy Dropdown in Editor
