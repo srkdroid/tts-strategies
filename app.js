@@ -616,9 +616,26 @@ document.addEventListener("DOMContentLoaded", async () => {
             document.getElementById("admin-bar").style.display = "flex";
             document.getElementById("admin-user-info").innerText = `Logged in as Admin (${resJson.userPhone})`;
             fetchAdminDbData();
+
+            // AI Features: Visible exclusively in Admin mode for testing
+            const aiTriggerBtn = document.getElementById("ai-copilot-trigger-btn");
+            if (aiTriggerBtn) aiTriggerBtn.style.display = "inline-flex";
+
+            const aiBriefContainer = document.getElementById("ai-daily-brief-container");
+            if (aiBriefContainer) {
+                aiBriefContainer.style.display = "block";
+                fetchDailyAiBrief(false);
+            }
         } else {
             const userLogoutBtn = document.getElementById("user-logout-btn");
             if (userLogoutBtn) userLogoutBtn.style.display = "block";
+
+            // Hide AI features for regular members during testing
+            const aiTriggerBtn = document.getElementById("ai-copilot-trigger-btn");
+            if (aiTriggerBtn) aiTriggerBtn.style.display = "none";
+
+            const aiBriefContainer = document.getElementById("ai-daily-brief-container");
+            if (aiBriefContainer) aiBriefContainer.style.display = "none";
         }
 
         window.userPermissions = resJson.permissions || { catalog: false, journal: false };
@@ -4342,8 +4359,5 @@ async function fetchDailyAiBrief(forceRefresh = false) {
     }
 }
 
-// Auto-fetch daily brief on calendar view load
-document.addEventListener("DOMContentLoaded", () => {
-    fetchDailyAiBrief(false);
-});
+// Daily brief auto-fetch is handled inside initialize Dashboard after verifying adminMode
 
