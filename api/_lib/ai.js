@@ -248,11 +248,50 @@ async function callGeminiStructured(systemInstruction, userPrompt) {
         }
     };
 
+    // 1. Try modern Gemini Interactions API (/v1beta/interactions)
+    const interactionModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+    for (const model of interactionModels) {
+        try {
+            const intPayload = {
+                model,
+                input: `${systemInstruction}\n\n${userPrompt}`,
+                generation_config: {
+                    response_mime_type: "application/json"
+                },
+                store: false
+            };
+
+            const intUrl = `https://generativelanguage.googleapis.com/v1beta/interactions?key=${GEMINI_API_KEY}`;
+            const response = await fetch(intUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(intPayload)
+            });
+
+            if (response.ok) {
+                const resJson = await response.json();
+                const textOut = resJson.output_text || 
+                                resJson.outputs?.[0]?.text || 
+                                resJson.steps?.find(s => s.type === 'message' || s.output_text)?.output_text;
+                if (textOut) {
+                    try {
+                        return JSON.parse(textOut);
+                    } catch (parseErr) {
+                        return { answer: textOut, actions: [] };
+                    }
+                }
+            }
+        } catch (intErr) {
+            console.warn(`Interactions API attempt with ${model} error:`, intErr.message);
+        }
+    }
+
+    // 2. Fallback to standard generateContent models
     const candidateModels = Array.from(new Set([
         GEMINI_MODEL,
         'gemini-2.0-flash',
         'gemini-1.5-flash',
-        'gemini-2.5-flash'
+        'gemini-1.5-pro'
     ]));
 
     let lastError = null;
@@ -268,7 +307,6 @@ async function callGeminiStructured(systemInstruction, userPrompt) {
 
             if (!response.ok) {
                 const errText = await response.text();
-                // If 404 model not found, continue to next fallback model
                 if (response.status === 404) {
                     console.warn(`Gemini model ${model} not available (404), trying fallback...`);
                     lastError = new Error(`Gemini API returned ${response.status}: ${errText}`);
