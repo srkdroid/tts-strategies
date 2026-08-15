@@ -19,8 +19,8 @@ const { queryKV, queryKVSafe } = require('./common/redis');
 
 // Configuration
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = 'gemini-2.5-flash';
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 const GLOBAL_DAILY_LIMIT = 1300;
 const USER_DAILY_LIMIT = 25;
@@ -248,31 +248,59 @@ async function callGeminiStructured(systemInstruction, userPrompt) {
         }
     };
 
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
+    const candidateModels = Array.from(new Set([
+        GEMINI_MODEL,
+        'gemini-2.0-flash',
+        'gemini-1.5-flash',
+        'gemini-2.5-flash'
+    ]));
 
-    if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Gemini API returned ${response.status}: ${errText}`);
+    let lastError = null;
+
+    for (const model of candidateModels) {
+        try {
+            const url = `${GEMINI_API_BASE}/${model}:generateContent?key=${GEMINI_API_KEY}`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                // If 404 model not found, continue to next fallback model
+                if (response.status === 404) {
+                    console.warn(`Gemini model ${model} not available (404), trying fallback...`);
+                    lastError = new Error(`Gemini API returned ${response.status}: ${errText}`);
+                    continue;
+                }
+                throw new Error(`Gemini API returned ${response.status}: ${errText}`);
+            }
+
+            const resJson = await response.json();
+            const textOut = resJson.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!textOut) {
+                throw new Error("Empty response from Gemini");
+            }
+
+            try {
+                return JSON.parse(textOut);
+            } catch (parseErr) {
+                return {
+                    answer: textOut,
+                    actions: []
+                };
+            }
+        } catch (callErr) {
+            if (callErr.message && callErr.message.includes('404')) {
+                lastError = callErr;
+                continue;
+            }
+            throw callErr;
+        }
     }
 
-    const resJson = await response.json();
-    const textOut = resJson.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!textOut) {
-        throw new Error("Empty response from Gemini");
-    }
-
-    try {
-        return JSON.parse(textOut);
-    } catch (parseErr) {
-        return {
-            answer: textOut,
-            actions: []
-        };
-    }
+    throw lastError || new Error("All Gemini candidate models failed");
 }
 
 /**
