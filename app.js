@@ -1008,7 +1008,7 @@ async function syncWhatsAppGroup() {
 
     } catch (err) {
         console.error("Sync error:", err);
-        showToast("Network error executing WhatsApp Sync", "error");
+        showToast(`❌ Sync Error: ${err.message || 'Network error executing WhatsApp Sync'}`, "error", 6000);
     } finally {
         if (btn) {
             btn.disabled = false;
