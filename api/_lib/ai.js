@@ -248,30 +248,33 @@ async function callGeminiStructured(systemInstruction, userPrompt) {
         }
     };
 
-    // 1. Try modern Gemini Interactions API (/v1beta/interactions)
+    // 1. Try modern Google Gemini Interactions API (/v1beta/interactions)
     const interactionModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
     for (const model of interactionModels) {
         try {
             const intPayload = {
                 model,
                 input: `${systemInstruction}\n\n${userPrompt}`,
-                generation_config: {
-                    response_mime_type: "application/json"
+                response_format: {
+                    type: "json_object"
                 },
                 store: false
             };
 
-            const intUrl = `https://generativelanguage.googleapis.com/v1beta/interactions?key=${GEMINI_API_KEY}`;
+            const intUrl = `https://generativelanguage.googleapis.com/v1beta/interactions`;
             const response = await fetch(intUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-goog-api-key': GEMINI_API_KEY
+                },
                 body: JSON.stringify(intPayload)
             });
 
             if (response.ok) {
                 const resJson = await response.json();
                 const textOut = resJson.output_text || 
-                                resJson.outputs?.[0]?.text || 
+                                (Array.isArray(resJson.outputs) ? resJson.outputs.map(o => o.text || '').join('') : '') ||
                                 resJson.steps?.find(s => s.type === 'message' || s.output_text)?.output_text;
                 if (textOut) {
                     try {
@@ -280,6 +283,9 @@ async function callGeminiStructured(systemInstruction, userPrompt) {
                         return { answer: textOut, actions: [] };
                     }
                 }
+            } else {
+                const errBody = await response.text();
+                console.warn(`Interactions API with ${model} returned ${response.status}:`, errBody);
             }
         } catch (intErr) {
             console.warn(`Interactions API attempt with ${model} error:`, intErr.message);
@@ -290,8 +296,7 @@ async function callGeminiStructured(systemInstruction, userPrompt) {
     const candidateModels = Array.from(new Set([
         GEMINI_MODEL,
         'gemini-2.0-flash',
-        'gemini-1.5-flash',
-        'gemini-1.5-pro'
+        'gemini-1.5-flash'
     ]));
 
     let lastError = null;
