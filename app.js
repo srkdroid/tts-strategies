@@ -1449,9 +1449,6 @@ function closeAppGuideModal() {
 // ADMIN CONTROLS INTERACTIVE LOGIC
 // -------------------------------------------------------------
 
-function showToast(msg, isError = false) {
-    alert(msg);
-}
 
 // A. Strategy Creation / Editing Modals
 function openAddStrategyModal() {

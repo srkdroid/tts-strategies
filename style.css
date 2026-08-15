@@ -37,6 +37,10 @@
     
     --font-heading: 'Outfit', sans-serif;
     --font-body: 'Inter', sans-serif;
+
+    /* Core UI Tokens */
+    --primary-color: #3b82f6;
+    --card-bg: var(--bg-card);
 }
 
 .light-theme {
@@ -72,6 +76,10 @@
     --color-shifted: #d97706;
     --color-shifted-bg: rgba(217, 119, 6, 0.08);
     --color-shifted-text: #b45309;
+
+    /* Core UI Tokens */
+    --primary-color: #2563eb;
+    --card-bg: var(--bg-card);
 }
 
 * {
