@@ -947,10 +947,15 @@ async function syncWhatsAppGroup() {
             body: JSON.stringify({ baseUrl, apiKey, sessionId, groupId })
         });
 
-        const resJson = await response.json();
+        let resJson;
+        try {
+            resJson = await response.json();
+        } catch (jsonErr) {
+            resJson = { error: `Server returned status ${response.status}: ${response.statusText}` };
+        }
 
         if (!response.ok) {
-            showToast(resJson.error || "WhatsApp Sync Failed", "error");
+            showToast(`❌ ${resJson.error || 'WhatsApp Sync Failed'}`, "error", 6000);
             return;
         }
 
@@ -1734,8 +1739,8 @@ async function fetchAdminDbData() {
         userPermissionsData = resJson.userPermissions || {};
         auditLogsData = resJson.auditLogs || [];
         
-        if (resJson.dispatchSettings && Object.keys(resJson.dispatchSettings).length > 0) {
-            const ds = resJson.dispatchSettings;
+        const ds = resJson.dispatch_settings || resJson.dispatchSettings;
+        if (ds && Object.keys(ds).length > 0) {
             localStorage.setItem("admin_webhook_url", ds.admin_webhook_url || "");
             localStorage.setItem("admin_app_url", ds.admin_app_url || "");
             localStorage.setItem("admin_openwa_url", ds.admin_openwa_url || "");
