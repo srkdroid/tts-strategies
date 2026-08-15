@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
+const { generateToken, normalizePhoneNumber } = require('./common/auth');
+const { queryKV } = require('./common/redis');
 
 // --- Redis-Based Rate Limiting ---
 const RATE_LIMIT_MAX = 5;
@@ -19,58 +20,6 @@ async function checkRateLimit(phone, queryKVFn) {
         // Fail open if Redis is down — don't block legitimate users
         return true;
     }
-}
-
-const SECRET = process.env.JWT_SECRET;
-if (!SECRET) {
-    throw new Error("JWT_SECRET environment variable is missing");
-}
-
-function normalizePhoneNumber(phone) {
-    if (!phone) return "";
-    let cleaned = phone.replace(/[^\d+]/g, '');
-    if (!cleaned.startsWith('+')) {
-        if (cleaned.length === 10) {
-            cleaned = '+91' + cleaned;
-        } else {
-            cleaned = '+' + cleaned;
-        }
-    }
-    return cleaned;
-}
-
-function generateToken(phone) {
-    const expires = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
-    const data = JSON.stringify({ phone, expires });
-    const hmac = crypto.createHmac('sha256', SECRET);
-    hmac.update(data);
-    const signature = hmac.digest('hex');
-    return Buffer.from(JSON.stringify({ data, signature })).toString('base64');
-}
-
-async function queryKV(command) {
-    const url = process.env.KV_REST_API_URL;
-    const token = process.env.KV_REST_API_TOKEN;
-    
-    if (!url || !token) {
-        throw new Error("KV_DATABASE_UNCONNECTED");
-    }
-    
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(command)
-    });
-    
-    if (!response.ok) {
-        throw new Error(`KV API returned ${response.status}`);
-    }
-    
-    const resJson = await response.json();
-    return resJson.result;
 }
 
 async function logAuthEvent(phone, method) {

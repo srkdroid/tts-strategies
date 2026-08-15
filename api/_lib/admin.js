@@ -1,72 +1,11 @@
-const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-
-const ADMIN_SECRET = process.env.ADMIN_JWT_SECRET;
-if (!ADMIN_SECRET) {
-    throw new Error("ADMIN_JWT_SECRET environment variable is missing");
-}
+const { verifyAdminToken, generateAdminToken, parseCookies } = require('./common/auth');
+const { queryKV } = require('./common/redis');
 
 const ADMIN_PASS = process.env.ADMIN_PASSWORD;
 if (!ADMIN_PASS) {
     throw new Error("ADMIN_PASSWORD environment variable is missing");
-}
-
-function verifyAdminToken(token) {
-    if (!token) return false;
-    try {
-        const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
-        const { data, signature } = decoded;
-        const hmac = crypto.createHmac('sha256', ADMIN_SECRET);
-        hmac.update(data);
-        if (signature !== hmac.digest('hex')) return false;
-        
-        const parsed = JSON.parse(data);
-        return parsed.role === 'admin' && parsed.expires && parsed.expires > Date.now();
-    } catch (e) {
-        return false;
-    }
-}
-
-function generateAdminToken() {
-    const expires = Date.now() + 2 * 60 * 60 * 1000; // 2 hours admin session
-    const data = JSON.stringify({ role: 'admin', expires });
-    const hmac = crypto.createHmac('sha256', ADMIN_SECRET);
-    hmac.update(data);
-    const signature = hmac.digest('hex');
-    return Buffer.from(JSON.stringify({ data, signature })).toString('base64');
-}
-
-function parseCookies(cookieHeader) {
-    const list = {};
-    if (!cookieHeader) return list;
-    cookieHeader.split(';').forEach(cookie => {
-        const parts = cookie.split('=');
-        list[parts.shift().trim()] = decodeURI(parts.join('='));
-    });
-    return list;
-}
-
-async function queryKV(command) {
-    const url = process.env.KV_REST_API_URL;
-    const token = process.env.KV_REST_API_TOKEN;
-    if (!url || !token) throw new Error("KV_DATABASE_UNCONNECTED");
-
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(command)
-    });
-
-    if (!response.ok) {
-        throw new Error(`KV API returned ${response.status}: ${response.statusText}`);
-    }
-
-    const resJson = await response.json();
-    return resJson.result;
 }
 
 function normalizePhoneDigits(raw) {

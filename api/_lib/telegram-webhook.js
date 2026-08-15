@@ -1,39 +1,5 @@
-const crypto = require('crypto');
-
-// Reusable KV Query Helper (REST API)
-async function queryKV(command) {
-    const url = process.env.KV_REST_API_URL;
-    const token = process.env.KV_REST_API_TOKEN;
-    if (!url || !token) {
-        throw new Error("KV_DATABASE_UNCONNECTED");
-    }
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(command)
-    });
-    if (!response.ok) {
-        throw new Error(`KV API returned ${response.status}`);
-    }
-    const resJson = await response.json();
-    return resJson.result;
-}
-
-function normalizePhoneNumber(phone) {
-    if (!phone) return "";
-    let cleaned = phone.replace(/[^\d+]/g, '');
-    if (!cleaned.startsWith('+')) {
-        if (cleaned.length === 10) {
-            cleaned = '+91' + cleaned;
-        } else {
-            cleaned = '+' + cleaned;
-        }
-    }
-    return cleaned;
-}
+const { normalizePhoneNumber } = require('./common/auth');
+const { queryKV } = require('./common/redis');
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
