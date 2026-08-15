@@ -19,7 +19,7 @@ const { queryKV, queryKVSafe } = require('./common/redis');
 
 // Configuration
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 const GLOBAL_DAILY_LIMIT = 1300;
@@ -248,54 +248,12 @@ async function callGeminiStructured(systemInstruction, userPrompt) {
         }
     };
 
-    // 1. Try modern Google Gemini Interactions API (/v1beta/interactions)
-    const interactionModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
-    for (const model of interactionModels) {
-        try {
-            const intPayload = {
-                model,
-                input: `${systemInstruction}\n\n${userPrompt}`,
-                response_format: {
-                    type: "json_object"
-                },
-                store: false
-            };
-
-            const intUrl = `https://generativelanguage.googleapis.com/v1beta/interactions`;
-            const response = await fetch(intUrl, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'x-goog-api-key': GEMINI_API_KEY
-                },
-                body: JSON.stringify(intPayload)
-            });
-
-            if (response.ok) {
-                const resJson = await response.json();
-                const textOut = resJson.output_text || 
-                                (Array.isArray(resJson.outputs) ? resJson.outputs.map(o => o.text || '').join('') : '') ||
-                                resJson.steps?.find(s => s.type === 'message' || s.output_text)?.output_text;
-                if (textOut) {
-                    try {
-                        return JSON.parse(textOut);
-                    } catch (parseErr) {
-                        return { answer: textOut, actions: [] };
-                    }
-                }
-            } else {
-                const errBody = await response.text();
-                console.warn(`Interactions API with ${model} returned ${response.status}:`, errBody);
-            }
-        } catch (intErr) {
-            console.warn(`Interactions API attempt with ${model} error:`, intErr.message);
-        }
-    }
-
-    // 2. Fallback to standard generateContent models
+    // Candidate models in order of priority
     const candidateModels = Array.from(new Set([
         GEMINI_MODEL,
+        'gemini-flash-latest',
         'gemini-2.0-flash',
+        'gemini-2.5-flash',
         'gemini-1.5-flash'
     ]));
 
@@ -303,17 +261,20 @@ async function callGeminiStructured(systemInstruction, userPrompt) {
 
     for (const model of candidateModels) {
         try {
-            const url = `${GEMINI_API_BASE}/${model}:generateContent?key=${GEMINI_API_KEY}`;
+            const url = `${GEMINI_API_BASE}/${model}:generateContent`;
             const response = await fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-goog-api-key': GEMINI_API_KEY
+                },
                 body: JSON.stringify(payload)
             });
 
             if (!response.ok) {
                 const errText = await response.text();
                 if (response.status === 404) {
-                    console.warn(`Gemini model ${model} not available (404), trying fallback...`);
+                    console.warn(`Gemini model ${model} returned 404, trying next candidate...`);
                     lastError = new Error(`Gemini API returned ${response.status}: ${errText}`);
                     continue;
                 }
