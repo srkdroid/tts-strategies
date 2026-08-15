@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 
-const SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' && !process.env.VERCEL ? 'TTS_STRATEGIES_SECURE_KEY_2026_JULY' : undefined);
+const SECRET = process.env.JWT_SECRET;
 if (!SECRET) {
     throw new Error("JWT_SECRET environment variable is missing");
 }
@@ -22,7 +22,7 @@ function verifyToken(token) {
     }
 }
 
-const ADMIN_SECRET = process.env.ADMIN_JWT_SECRET || (process.env.NODE_ENV !== 'production' && !process.env.VERCEL ? 'TTS_STRATEGIES_ADMIN_SECURE_KEY_2026' : undefined);
+const ADMIN_SECRET = process.env.ADMIN_JWT_SECRET;
 if (!ADMIN_SECRET) {
     throw new Error("ADMIN_JWT_SECRET environment variable is missing");
 }

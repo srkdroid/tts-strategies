@@ -2,12 +2,12 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-const ADMIN_SECRET = process.env.ADMIN_JWT_SECRET || (process.env.NODE_ENV !== 'production' && !process.env.VERCEL ? 'TTS_STRATEGIES_ADMIN_SECURE_KEY_2026' : undefined);
+const ADMIN_SECRET = process.env.ADMIN_JWT_SECRET;
 if (!ADMIN_SECRET) {
     throw new Error("ADMIN_JWT_SECRET environment variable is missing");
 }
 
-const ADMIN_PASS = process.env.ADMIN_PASSWORD || (process.env.NODE_ENV !== 'production' && !process.env.VERCEL ? 'admin123' : undefined);
+const ADMIN_PASS = process.env.ADMIN_PASSWORD;
 if (!ADMIN_PASS) {
     throw new Error("ADMIN_PASSWORD environment variable is missing");
 }

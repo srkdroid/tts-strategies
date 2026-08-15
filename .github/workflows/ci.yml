@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Validate JavaScript Syntax
+      run: |
+        echo "Validating root JavaScript files..."
+        node -c app.js
+        node -c notes.js
+        node -c holidays.js
+        node -c capital-planner-data.js
+        node -c strategies.js
+        node -c local-server.js
+        
+        echo "Validating API serverless files..."
+        node -c api/index.js
+        for f in api/_lib/*.js; do
+          echo "Checking $f"
+          node -c "$f"
+        done
+        
+        echo "All JavaScript files passed syntax check!"

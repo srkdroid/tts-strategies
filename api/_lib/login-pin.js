@@ -2,26 +2,26 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-// --- Rate Limiting ---
-const rateLimitMap = new Map();
-const RATE_LIMIT_MAX = 15;
-const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+// --- Redis-Based Rate Limiting ---
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_SECS = 900; // 15 minutes
 
-function checkRateLimit(key) {
-    const now = Date.now();
-    const entry = rateLimitMap.get(key);
-    if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
-        rateLimitMap.set(key, { windowStart: now, count: 1 });
-        return true; // allowed
+async function checkRateLimit(phone, queryKVFn) {
+    try {
+        const key = `rate_limit:pin:${phone}`;
+        const count = await queryKVFn(['INCR', key]);
+        if (count === 1) {
+            // First attempt — set TTL for the window
+            await queryKVFn(['EXPIRE', key, RATE_LIMIT_WINDOW_SECS]);
+        }
+        return count <= RATE_LIMIT_MAX;
+    } catch (e) {
+        // Fail open if Redis is down — don't block legitimate users
+        return true;
     }
-    entry.count++;
-    if (entry.count > RATE_LIMIT_MAX) {
-        return false; // blocked
-    }
-    return true; // allowed
 }
 
-const SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' && !process.env.VERCEL ? 'TTS_STRATEGIES_SECURE_KEY_2026_JULY' : undefined);
+const SECRET = process.env.JWT_SECRET;
 if (!SECRET) {
     throw new Error("JWT_SECRET environment variable is missing");
 }
@@ -122,6 +122,13 @@ module.exports = async (req, res) => {
         }
 
         const cleanPhone = normalizePhoneNumber(phone);
+
+        // Rate limit check — 5 attempts per phone per 15-minute window
+        const allowed = await checkRateLimit(cleanPhone, queryKV);
+        if (!allowed) {
+            return res.status(429).json({ error: 'Too many login attempts. Please wait 15 minutes before trying again.' });
+        }
+
         const storedPin = await getStoredPin(cleanPhone);
 
         if (!storedPin) {
