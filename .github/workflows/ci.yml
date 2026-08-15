@@ -35,5 +35,9 @@ jobs:
           echo "Checking $f"
           node -c "$f"
         done
+        for f in api/_lib/common/*.js; do
+          echo "Checking $f"
+          node -c "$f"
+        done
         
         echo "All JavaScript files passed syntax check!"
