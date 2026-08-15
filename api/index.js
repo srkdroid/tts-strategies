@@ -7,6 +7,7 @@ const logoutHandler = require('./_lib/logout');
 const notesHandler = require('./_lib/notes');
 const telegramWebhookHandler = require('./_lib/telegram-webhook');
 const trackHandler = require('./_lib/track');
+const uploadHandler = require('./_lib/upload');
 
 module.exports = async (req, res) => {
     // Determine route from query param (set by vercel rewrites) or req.url
@@ -44,6 +45,9 @@ module.exports = async (req, res) => {
             return telegramWebhookHandler(req, res);
         case 'track':
             return trackHandler(req, res);
+        case 'upload':
+        case 'image':
+            return uploadHandler(req, res);
         default:
             return res.status(404).json({ error: `API route '${route}' not found` });
     }

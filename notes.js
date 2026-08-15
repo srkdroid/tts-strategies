@@ -376,6 +376,45 @@ function updateEditorLivePreview() {
     }
 }
 
+// Helper: Compress an image file to optimized WebP format before upload
+async function compressImageToWebP(file, maxDimension = 1920, quality = 0.82) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            img.onload = () => {
+                let { width, height } = img;
+                if (width > maxDimension || height > maxDimension) {
+                    if (width > height) {
+                        height = Math.round((height * maxDimension) / width);
+                        width = maxDimension;
+                    } else {
+                        width = Math.round((width * maxDimension) / height);
+                        height = maxDimension;
+                    }
+                }
+
+                const canvas = document.createElement("canvas");
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Export to WebP (falls back to PNG if WebP unsupported)
+                let dataUrl = canvas.toDataURL("image/webp", quality);
+                if (!dataUrl.startsWith("data:image/webp")) {
+                    dataUrl = canvas.toDataURL("image/png");
+                }
+                resolve(dataUrl);
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
 // Attach Clipboard Image Paste Listener (Ctrl+V)
 function setupEditorPasteListener() {
     const textarea = document.getElementById("editor-markdown-input");
@@ -385,29 +424,69 @@ function setupEditorPasteListener() {
 
     textarea.addEventListener("input", updateEditorLivePreview);
 
-    textarea.addEventListener("paste", (event) => {
+    textarea.addEventListener("paste", async (event) => {
         const items = (event.clipboardData || event.originalEvent.clipboardData).items;
         for (let item of items) {
             if (item.type.indexOf("image") === 0) {
                 event.preventDefault();
                 const file = item.getAsFile();
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const base64Data = e.target.result;
-                    const imageMarkdown = `\n![Pasted Screenshot](${base64Data})\n`;
-                    
-                    // Insert at cursor
-                    const startPos = textarea.selectionStart;
-                    const endPos = textarea.selectionEnd;
-                    textarea.value = textarea.value.substring(0, startPos) + imageMarkdown + textarea.value.substring(endPos);
-                    textarea.selectionStart = textarea.selectionEnd = startPos + imageMarkdown.length;
+                if (!file) continue;
 
-                    updateEditorLivePreview();
-                    if (typeof showToast === 'function') {
-                        showToast("📸 Screenshot pasted into editor!");
+                if (typeof showToast === 'function') {
+                    showToast("⏳ Optimizing & uploading image...", "info", 2000);
+                }
+
+                // Insert placeholder at cursor
+                const placeholder = `\n![Uploading screenshot...]()\n`;
+                const startPos = textarea.selectionStart;
+                const endPos = textarea.selectionEnd;
+                textarea.value = textarea.value.substring(0, startPos) + placeholder + textarea.value.substring(endPos);
+                updateEditorLivePreview();
+
+                try {
+                    // 1. Client-side WebP compression (shrinks 3MB to ~80KB)
+                    const compressedDataUrl = await compressImageToWebP(file);
+
+                    // 2. Upload to authenticated /api/upload
+                    const res = await fetch('/api/upload', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            image: compressedDataUrl,
+                            mimeType: 'image/webp'
+                        })
+                    });
+
+                    if (!res.ok) {
+                        const errJson = await res.json().catch(() => ({}));
+                        throw new Error(errJson.error || `Upload failed with status ${res.status}`);
                     }
-                };
-                reader.readAsDataURL(file);
+
+                    const data = await res.json();
+                    const imageMarkdown = `\n![Pasted Screenshot](${data.url})\n`;
+
+                    // Replace placeholder with final authenticated image URL
+                    textarea.value = textarea.value.replace(placeholder, imageMarkdown);
+                    updateEditorLivePreview();
+
+                    if (typeof showToast === 'function') {
+                        showToast("🔒 Secure image uploaded & linked!", "info", 3000);
+                    }
+                } catch (err) {
+                    console.error("Paste upload failed:", err);
+                    // Fallback to local Base64 if upload fails
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const fallbackMarkdown = `\n![Pasted Screenshot](${e.target.result})\n`;
+                        textarea.value = textarea.value.replace(placeholder, fallbackMarkdown);
+                        updateEditorLivePreview();
+                    };
+                    reader.readAsDataURL(file);
+
+                    if (typeof showToast === 'function') {
+                        showToast("⚠️ Upload failed, embedded as local fallback", "info", 3500);
+                    }
+                }
                 break;
             }
         }

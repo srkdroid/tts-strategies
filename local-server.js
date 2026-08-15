@@ -18,6 +18,7 @@ const server = http.createServer((req, res) => {
 
     const url = new URL(req.url, `http://localhost:${PORT}`);
     const pathname = url.pathname;
+    req.query = Object.fromEntries(url.searchParams.entries());
 
     if (pathname.startsWith('/api/')) {
         // Collect and parse POST body
