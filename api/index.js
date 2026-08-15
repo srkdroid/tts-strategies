@@ -5,6 +5,7 @@ const loginPinHandler = require('./_lib/login-pin');
 const loginHandler = require('./_lib/login');
 const logoutHandler = require('./_lib/logout');
 const notesHandler = require('./_lib/notes');
+const aiHandler = require('./_lib/ai');
 const telegramWebhookHandler = require('./_lib/telegram-webhook');
 const trackHandler = require('./_lib/track');
 const uploadHandler = require('./_lib/upload');
@@ -41,6 +42,8 @@ module.exports = async (req, res) => {
             return logoutHandler(req, res);
         case 'notes':
             return notesHandler(req, res);
+        case 'ai':
+            return aiHandler(req, res);
         case 'telegram-webhook':
             return telegramWebhookHandler(req, res);
         case 'track':

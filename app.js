@@ -1683,6 +1683,8 @@ function switchDbTab(tab) {
     if (activityBtn) activityBtn.classList.toggle("active", tab === 'activity');
     const dispatchBtn = document.getElementById("tab-dispatch-btn");
     if (dispatchBtn) dispatchBtn.classList.toggle("active", tab === 'dispatch');
+    const aiBtn = document.getElementById("tab-ai-btn");
+    if (aiBtn) aiBtn.classList.toggle("active", tab === 'ai');
     
     document.getElementById("tab-users-content").style.display = tab === 'users' ? 'flex' : 'none';
     document.getElementById("tab-holidays-content").style.display = tab === 'holidays' ? 'flex' : 'none';
@@ -1692,6 +1694,8 @@ function switchDbTab(tab) {
     if (activityContent) activityContent.style.display = tab === 'activity' ? 'flex' : 'none';
     const dispatchContent = document.getElementById("tab-dispatch-content");
     if (dispatchContent) dispatchContent.style.display = tab === 'dispatch' ? 'flex' : 'none';
+    const aiContent = document.getElementById("tab-ai-content");
+    if (aiContent) aiContent.style.display = tab === 'ai' ? 'flex' : 'none';
     
     if (tab === 'logs') {
         renderAuditLogsTable();
@@ -4113,4 +4117,233 @@ async function clearAdminActivityLogs() {
     }
 }
 
-// Reverted PDF generation feature
+// -------------------------------------------------------------
+// AI STRATEGY CO-PILOT & DAILY BRIEFING CLIENT CONTROLLER
+// -------------------------------------------------------------
+
+let aiChatHistory = [];
+
+function toggleAiDrawer() {
+    const drawer = document.getElementById("ai-copilot-drawer");
+    const overlay = document.getElementById("ai-drawer-overlay");
+    if (!drawer) return;
+
+    const isActive = drawer.classList.contains("active");
+    if (isActive) {
+        closeAiDrawer();
+    } else {
+        openAiDrawer();
+    }
+}
+
+function openAiDrawer() {
+    const drawer = document.getElementById("ai-copilot-drawer");
+    const overlay = document.getElementById("ai-drawer-overlay");
+    if (drawer) drawer.classList.add("active");
+    if (overlay) overlay.classList.add("active");
+
+    const input = document.getElementById("ai-chat-input");
+    if (input) setTimeout(() => input.focus(), 300);
+}
+
+function closeAiDrawer() {
+    const drawer = document.getElementById("ai-copilot-drawer");
+    const overlay = document.getElementById("ai-drawer-overlay");
+    if (drawer) drawer.classList.remove("active");
+    if (overlay) overlay.classList.remove("active");
+}
+
+function sendAiQuickPrompt(promptText) {
+    const input = document.getElementById("ai-chat-input");
+    if (input) {
+        input.value = promptText;
+        submitAiChat(new Event('submit'));
+    }
+}
+
+function clearAiChatHistory() {
+    aiChatHistory = [];
+    const container = document.getElementById("ai-messages-container");
+    if (container) {
+        container.innerHTML = `
+            <div class="ai-message ai-bot-message">
+                <div class="ai-msg-avatar">🤖</div>
+                <div class="ai-msg-content">
+                    <p>Conversation cleared. How can I assist your trading today?</p>
+                </div>
+            </div>
+        `;
+    }
+}
+
+async function submitAiChat(event) {
+    if (event && event.preventDefault) event.preventDefault();
+
+    const input = document.getElementById("ai-chat-input");
+    const message = (input ? input.value : '').trim();
+    if (!message) return;
+
+    input.value = "";
+
+    // 1. Render User Message
+    renderAiMessage('user', message);
+
+    // 2. Show Typing Indicator
+    const typingIndicator = document.getElementById("ai-typing-indicator");
+    if (typingIndicator) typingIndicator.style.display = "flex";
+
+    const messagesContainer = document.getElementById("ai-messages-container");
+    if (messagesContainer) messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    try {
+        const res = await fetch('/api/ai?action=chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message })
+        });
+
+        const data = await res.json();
+
+        if (typingIndicator) typingIndicator.style.display = "none";
+
+        if (res.ok && data.success) {
+            renderAiMessage('bot', data.answer, data.actions);
+        } else {
+            const errorMsg = data.error || "Sorry, I encountered an issue processing your request.";
+            renderAiMessage('bot', `⚠️ **Notice:** ${errorMsg}`);
+        }
+
+    } catch (err) {
+        console.error("AI Chat Client Error:", err);
+        if (typingIndicator) typingIndicator.style.display = "none";
+        renderAiMessage('bot', "⚠️ **Network Error:** Unable to reach AI Co-Pilot server. Please try again.");
+    }
+}
+
+function renderAiMessage(sender, text, actions = []) {
+    const container = document.getElementById("ai-messages-container");
+    if (!container) return;
+
+    const msgDiv = document.createElement("div");
+    msgDiv.className = `ai-message ai-${sender}-message`;
+
+    const avatar = document.createElement("div");
+    avatar.className = "ai-msg-avatar";
+    avatar.innerText = sender === 'user' ? '👤' : '🤖';
+
+    const contentDiv = document.createElement("div");
+    contentDiv.className = "ai-msg-content";
+
+    // Format markdown safely
+    if (typeof marked !== 'undefined' && marked.parse) {
+        contentDiv.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(marked.parse(text)) : marked.parse(text);
+    } else {
+        contentDiv.innerText = text;
+    }
+
+    // Render Action Buttons
+    if (actions && actions.length > 0) {
+        const actionGroup = document.createElement("div");
+        actionGroup.className = "ai-action-buttons-group";
+
+        actions.forEach(action => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "ai-action-btn";
+            btn.innerText = action.label || "Action";
+            btn.onclick = () => executeAiAction(action);
+            actionGroup.appendChild(btn);
+        });
+
+        contentDiv.appendChild(actionGroup);
+    }
+
+    msgDiv.appendChild(avatar);
+    msgDiv.appendChild(contentDiv);
+    container.appendChild(msgDiv);
+
+    container.scrollTop = container.scrollHeight;
+}
+
+function executeAiAction(action) {
+    if (!action) return;
+    const { type, targetId } = action;
+
+    if (type === 'switch_view') {
+        if (typeof switchViewMode === 'function') {
+            switchViewMode(targetId);
+            closeAiDrawer();
+        }
+    } else if (type === 'open_note') {
+        if (typeof switchViewMode === 'function') switchViewMode('notes');
+        if (typeof selectNote === 'function') selectNote(targetId);
+        closeAiDrawer();
+    } else if (type === 'open_strike_calc') {
+        if (typeof openPlannerStrategyModal === 'function') {
+            openPlannerStrategyModal(targetId);
+        } else if (window.strategiesData) {
+            const strat = window.strategiesData.find(s => s.id === targetId);
+            if (strat && typeof showStrategyDetails === 'function') {
+                showStrategyDetails({ strategy: strat, date: new Date().toISOString().split('T')[0] });
+            }
+        }
+        closeAiDrawer();
+    }
+}
+
+// -------------------------------------------------------------
+// DAILY PRE-MARKET BRIEFING FETCHER
+// -------------------------------------------------------------
+
+async function fetchDailyAiBrief(forceRefresh = false) {
+    const headlineEl = document.getElementById("ai-brief-headline");
+    const dateEl = document.getElementById("ai-brief-date");
+    const bulletsEl = document.getElementById("ai-brief-bullets");
+    const cacheTagEl = document.getElementById("ai-brief-cache-tag");
+
+    if (!headlineEl || !bulletsEl) return;
+
+    if (forceRefresh) {
+        bulletsEl.innerHTML = `<li>⏳ Contacting AI intelligence co-pilot for live briefing...</li>`;
+    }
+
+    try {
+        const res = await fetch('/api/ai?action=daily-brief');
+        if (!res.ok) throw new Error("Failed to load daily briefing");
+
+        const data = await res.json();
+        const brief = data.brief || {};
+
+        if (headlineEl) headlineEl.innerText = brief.headline || "Today's Pre-Market Briefing";
+        if (dateEl) {
+            const now = new Date();
+            dateEl.innerText = `${now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })} • Market Status: ${brief.status || 'ACTIVE'}`;
+        }
+
+        if (cacheTagEl) {
+            cacheTagEl.innerText = data.cached ? "⚡ Instant Cached" : "✨ Freshly Generated";
+            cacheTagEl.style.display = "inline-block";
+        }
+
+        if (bulletsEl && Array.isArray(brief.bullets)) {
+            bulletsEl.innerHTML = brief.bullets.map(b => `<li style="margin-bottom: 0.35rem;">${b}</li>`).join('');
+        }
+
+    } catch (err) {
+        console.warn("Daily brief fetch error:", err);
+        if (bulletsEl) {
+            bulletsEl.innerHTML = `
+                <li>Review scheduled monthly and weekly calendar deployments for today.</li>
+                <li>Verify 5% to 6% net credit deployment range before taking execution strikes.</li>
+                <li>Adhere strictly to pre-defined stop loss and profit targets in Trade Journal.</li>
+            `;
+        }
+        if (dateEl) dateEl.innerText = "Offline schedule mode active";
+    }
+}
+
+// Auto-fetch daily brief on calendar view load
+document.addEventListener("DOMContentLoaded", () => {
+    fetchDailyAiBrief(false);
+});
+

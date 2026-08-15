@@ -155,6 +155,27 @@
         <main id="main-content" class="dashboard-main">
             <!-- Calendars Grid -->
             <section class="calendars-grid" id="calendar-view-container" style="display: none;">
+            
+            <!-- AI Pre-Market Intelligence Briefing Card -->
+            <article id="ai-daily-brief-container" class="month-container" style="max-width: 100%; margin-bottom: 1.5rem; background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 12px; padding: 1.2rem 1.5rem; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 0.8rem;">
+                    <div style="display: flex; align-items: center; gap: 0.6rem;">
+                        <span style="font-size: 1.4rem;">🤖</span>
+                        <div>
+                            <h3 id="ai-brief-headline" style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #e9d5ff; font-family: var(--font-heading);">Today's AI Pre-Market Intelligence</h3>
+                            <span id="ai-brief-date" style="font-size: 0.75rem; color: #a78bfa;">Fetching today's schedule & market outlook...</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <span id="ai-brief-cache-tag" style="font-size: 0.68rem; color: #10b981; background: rgba(16, 185, 129, 0.12); padding: 3px 8px; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.3);">⚡ Instant Cached</span>
+                        <button onclick="fetchDailyAiBrief(true)" class="admin-btn edit" style="margin: 0; padding: 0.3rem 0.65rem; font-size: 0.75rem; background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2);" title="Refresh briefing">↻ Refresh</button>
+                    </div>
+                </div>
+                <ul id="ai-brief-bullets" style="margin: 0; padding-left: 1.2rem; font-size: 0.88rem; line-height: 1.6; color: var(--text-primary);">
+                    <li>Loading pre-market intelligence briefing...</li>
+                </ul>
+            </article>
+
             <!-- Current Month Container -->
             <article class="month-container">
                 <div class="month-header-row">
@@ -921,6 +942,7 @@
                 <button id="tab-logs-btn" class="tab-nav-btn" onclick="switchDbTab('logs')">Auth Audit Logs</button>
                 <button id="tab-activity-btn" class="tab-nav-btn" onclick="switchDbTab('activity')">📊 User Activity Audit</button>
                 <button id="tab-dispatch-btn" class="tab-nav-btn" onclick="switchDbTab('dispatch')">Dispatch Settings</button>
+                <button id="tab-ai-btn" class="tab-nav-btn" onclick="switchDbTab('ai')">🤖 AI Settings</button>
             </div>
 
             <!-- Tab Content: Users -->
@@ -1089,6 +1111,38 @@
                 </div>
                 
                 <button onclick="saveAdminDispatchSettings()" class="admin-btn add" style="align-self: flex-start; margin-top: 0.5rem;">💾 Save Dispatch & OpenWA Settings</button>
+            </div>
+
+            <!-- Tab Content: AI Settings & Disclosures -->
+            <div id="tab-ai-content" class="admin-tab-content" style="display: none; flex-direction: column; flex-grow: 1; overflow-y: auto;">
+                <h4 style="margin: 0 0 0.4rem 0; font-size: 1.05rem; color: #e9d5ff;">🤖 AI Strategy Co-Pilot & Intelligence Settings</h4>
+                <p style="margin: 0 0 1.2rem 0; font-size: 0.82rem; color: var(--text-secondary);">Manage AI models, daily briefing options, and view data privacy disclosures.</p>
+
+                <div class="modal-card" style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 10px; padding: 1.2rem; margin-bottom: 1.2rem;">
+                    <h5 style="margin: 0 0 0.5rem 0; font-size: 0.92rem; color: #e9d5ff;">⚡ Model & Free-Tier Quota Architecture</h5>
+                    <ul style="margin: 0; padding-left: 1.2rem; font-size: 0.82rem; line-height: 1.6; color: var(--text-primary);">
+                        <li><strong>Engine:</strong> Google Gemini 2.5 Flash / Flash-Lite via Google AI Studio API key (100% Free Tier).</li>
+                        <li><strong>Per-User Limit:</strong> 25 query turns / day (members) • 100 turns / day (admin).</li>
+                        <li><strong>Global Circuit Breaker:</strong> 1,300 queries / day (safely below Gemini's 1,500 free RPM ceiling).</li>
+                        <li><strong>Zero-Cost Daily Briefing:</strong> Pre-market brief generates once daily and is cached in Redis (0 LLM calls on pageviews).</li>
+                    </ul>
+                </div>
+
+                <div class="modal-card" style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 10px; padding: 1.2rem; margin-bottom: 1.2rem;">
+                    <h5 style="margin: 0 0 0.5rem 0; font-size: 0.92rem; color: #93c5fd;">🔒 Multi-Tenant Privacy & Role Isolation</h5>
+                    <ul style="margin: 0; padding-left: 1.2rem; font-size: 0.82rem; line-height: 1.6; color: var(--text-primary);">
+                        <li><strong>Admin Private Notes:</strong> Notes marked as <code>🔒 Admin Only</code> are physically excluded from regular members' RAG prompt context.</li>
+                        <li><strong>Trade Journal Scoping:</strong> Users without Journal permission never have their trades read or analyzed by the AI.</li>
+                        <li><strong>Deterministic Calculations:</strong> All capital allocation math, margins, and lot sizes are computed by deterministic code—never hallucinated by the LLM.</li>
+                    </ul>
+                </div>
+
+                <div class="modal-card" style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 1.2rem; margin-bottom: 1rem;">
+                    <h5 style="margin: 0 0 0.4rem 0; font-size: 0.88rem; color: #fbbf24;">ℹ️ Free-Tier Data Terms Disclosure</h5>
+                    <p style="margin: 0; font-size: 0.8rem; line-height: 1.5; color: var(--text-secondary);">
+                        Under Google AI Studio's Free Tier terms of service, prompt text may be used to train and improve model capabilities. Please avoid entering sensitive personal credentials or external API keys into the chat interface.
+                    </p>
+                </div>
             </div>
 
             <!-- Tab Content: User Activity Audit -->
@@ -1500,6 +1554,77 @@
             </form>
         </div>
     </div>
+
+    <!-- ------------------------------------------------------------- -->
+    <!-- AI STRATEGY CO-PILOT FLOATING BUTTON & SLIDE-OVER DRAWER       -->
+    <!-- ------------------------------------------------------------- -->
+    
+    <!-- Floating Trigger Button -->
+    <button id="ai-copilot-trigger-btn" onclick="toggleAiDrawer()" class="ai-floating-btn" aria-label="Open AI Strategy Co-Pilot">
+        <span class="ai-btn-icon">🤖</span>
+        <span class="ai-btn-label">AI Co-Pilot</span>
+    </button>
+
+    <!-- Slide-over Drawer Overlay -->
+    <div id="ai-drawer-overlay" class="ai-drawer-overlay" onclick="closeAiDrawer()"></div>
+
+    <!-- Slide-over Drawer Pane -->
+    <aside id="ai-copilot-drawer" class="ai-drawer-pane" role="dialog" aria-modal="true" aria-labelledby="ai-drawer-title">
+        <div class="ai-drawer-header">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <span style="font-size: 1.3rem;">🤖</span>
+                <div>
+                    <h3 id="ai-drawer-title" style="margin: 0; font-size: 1.05rem; font-family: var(--font-heading); color: var(--text-primary);">TTS Strategy Co-Pilot</h3>
+                    <span style="font-size: 0.72rem; color: #a78bfa;">Grounded in Master Playbooks & Rules</span>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <button type="button" onclick="clearAiChatHistory()" class="admin-btn edit" style="padding: 0.25rem 0.5rem; font-size: 0.7rem;" title="Clear conversation">🗑️</button>
+                <button type="button" class="close-btn" onclick="closeAiDrawer()" aria-label="Close AI Co-Pilot">&times;</button>
+            </div>
+        </div>
+
+        <!-- Quick Prompt Chips -->
+        <div class="ai-quick-chips">
+            <button type="button" class="ai-chip" onclick="sendAiQuickPrompt('What strategies are scheduled to deploy today?')">📅 What deploys today?</button>
+            <button type="button" class="ai-chip" onclick="sendAiQuickPrompt('How do I adjust an Iron Fly if index moves against me?')">🛠️ Adjust Iron Fly</button>
+            <button type="button" class="ai-chip" onclick="sendAiQuickPrompt('What are the strike rules and exit criteria for Batman 1:3:2?')">🦇 Batman Rules</button>
+            <button type="button" class="ai-chip" onclick="sendAiQuickPrompt('Explain the 3 Priority Capital Allocation buckets.')">💰 Allocation Rules</button>
+        </div>
+
+        <!-- Message History Stream -->
+        <div id="ai-messages-container" class="ai-messages-container">
+            <div class="ai-message ai-bot-message">
+                <div class="ai-msg-avatar">🤖</div>
+                <div class="ai-msg-content">
+                    <p>Hello! I am your <strong>TTS Strategy Co-Pilot</strong>.</p>
+                    <p>I can help you navigate options strategies, calculate strikes, walk through adjustment playbooks, and understand capital sequencing rules. How can I assist your trading today?</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Typing Indicator Bubble -->
+        <div id="ai-typing-indicator" class="ai-typing-indicator" style="display: none;">
+            <div class="ai-msg-avatar">🤖</div>
+            <div class="ai-typing-bubble">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+
+        <!-- Input Box & Actions -->
+        <form id="ai-chat-form" onsubmit="submitAiChat(event)" class="ai-input-form">
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <input type="text" id="ai-chat-input" placeholder="Ask about strategies, adjustments, rules..." autocomplete="off" required>
+                <button type="submit" id="ai-chat-send-btn" class="ai-send-btn" aria-label="Send message">
+                    <span>➤</span>
+                </button>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.4rem; font-size: 0.68rem; color: var(--text-secondary);">
+                <span>Free Tier Gemini Flash (25 turns/day)</span>
+                <span id="ai-quota-badge">● Active</span>
+            </div>
+        </form>
+    </aside>
 
     <!-- Script imports -->
     <script src="holidays.js?v=5.6"></script>
