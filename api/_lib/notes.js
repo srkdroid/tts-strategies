@@ -49,9 +49,12 @@ module.exports = async function handler(req, res) {
             await queryKV(['SET', 'notes', JSON.stringify(SEED_NOTES)]);
         }
 
+        // Role-based visibility: non-admins only see public notes
+        const visibleNotes = isAdmin ? notesData : notesData.filter(n => !n.isAdminOnly);
+
         return res.status(200).json({
             success: true,
-            notes: notesData,
+            notes: visibleNotes,
             isAdmin: isAdmin
         });
     } catch (error) {

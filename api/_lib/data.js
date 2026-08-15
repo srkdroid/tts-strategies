@@ -52,6 +52,18 @@ module.exports = async (req, res) => {
             return res.status(401).json({ error: 'Unauthorized. Please login first.' });
         }
 
+        // Support POST /api/data for saving user trading capital
+        if (req.method === 'POST') {
+            const body = req.body || {};
+            const capital = parseFloat(body.capital);
+            if (isNaN(capital) || capital < 0) {
+                return res.status(400).json({ error: 'Invalid capital amount' });
+            }
+            const phoneKey = userPhone || 'admin';
+            await queryKV(['HSET', 'user_capital', phoneKey, String(capital)]);
+            return res.status(200).json({ success: true, capital });
+        }
+
         // Log active session auth event once per 15 minutes per user
         if (userPhone && !isAdmin && userPhone !== 'Admin' && userPhone.toLowerCase() !== 'admin') {
             try {
@@ -171,12 +183,24 @@ module.exports = async (req, res) => {
             }
         }
 
+        let userCapital = null;
+        try {
+            const phoneKey = userPhone || (isAdmin ? 'admin' : null);
+            if (phoneKey) {
+                const capStr = await queryKV(['HGET', 'user_capital', phoneKey]);
+                if (capStr) userCapital = parseFloat(capStr);
+            }
+        } catch (capErr) {
+            console.warn("User capital fetch failed:", capErr.message);
+        }
+
         return res.status(200).json({ 
             strategies: strategiesData || [],
             holidays: holidaysData || {},
             isAdmin: !!isAdmin,
             userPhone: userPhone || 'Admin',
-            permissions: userPermissions
+            permissions: userPermissions,
+            userCapital: userCapital
         });
 
     } catch (error) {

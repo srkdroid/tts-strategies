@@ -604,6 +604,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
         isAdminMode = !!resJson.isAdmin;
         window.isAdminMode = isAdminMode;
+        window.userCapital = resJson.userCapital || 5000000;
+        const plannerCapitalInput = document.getElementById("planner-capital-input");
+        if (plannerCapitalInput && resJson.userCapital) {
+            plannerCapitalInput.value = resJson.userCapital;
+        }
         const plannerBtn = document.getElementById("mode-planner-btn");
         if (plannerBtn) plannerBtn.style.display = "inline-flex";
 
@@ -3002,6 +3007,17 @@ function renderCapitalPlannerView() {
 }
 
 function recalculateCapitalPlanner() {
+    const capitalInput = document.getElementById("planner-capital-input");
+    const totalCapital = capitalInput ? parseFloat(capitalInput.value) || 5000000 : 5000000;
+    window.userCapital = totalCapital;
+
+    // Asynchronously save updated capital to user profile
+    fetch('/api/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ capital: totalCapital })
+    }).catch(err => console.warn("Failed to persist user capital:", err.message));
+
     renderCapitalPlannerView();
 }
 

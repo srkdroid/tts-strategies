@@ -143,8 +143,10 @@ module.exports = async (req, res) => {
                 if (kvNotes) {
                     try { notesList = JSON.parse(kvNotes); } catch(e){}
                 }
-                if (!Array.isArray(notesList)) notesList = [];
-                const notePayload = data;
+                const notePayload = {
+                    ...data,
+                    isAdminOnly: Boolean(data.isAdminOnly)
+                };
                 if (!notePayload || !notePayload.id) return res.status(400).json({ error: 'Missing note payload' });
 
                 const idx = notesList.findIndex(n => n && n.id === notePayload.id);

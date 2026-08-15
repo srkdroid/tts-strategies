@@ -169,8 +169,12 @@ function renderNotesSidebar() {
 
             const itemTitle = document.createElement("div");
             itemTitle.className = "note-sidebar-item-title";
-            itemTitle.innerText = n.title;
-            itemTitle.title = n.title;
+            if (n.isAdminOnly && (window.isAdminMode || (typeof isAdminMode !== 'undefined' && isAdminMode))) {
+                itemTitle.innerHTML = `<span style="display: flex; align-items: center; justify-content: space-between; width: 100%;"><span>${n.title}</span><span style="font-size: 0.65rem; color: #f87171; background: rgba(239, 68, 68, 0.15); padding: 2px 6px; border-radius: 4px; font-weight: 700; flex-shrink: 0; margin-left: 6px;">🔒 Admin</span></span>`;
+            } else {
+                itemTitle.innerText = n.title;
+            }
+            itemTitle.title = n.title + (n.isAdminOnly ? " (Admin Only)" : "");
 
             item.appendChild(itemTitle);
             itemsContainer.appendChild(item);
@@ -240,7 +244,8 @@ function selectNote(noteId) {
     const dateEl = document.getElementById("note-view-date");
     if (dateEl) {
         const d = note.updatedAt ? new Date(note.updatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
-        dateEl.innerText = `Updated: ${d}`;
+        const adminTag = note.isAdminOnly ? ' <span style="color: #f87171; background: rgba(239, 68, 68, 0.15); padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 0.72rem; margin-left: 6px;">🔒 Admin Only</span>' : '';
+        dateEl.innerHTML = `Updated: ${d}${adminTag}`;
     }
 
     // Admin action buttons visibility
@@ -317,6 +322,8 @@ function openNewNoteEditor() {
     document.getElementById("note-editor-heading").innerText = "Create New Note";
     document.getElementById("editor-note-title").value = "";
     document.getElementById("editor-note-category").value = "Generic";
+    const adminCheck = document.getElementById("editor-note-is-admin-only");
+    if (adminCheck) adminCheck.checked = false;
     document.getElementById("editor-markdown-input").value = "";
     document.getElementById("editor-live-preview").innerHTML = "";
 
@@ -336,6 +343,8 @@ function editCurrentNote() {
     document.getElementById("note-editor-heading").innerText = "Edit Note";
     document.getElementById("editor-note-title").value = note.title;
     document.getElementById("editor-note-category").value = note.category || "Generic";
+    const adminCheck = document.getElementById("editor-note-is-admin-only");
+    if (adminCheck) adminCheck.checked = !!note.isAdminOnly;
     document.getElementById("editor-markdown-input").value = note.content || "";
 
     populateNotesStrategyDropdown();
@@ -506,11 +515,15 @@ async function saveNoteFromEditor() {
         return;
     }
 
+    const adminCheck = document.getElementById("editor-note-is-admin-only");
+    const isAdminOnly = adminCheck ? adminCheck.checked : false;
+
     const notePayload = {
         id: editingNoteId || `note_${Date.now()}`,
         title: title,
         category: category,
         strategyId: strategyId,
+        isAdminOnly: isAdminOnly,
         content: content,
         updatedAt: new Date().toISOString()
     };
