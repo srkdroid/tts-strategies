@@ -625,30 +625,51 @@ module.exports = async (req, res) => {
                 return res.status(429).json({ error: rateCheck.reason });
             }
 
-            // Generate Generic Shared Daily Briefing via Gemini
+            // Generate Enriched Daily Briefing with strategy context
             const { strategies } = loadDiskFallbacks();
+            const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
+            const dayShort = dayName.substring(0, 3);
+
+            // Build strategy context: which strategies deploy today and this week
+            const strategyContext = strategies.map(s => {
+                const deploysToday = (s.day || '').toLowerCase().includes(dayShort.toLowerCase());
+                return `• ${s.name} [${s.index}] — ${s.sheet} | Deploy: ${s.day} | DTE: ${s.dte} | Exit: ${s.exit?.target || 'N/A'} / SL: ${s.exit?.sl || 'N/A'} | Credit: ${s.conditions?.credit_range || 'N/A'}${deploysToday ? ' ⚡ DEPLOYS TODAY' : ''}`;
+            }).join('\n');
+
+            const todayStrategies = strategies.filter(s => (s.day || '').toLowerCase().includes(dayShort.toLowerCase()));
+            const todayNames = todayStrategies.map(s => `${s.name} (${s.index})`).join(', ');
+
             const systemPrompt = `You are the Pre-Market Intelligence Assistant for TTS Options Strategy Calendar.
-Analyze today's trading day (${today}, ${now.toLocaleDateString('en-US', { weekday: 'long' })}).
-Create a concise, punchy 3-bullet pre-market briefing summarizing:
-1. Scheduled deployment focus for today based on typical monthly/weekly cycles.
-2. Market risk factors to watch (e.g. gap openings, volatility discipline).
-3. Core execution reminder (e.g. 5-6% credit range rule, CE hedge first).`;
+Today is ${dayName}, ${today}. Analyze the ACTUAL strategy schedule below and create a specific, actionable briefing.
+
+MASTER STRATEGY ROSTER:
+${strategyContext}
+
+${todayStrategies.length > 0 ? `⚡ STRATEGIES DEPLOYING TODAY (${dayName}): ${todayNames}` : `No strategies are scheduled to deploy today (${dayName}).`}
+
+RULES:
+- List specific strategy names that deploy today or need monitoring.
+- Mention specific exit targets, stop losses, and credit ranges from the data.
+- If no deployments today, highlight which strategies are currently in active positions and need monitoring.
+- Be concise but SPECIFIC — never give generic advice without referencing actual strategy names.`;
 
             const briefingSchema = {
                 type: "OBJECT",
                 properties: {
-                    headline: { type: "STRING", description: "Briefing headline, e.g. 'Wednesday Expiry Deployment Focus'" },
-                    status: { type: "STRING", description: "Market status, e.g. 'ACTIVE' or 'EXPIRY DAY'" },
+                    headline: { type: "STRING", description: "Briefing headline referencing today's key activity, e.g. 'Tuesday: Batman & Iron Fly Deployment Day'" },
+                    status: { type: "STRING", description: "Market status: 'ACTIVE', 'EXPIRY DAY', 'DEPLOYMENT DAY', or 'MONITORING'" },
                     bullets: {
                         type: "ARRAY",
-                        description: "Array of exactly 3 concise actionable strings",
+                        description: "Array of 3-5 concise, strategy-specific actionable bullet points",
                         items: { type: "STRING" }
                     }
                 },
                 required: ["headline", "status", "bullets"]
             };
 
-            const userPrompt = `Generate today's pre-market briefing for ${today}. Active strategies count: ${strategies.length}.`;
+            const userPrompt = `Generate today's pre-market briefing for ${dayName}, ${today}.
+${todayStrategies.length > 0 ? `Strategies deploying today: ${todayNames}. Include their specific deployment rules, DTE, credit ranges, and exit targets.` : `No deployments today. Focus on monitoring active positions and upcoming deployment days.`}
+Total active strategies: ${strategies.length}.`;
             let briefResult = await callGeminiStructured(systemPrompt, userPrompt, briefingSchema);
 
             // Handle cases where answer/actions schema might be returned (Groq fallback)
@@ -747,7 +768,12 @@ Create a concise, punchy 3-bullet pre-market briefing summarizing:
 <retrieved_context>
 [USER_ROLE]: ${context.callerRole}
 [MASTER_STRATEGIES]:
-${JSON.stringify(context.strategies.map(s => ({ id: s.id, name: s.name, index: s.index, dte: s.dte, exit: s.exit })), null, 2)}
+${JSON.stringify(context.strategies.map(s => ({
+    id: s.id, name: s.name, index: s.index, sheet: s.sheet,
+    deploy_day: s.day, deploy_time: s.time, expiry: s.expiry, dte: s.dte,
+    setup: s.setup, conditions: s.conditions, exit: s.exit,
+    deploy_rule: s.deploy_rule, exit_rule: s.exit_rule
+})), null, 2)}
 
 [PERMITTED_KNOWLEDGE_NOTES]:
 ${context.notes.map(n => `### Note: ${n.title} (ID: ${n.id}, Category: ${n.category})\n${n.content}`).join('\n\n')}
