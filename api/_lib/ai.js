@@ -19,6 +19,8 @@ const { queryKV, queryKVSafe } = require('./common/redis');
 
 // Configuration
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
@@ -193,11 +195,61 @@ async function getScopedContext(caller, { includeNotes = true, includeTrades = f
 }
 
 /**
- * Call Google Gemini with native responseSchema for structured JSON output
+ * Call Groq API (Ultra-fast, zero-503, free tier with Llama 3.3 70B)
+ */
+async function callGroqStructured(systemInstruction, userPrompt) {
+    if (!GROQ_API_KEY) return null;
+
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${GROQ_API_KEY}`
+        },
+        body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+                {
+                    role: 'system',
+                    content: `${systemInstruction}\n\nIMPORTANT: You must reply ONLY with a valid, parseable JSON object matching the required structure.`
+                },
+                {
+                    role: 'user',
+                    content: userPrompt
+                }
+            ],
+            response_format: { type: "json_object" },
+            temperature: 0.2
+        })
+    });
+
+    if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Groq API returned ${response.status}: ${errText}`);
+    }
+
+    const resJson = await response.json();
+    const content = resJson.choices?.[0]?.message?.content;
+    if (!content) throw new Error("Empty response from Groq");
+    return JSON.parse(content);
+}
+
+/**
+ * Multi-Provider Structured LLM Caller (Groq ➡️ Gemini Multi-Model Cascade)
  */
 async function callGeminiStructured(systemInstruction, userPrompt, customSchema = null) {
+    // 1. If GROQ_API_KEY is configured, prioritize Groq for 10x speed & zero 503 errors
+    if (GROQ_API_KEY) {
+        try {
+            const groqResult = await callGroqStructured(systemInstruction, userPrompt);
+            if (groqResult) return groqResult;
+        } catch (groqErr) {
+            console.warn("Groq provider error, falling back to Gemini:", groqErr.message);
+        }
+    }
+
     if (!GEMINI_API_KEY) {
-        throw new Error("GEMINI_API_KEY_NOT_CONFIGURED");
+        throw new Error("NO_AI_PROVIDER_KEY_CONFIGURED (Please set GEMINI_API_KEY or GROQ_API_KEY in Vercel Environment Variables)");
     }
 
     const defaultSchema = {
@@ -250,7 +302,7 @@ async function callGeminiStructured(systemInstruction, userPrompt, customSchema 
         }
     };
 
-    // Candidate models in order of priority
+    // Candidate Gemini models in order of priority
     const candidateModels = Array.from(new Set([
         GEMINI_MODEL,
         'gemini-flash-latest',
@@ -262,11 +314,10 @@ async function callGeminiStructured(systemInstruction, userPrompt, customSchema 
     let lastError = null;
 
     for (const model of candidateModels) {
-        // Try up to 2 attempts per candidate model if 503/429 occurs
         for (let attempt = 0; attempt < 2; attempt++) {
             try {
                 if (attempt > 0) {
-                    await new Promise(r => setTimeout(r, 600)); // Small 600ms backoff on 503/429
+                    await new Promise(r => setTimeout(r, 600));
                 }
 
                 const url = `${GEMINI_API_BASE}/${model}:generateContent`;
@@ -282,14 +333,13 @@ async function callGeminiStructured(systemInstruction, userPrompt, customSchema 
                 if (!response.ok) {
                     const errText = await response.text();
                     const status = response.status;
-                    // If 503 (Overloaded), 429 (Rate/Spike), or 404 (Not Found) -> fallback to next model
                     if (status === 503 || status === 429 || status === 404) {
-                        console.warn(`Gemini model ${model} returned ${status} (attempt ${attempt + 1}), trying alternative...`);
+                        console.warn(`Gemini model ${model} returned ${status}, trying next model...`);
                         lastError = new Error(`Gemini API returned ${status}: ${errText}`);
                         if (attempt === 0 && (status === 503 || status === 429)) {
-                            continue; // Retry once on same model after short delay
+                            continue;
                         }
-                        break; // Move to next model
+                        break;
                     }
                     throw new Error(`Gemini API returned ${status}: ${errText}`);
                 }
@@ -320,7 +370,7 @@ async function callGeminiStructured(systemInstruction, userPrompt, customSchema 
         }
     }
 
-    throw lastError || new Error("All Gemini candidate models failed");
+    throw lastError || new Error("All AI candidate models failed");
 }
 
 /**
