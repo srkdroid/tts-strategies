@@ -195,48 +195,72 @@ async function getScopedContext(caller, { includeNotes = true, includeTrades = f
 }
 
 /**
- * Call Groq API (Ultra-fast, zero-503, free tier with Llama 3.3 70B)
+ * Call Groq API with multi-model cascade (uses available free-tier models)
  */
 async function callGroqStructured(systemInstruction, userPrompt) {
     const groqKey = process.env.GROQ_API_KEY || GROQ_API_KEY;
     if (!groqKey) return null;
 
-    console.log('[AI-ROUTER] Attempting Groq provider (llama-3.3-70b-versatile)...');
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${groqKey}`
-        },
-        body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
-            messages: [
-                {
-                    role: 'system',
-                    content: `${systemInstruction}\n\nIMPORTANT: You must reply ONLY with a valid, parseable JSON object matching the required structure.`
-                },
-                {
-                    role: 'user',
-                    content: userPrompt
-                }
-            ],
-            response_format: { type: "json_object" },
-            temperature: 0.2
-        })
-    });
+    // Models in priority order (available on Groq free tier as of Aug 2026)
+    const groqModels = [
+        'qwen/qwen3.6-27b',
+        'openai/gpt-oss-120b',
+        'openai/gpt-oss-20b'
+    ];
 
-    if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Groq API returned ${response.status}: ${errText}`);
+    let lastError = null;
+
+    for (const model of groqModels) {
+        try {
+            console.log(`[AI-ROUTER] Attempting Groq model: ${model}...`);
+            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${groqKey}`
+                },
+                body: JSON.stringify({
+                    model: model,
+                    messages: [
+                        {
+                            role: 'system',
+                            content: `${systemInstruction}\n\nIMPORTANT: You must reply ONLY with a valid, parseable JSON object matching the required structure.`
+                        },
+                        {
+                            role: 'user',
+                            content: userPrompt
+                        }
+                    ],
+                    response_format: { type: "json_object" },
+                    temperature: 0.2
+                })
+            });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                console.warn(`[AI-ROUTER] Groq model ${model} returned ${response.status}, trying next...`);
+                lastError = new Error(`Groq ${model} returned ${response.status}: ${errText}`);
+                continue;
+            }
+
+            const resJson = await response.json();
+            const content = resJson.choices?.[0]?.message?.content;
+            if (!content) {
+                lastError = new Error(`Empty response from Groq model ${model}`);
+                continue;
+            }
+            const parsed = JSON.parse(content);
+            parsed._provider = `groq:${model}`;
+            console.log(`[AI-ROUTER] ✅ Groq model ${model} responded successfully`);
+            return parsed;
+        } catch (err) {
+            console.warn(`[AI-ROUTER] Groq model ${model} error:`, err.message);
+            lastError = err;
+            continue;
+        }
     }
 
-    const resJson = await response.json();
-    const content = resJson.choices?.[0]?.message?.content;
-    if (!content) throw new Error("Empty response from Groq");
-    const parsed = JSON.parse(content);
-    parsed._provider = 'groq:llama-3.3-70b';
-    console.log('[AI-ROUTER] ✅ Groq responded successfully');
-    return parsed;
+    throw lastError || new Error('All Groq models failed');
 }
 
 /**
@@ -448,6 +472,7 @@ async function handleDiag(req, res) {
 
         // Live test call
         try {
+            const testModel = 'qwen/qwen3.6-27b';
             const testResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -455,7 +480,7 @@ async function handleDiag(req, res) {
                     'Authorization': `Bearer ${groqKey}`
                 },
                 body: JSON.stringify({
-                    model: 'llama-3.3-70b-versatile',
+                    model: testModel,
                     messages: [{ role: 'user', content: 'Reply with exactly: {"test":"ok"}' }],
                     response_format: { type: 'json_object' },
                     temperature: 0
@@ -465,14 +490,14 @@ async function handleDiag(req, res) {
                 const testJson = await testResp.json();
                 diag.groq.liveTest = {
                     status: 'SUCCESS',
-                    model: 'llama-3.3-70b-versatile',
+                    model: testModel,
                     response: testJson.choices?.[0]?.message?.content
                 };
             } else {
                 const errText = await testResp.text();
                 diag.groq.liveTest = {
                     status: `ERROR_${testResp.status}`,
-                    model: 'llama-3.3-70b-versatile',
+                    model: testModel,
                     error: errText.substring(0, 500)
                 };
             }
