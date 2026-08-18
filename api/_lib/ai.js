@@ -201,6 +201,7 @@ async function callGroqStructured(systemInstruction, userPrompt) {
     const groqKey = process.env.GROQ_API_KEY || GROQ_API_KEY;
     if (!groqKey) return null;
 
+    console.log('[AI-ROUTER] Attempting Groq provider (llama-3.3-70b-versatile)...');
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -232,7 +233,10 @@ async function callGroqStructured(systemInstruction, userPrompt) {
     const resJson = await response.json();
     const content = resJson.choices?.[0]?.message?.content;
     if (!content) throw new Error("Empty response from Groq");
-    return JSON.parse(content);
+    const parsed = JSON.parse(content);
+    parsed._provider = 'groq:llama-3.3-70b';
+    console.log('[AI-ROUTER] ✅ Groq responded successfully');
+    return parsed;
 }
 
 /**
@@ -242,14 +246,18 @@ async function callGeminiStructured(systemInstruction, userPrompt, customSchema 
     const groqKey = process.env.GROQ_API_KEY || GROQ_API_KEY;
     const geminiKey = process.env.GEMINI_API_KEY || GEMINI_API_KEY;
 
+    console.log(`[AI-ROUTER] Provider keys: GROQ=${groqKey ? 'SET(' + groqKey.substring(0,6) + '...)' : 'NOT_SET'}, GEMINI=${geminiKey ? 'SET(' + geminiKey.substring(0,6) + '...)' : 'NOT_SET'}`);
+
     // 1. If GROQ_API_KEY is configured, prioritize Groq for 10x speed & zero 503 errors
     if (groqKey) {
         try {
             const groqResult = await callGroqStructured(systemInstruction, userPrompt);
             if (groqResult) return groqResult;
         } catch (groqErr) {
-            console.warn("Groq provider error, falling back to Gemini:", groqErr.message);
+            console.warn('[AI-ROUTER] ❌ Groq provider error, falling back to Gemini:', groqErr.message);
         }
+    } else {
+        console.log('[AI-ROUTER] GROQ_API_KEY not set, skipping Groq provider');
     }
 
     if (!geminiKey) {
@@ -355,11 +363,15 @@ async function callGeminiStructured(systemInstruction, userPrompt, customSchema 
                 }
 
                 try {
-                    return JSON.parse(textOut);
+                    const parsed = JSON.parse(textOut);
+                    parsed._provider = `gemini:${model}`;
+                    console.log(`[AI-ROUTER] ✅ Gemini model ${model} responded successfully`);
+                    return parsed;
                 } catch (parseErr) {
                     return {
                         answer: textOut,
-                        actions: []
+                        actions: [],
+                        _provider: `gemini:${model}`
                     };
                 }
             } catch (callErr) {
@@ -405,6 +417,36 @@ function sanitizeActions(actions, permittedNotes, strategies) {
 }
 
 // -------------------------------------------------------------
+// DIAGNOSTIC ENDPOINT
+async function handleDiag(req, res) {
+    const groqKey = process.env.GROQ_API_KEY || GROQ_API_KEY;
+    const geminiKey = process.env.GEMINI_API_KEY || GEMINI_API_KEY;
+    const diag = {
+        groq: { configured: !!groqKey, keyPrefix: groqKey ? groqKey.substring(0, 8) + '...' : null },
+        gemini: { configured: !!geminiKey, keyPrefix: geminiKey ? geminiKey.substring(0, 8) + '...' : null },
+        geminiModel: process.env.GEMINI_MODEL || GEMINI_MODEL,
+        envKeys: Object.keys(process.env).filter(k => k.includes('GROQ') || k.includes('GEMINI') || k.includes('OPENAI'))
+    };
+
+    // Quick connectivity test
+    if (groqKey) {
+        try {
+            const r = await fetch('https://api.groq.com/openai/v1/models', {
+                headers: { 'Authorization': `Bearer ${groqKey}` }
+            });
+            diag.groq.status = r.ok ? 'CONNECTED' : `ERROR_${r.status}`;
+            if (r.ok) {
+                const models = await r.json();
+                diag.groq.models = models.data?.map(m => m.id).slice(0, 5) || [];
+            }
+        } catch (e) {
+            diag.groq.status = 'NETWORK_ERROR: ' + e.message;
+        }
+    }
+
+    return res.status(200).json(diag);
+}
+
 // MAIN API DISPATCHER
 // -------------------------------------------------------------
 
@@ -414,6 +456,11 @@ module.exports = async (req, res) => {
     if (!action && req.url) {
         const urlObj = new URL(req.url, 'http://localhost');
         action = urlObj.searchParams.get('action') || urlObj.pathname.split('/').filter(Boolean).pop();
+    }
+
+    // 0. DIAGNOSTIC ENDPOINT (Admin-only, tests AI provider connectivity)
+    if (action === 'diag') {
+        return handleDiag(req, res);
     }
 
     // 1. CRON / DAILY BRIEFING ENDPOINT (Supports Vercel Cron with CRON_SECRET or session auth)
