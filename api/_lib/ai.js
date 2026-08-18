@@ -212,7 +212,7 @@ function schemaToTextDescription(schema) {
             return `- "${key}": ${type.toLowerCase()}${req} — ${desc}`;
         });
         return `\n\nYour JSON response MUST have exactly these fields:\n${fields.join('\n')}`;
-    } catch {
+    } catch (e) {
         return '';
     }
 }
