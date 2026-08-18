@@ -2100,7 +2100,7 @@ function bulkToggleUserPermissions(feature, enable) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             action: 'bulk_update_user_permissions',
-            data: { feature, enable }
+            data: { feature, enable, enabled: enable }
         })
     }).then(res => res.json()).then(resJson => {
         if (resJson.success) {

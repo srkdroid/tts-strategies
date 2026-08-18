@@ -222,8 +222,10 @@ module.exports = async (req, res) => {
             }
 
             if (saveType === 'bulk_update_user_permissions') {
-                const { feature, enabled } = data || {};
-                if (!feature || typeof enabled !== 'boolean') {
+                const feature = data && data.feature;
+                const isEnabled = data ? (typeof data.enabled === 'boolean' ? data.enabled : (typeof data.enable === 'boolean' ? data.enable : null)) : null;
+
+                if (!feature || isEnabled === null) {
                     return res.status(400).json({ error: 'Invalid feature or enabled flag' });
                 }
 
@@ -242,14 +244,25 @@ module.exports = async (req, res) => {
                 }
 
                 const updatedPerms = {};
-                for (const phone of Object.keys(whitelistMap)) {
+                const phones = Object.keys(whitelistMap);
+                for (const phone of phones) {
                     const userPerm = currentPerms[phone] || { catalog: false, journal: false };
-                    userPerm[feature] = enabled;
+                    if (feature === 'all') {
+                        userPerm.catalog = isEnabled;
+                        userPerm.journal = isEnabled;
+                    } else {
+                        userPerm[feature] = isEnabled;
+                    }
                     updatedPerms[phone] = userPerm;
                     await queryKV(['HSET', 'user_permissions', phone, JSON.stringify(userPerm)]);
                 }
 
-                return res.status(200).json({ success: true, message: `Bulk updated ${feature} permission`, permissions: updatedPerms });
+                return res.status(200).json({ 
+                    success: true, 
+                    count: phones.length,
+                    message: `Bulk updated ${feature} permission for ${phones.length} users`, 
+                    permissions: updatedPerms 
+                });
             }
 
             if (saveType === 'save_strategies' || saveType === 'strategies') {
