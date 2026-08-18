@@ -481,7 +481,7 @@ async function handleDiag(req, res) {
                 },
                 body: JSON.stringify({
                     model: testModel,
-                    messages: [{ role: 'user', content: 'Reply with exactly: {"test":"ok"}' }],
+                    messages: [{ role: 'user', content: 'Reply with this exact json: {"test":"ok"}' }],
                     response_format: { type: 'json_object' },
                     temperature: 0
                 })
