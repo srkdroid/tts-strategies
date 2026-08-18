@@ -4345,7 +4345,8 @@ async function fetchDailyAiBrief(forceRefresh = false) {
     }
 
     try {
-        const res = await fetch('/api/ai?action=daily-brief');
+        const url = forceRefresh ? '/api/ai?action=daily-brief&force=true' : '/api/ai?action=daily-brief';
+        const res = await fetch(url);
         if (!res.ok) throw new Error("Failed to load daily briefing");
 
         const data = await res.json();
