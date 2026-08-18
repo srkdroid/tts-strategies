@@ -195,9 +195,32 @@ async function getScopedContext(caller, { includeNotes = true, includeTrades = f
 }
 
 /**
+ * Convert Gemini-style schema to text description for Groq's system prompt
+ */
+function schemaToTextDescription(schema) {
+    if (!schema) return '';
+    try {
+        const props = schema.properties || {};
+        const required = schema.required || [];
+        const fields = Object.entries(props).map(([key, val]) => {
+            const type = val.type || 'STRING';
+            const desc = val.description || '';
+            const req = required.includes(key) ? ' (required)' : '';
+            if (type === 'ARRAY' && val.items) {
+                return `- "${key}": array of ${val.items.type || 'strings'}${req} — ${desc}`;
+            }
+            return `- "${key}": ${type.toLowerCase()}${req} — ${desc}`;
+        });
+        return `\n\nYour JSON response MUST have exactly these fields:\n${fields.join('\n')}`;
+    } catch {
+        return '';
+    }
+}
+
+/**
  * Call Groq API with multi-model cascade (uses available free-tier models)
  */
-async function callGroqStructured(systemInstruction, userPrompt) {
+async function callGroqStructured(systemInstruction, userPrompt, customSchema = null) {
     const groqKey = process.env.GROQ_API_KEY || GROQ_API_KEY;
     if (!groqKey) return null;
 
@@ -207,6 +230,9 @@ async function callGroqStructured(systemInstruction, userPrompt) {
         'openai/gpt-oss-120b',
         'openai/gpt-oss-20b'
     ];
+
+    const schemaHint = schemaToTextDescription(customSchema);
+    const fullSystemPrompt = `${systemInstruction}\n\nIMPORTANT: You must reply ONLY with a valid, parseable JSON object.${schemaHint}`;
 
     let lastError = null;
 
@@ -222,14 +248,8 @@ async function callGroqStructured(systemInstruction, userPrompt) {
                 body: JSON.stringify({
                     model: model,
                     messages: [
-                        {
-                            role: 'system',
-                            content: `${systemInstruction}\n\nIMPORTANT: You must reply ONLY with a valid, parseable JSON object matching the required structure.`
-                        },
-                        {
-                            role: 'user',
-                            content: userPrompt
-                        }
+                        { role: 'system', content: fullSystemPrompt },
+                        { role: 'user', content: userPrompt }
                     ],
                     response_format: { type: "json_object" },
                     temperature: 0.2
@@ -275,7 +295,7 @@ async function callGeminiStructured(systemInstruction, userPrompt, customSchema 
     // 1. If GROQ_API_KEY is configured, prioritize Groq for 10x speed & zero 503 errors
     if (groqKey) {
         try {
-            const groqResult = await callGroqStructured(systemInstruction, userPrompt);
+            const groqResult = await callGroqStructured(systemInstruction, userPrompt, customSchema);
             if (groqResult) return groqResult;
         } catch (groqErr) {
             console.warn('[AI-ROUTER] ❌ Groq provider error, falling back to Gemini:', groqErr.message);
