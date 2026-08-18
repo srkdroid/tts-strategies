@@ -195,10 +195,43 @@ async function getScopedContext(caller, { includeNotes = true, includeTrades = f
 /**
  * Call Google Gemini with native responseSchema for structured JSON output
  */
-async function callGeminiStructured(systemInstruction, userPrompt) {
+async function callGeminiStructured(systemInstruction, userPrompt, customSchema = null) {
     if (!GEMINI_API_KEY) {
         throw new Error("GEMINI_API_KEY_NOT_CONFIGURED");
     }
+
+    const defaultSchema = {
+        type: "OBJECT",
+        properties: {
+            answer: { 
+                type: "STRING", 
+                description: "Clear, concise markdown explanation or answer" 
+            },
+            actions: {
+                type: "ARRAY",
+                description: "Optional clickable interactive action chips to suggest to user",
+                items: {
+                    type: "OBJECT",
+                    properties: {
+                        type: { 
+                            type: "STRING", 
+                            enum: ["open_note", "open_strike_calc", "switch_view"] 
+                        },
+                        targetId: { 
+                            type: "STRING", 
+                            description: "Note ID, Strategy ID, or view name (calendar, flow, planner, notes, catalog, journal)" 
+                        },
+                        label: { 
+                            type: "STRING", 
+                            description: "Button label, e.g. '📖 Open Batman Note'" 
+                        }
+                    },
+                    required: ["type", "targetId", "label"]
+                }
+            }
+        },
+        required: ["answer", "actions"]
+    };
 
     const payload = {
         systemInstruction: {
@@ -213,38 +246,7 @@ async function callGeminiStructured(systemInstruction, userPrompt) {
         generationConfig: {
             temperature: 0.2,
             responseMimeType: "application/json",
-            responseSchema: {
-                type: "OBJECT",
-                properties: {
-                    answer: { 
-                        type: "STRING", 
-                        description: "Clear, concise markdown explanation or answer" 
-                    },
-                    actions: {
-                        type: "ARRAY",
-                        description: "Optional clickable interactive action chips to suggest to user",
-                        items: {
-                            type: "OBJECT",
-                            properties: {
-                                type: { 
-                                    type: "STRING", 
-                                    enum: ["open_note", "open_strike_calc", "switch_view"] 
-                                },
-                                targetId: { 
-                                    type: "STRING", 
-                                    description: "Note ID, Strategy ID, or view name (calendar, flow, planner, notes, catalog, journal)" 
-                                },
-                                label: { 
-                                    type: "STRING", 
-                                    description: "Button label, e.g. '📖 Open Batman Note'" 
-                                }
-                            },
-                            required: ["type", "targetId", "label"]
-                        }
-                    }
-                },
-                required: ["answer", "actions"]
-            }
+            responseSchema: customSchema || defaultSchema
         }
     };
 
@@ -414,12 +416,34 @@ Analyze today's trading day (${today}, ${now.toLocaleDateString('en-US', { weekd
 Create a concise, punchy 3-bullet pre-market briefing summarizing:
 1. Scheduled deployment focus for today based on typical monthly/weekly cycles.
 2. Market risk factors to watch (e.g. gap openings, volatility discipline).
-3. Core execution reminder (e.g. 5-6% credit range rule, CE hedge first).
+3. Core execution reminder (e.g. 5-6% credit range rule, CE hedge first).`;
 
-Output JSON with keys "headline", "status", and "bullets" (array of exactly 3 strings). Keep bullets short and actionable.`;
+            const briefingSchema = {
+                type: "OBJECT",
+                properties: {
+                    headline: { type: "STRING", description: "Briefing headline, e.g. 'Wednesday Expiry Deployment Focus'" },
+                    status: { type: "STRING", description: "Market status, e.g. 'ACTIVE' or 'EXPIRY DAY'" },
+                    bullets: {
+                        type: "ARRAY",
+                        description: "Array of exactly 3 concise actionable strings",
+                        items: { type: "STRING" }
+                    }
+                },
+                required: ["headline", "status", "bullets"]
+            };
 
             const userPrompt = `Generate today's pre-market briefing for ${today}. Active strategies count: ${strategies.length}.`;
-            const briefResult = await callGeminiStructured(systemPrompt, userPrompt);
+            let briefResult = await callGeminiStructured(systemPrompt, userPrompt, briefingSchema);
+
+            // Handle cases where answer/actions schema might be returned
+            if (!briefResult.bullets && briefResult.answer) {
+                const lines = briefResult.answer.split('\n').filter(l => l.trim().startsWith('-') || l.trim().startsWith('*') || /^\d+\./.test(l.trim()));
+                briefResult = {
+                    headline: "Today's Pre-Market Briefing",
+                    status: "ACTIVE",
+                    bullets: lines.length > 0 ? lines.map(l => l.replace(/^[-*•\d.]+\s*/, '').trim()) : [briefResult.answer]
+                };
+            }
 
             // Cache in Redis for 24 hours
             await queryKVSafe(['SET', cacheKey, JSON.stringify(briefResult), 'EX', 86400]);
