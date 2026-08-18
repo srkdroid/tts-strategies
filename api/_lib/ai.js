@@ -550,16 +550,35 @@ module.exports = async (req, res) => {
         try {
             const today = new Date().toISOString().split('T')[0];
             const cacheKey = `daily_brief:shared:${today}`;
+            const forceRefresh = req.query && (req.query.force === 'true' || req.query.force === '1');
 
             // Check Idempotency / Cache First (0 LLM cost on subsequent hits)
-            const cachedBrief = await queryKVSafe(['GET', cacheKey]);
-            if (cachedBrief) {
-                return res.status(200).json({
-                    success: true,
-                    date: today,
-                    brief: JSON.parse(cachedBrief),
-                    cached: true
-                });
+            if (!forceRefresh) {
+                const cachedBrief = await queryKVSafe(['GET', cacheKey]);
+                if (cachedBrief) {
+                    try {
+                        const parsed = JSON.parse(cachedBrief);
+                        // Validate cached data has correct structure (not stale answer/actions format)
+                        if (parsed.bullets && Array.isArray(parsed.bullets)) {
+                            return res.status(200).json({
+                                success: true,
+                                date: today,
+                                brief: parsed,
+                                cached: true
+                            });
+                        }
+                        // Stale/malformed cache — delete and regenerate
+                        console.warn('[DAILY-BRIEF] Stale cache detected (missing bullets), regenerating...');
+                        await queryKVSafe(['DEL', cacheKey]);
+                    } catch (parseErr) {
+                        console.warn('[DAILY-BRIEF] Corrupt cache, regenerating...');
+                        await queryKVSafe(['DEL', cacheKey]);
+                    }
+                }
+            } else {
+                // Force refresh: delete existing cache
+                await queryKVSafe(['DEL', cacheKey]);
+                console.log('[DAILY-BRIEF] Force refresh requested, cache cleared.');
             }
 
             // Auth Check: Either Bearer CRON_SECRET or logged in session
@@ -632,15 +651,20 @@ Create a concise, punchy 3-bullet pre-market briefing summarizing:
             const userPrompt = `Generate today's pre-market briefing for ${today}. Active strategies count: ${strategies.length}.`;
             let briefResult = await callGeminiStructured(systemPrompt, userPrompt, briefingSchema);
 
-            // Handle cases where answer/actions schema might be returned
+            // Handle cases where answer/actions schema might be returned (Groq fallback)
             if (!briefResult.bullets && briefResult.answer) {
                 const lines = briefResult.answer.split('\n').filter(l => l.trim().startsWith('-') || l.trim().startsWith('*') || /^\d+\./.test(l.trim()));
                 briefResult = {
                     headline: "Today's Pre-Market Briefing",
                     status: "ACTIVE",
-                    bullets: lines.length > 0 ? lines.map(l => l.replace(/^[-*•\d.]+\s*/, '').trim()) : [briefResult.answer]
+                    bullets: lines.length > 0 ? lines.map(l => l.replace(/^[-*•\d.]+\s*/, '').trim()) : [briefResult.answer],
+                    _provider: briefResult._provider
                 };
             }
+
+            // Strip _provider before caching, keep for response
+            const provider = briefResult._provider;
+            delete briefResult._provider;
 
             // Cache in Redis for 24 hours
             await queryKVSafe(['SET', cacheKey, JSON.stringify(briefResult), 'EX', 86400]);
@@ -649,7 +673,8 @@ Create a concise, punchy 3-bullet pre-market briefing summarizing:
                 success: true,
                 date: today,
                 brief: briefResult,
-                cached: false
+                cached: false,
+                provider: provider || 'unknown'
             });
 
         } catch (err) {
