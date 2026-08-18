@@ -262,47 +262,61 @@ async function callGeminiStructured(systemInstruction, userPrompt, customSchema 
     let lastError = null;
 
     for (const model of candidateModels) {
-        try {
-            const url = `${GEMINI_API_BASE}/${model}:generateContent`;
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'x-goog-api-key': GEMINI_API_KEY
-                },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errText = await response.text();
-                if (response.status === 404) {
-                    console.warn(`Gemini model ${model} returned 404, trying next candidate...`);
-                    lastError = new Error(`Gemini API returned ${response.status}: ${errText}`);
-                    continue;
-                }
-                throw new Error(`Gemini API returned ${response.status}: ${errText}`);
-            }
-
-            const resJson = await response.json();
-            const textOut = resJson.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!textOut) {
-                throw new Error("Empty response from Gemini");
-            }
-
+        // Try up to 2 attempts per candidate model if 503/429 occurs
+        for (let attempt = 0; attempt < 2; attempt++) {
             try {
-                return JSON.parse(textOut);
-            } catch (parseErr) {
-                return {
-                    answer: textOut,
-                    actions: []
-                };
+                if (attempt > 0) {
+                    await new Promise(r => setTimeout(r, 600)); // Small 600ms backoff on 503/429
+                }
+
+                const url = `${GEMINI_API_BASE}/${model}:generateContent`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': GEMINI_API_KEY
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errText = await response.text();
+                    const status = response.status;
+                    // If 503 (Overloaded), 429 (Rate/Spike), or 404 (Not Found) -> fallback to next model
+                    if (status === 503 || status === 429 || status === 404) {
+                        console.warn(`Gemini model ${model} returned ${status} (attempt ${attempt + 1}), trying alternative...`);
+                        lastError = new Error(`Gemini API returned ${status}: ${errText}`);
+                        if (attempt === 0 && (status === 503 || status === 429)) {
+                            continue; // Retry once on same model after short delay
+                        }
+                        break; // Move to next model
+                    }
+                    throw new Error(`Gemini API returned ${status}: ${errText}`);
+                }
+
+                const resJson = await response.json();
+                const textOut = resJson.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!textOut) {
+                    throw new Error("Empty response from Gemini");
+                }
+
+                try {
+                    return JSON.parse(textOut);
+                } catch (parseErr) {
+                    return {
+                        answer: textOut,
+                        actions: []
+                    };
+                }
+            } catch (callErr) {
+                const msg = callErr.message || '';
+                if (msg.includes('503') || msg.includes('429') || msg.includes('404') || msg.includes('UNAVAILABLE') || msg.includes('fetch failed')) {
+                    lastError = callErr;
+                    if (attempt === 0) continue;
+                    break;
+                }
+                throw callErr;
             }
-        } catch (callErr) {
-            if (callErr.message && callErr.message.includes('404')) {
-                lastError = callErr;
-                continue;
-            }
-            throw callErr;
         }
     }
 
@@ -457,17 +471,23 @@ Create a concise, punchy 3-bullet pre-market briefing summarizing:
 
         } catch (err) {
             console.error("Daily Brief Error:", err);
-            return res.status(500).json({ 
-                error: 'Failed to generate daily briefing',
-                fallback: {
-                    headline: "Today's Trading Schedule",
-                    status: "ACTIVE",
-                    bullets: [
-                        "Review active monthly and weekly calendar deployments for today.",
-                        "Verify net credit range between 5% and 6% before finalizing strikes.",
-                        "Stick to pre-defined stop loss and profit targets in Trade Journal."
-                    ]
-                }
+            const { strategies } = loadDiskFallbacks();
+            const topStrategies = strategies.slice(0, 3).map(s => s.name).join(', ');
+            const fallbackBrief = {
+                headline: "Today's Trading Schedule & Risk Brief",
+                status: "ACTIVE",
+                bullets: [
+                    `Review active deployment cycles for scheduled strategies (${topStrategies}).`,
+                    "Verify 5% to 6% net credit deployment range before taking execution strikes.",
+                    "Adhere strictly to pre-defined stop loss and profit targets in your Trade Journal."
+                ]
+            };
+            return res.status(200).json({ 
+                success: true,
+                date: new Date().toISOString().split('T')[0],
+                brief: fallbackBrief,
+                cached: false,
+                fallback: true
             });
         }
     }
