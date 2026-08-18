@@ -198,13 +198,14 @@ async function getScopedContext(caller, { includeNotes = true, includeTrades = f
  * Call Groq API (Ultra-fast, zero-503, free tier with Llama 3.3 70B)
  */
 async function callGroqStructured(systemInstruction, userPrompt) {
-    if (!GROQ_API_KEY) return null;
+    const groqKey = process.env.GROQ_API_KEY || GROQ_API_KEY;
+    if (!groqKey) return null;
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${GROQ_API_KEY}`
+            'Authorization': `Bearer ${groqKey}`
         },
         body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
@@ -238,8 +239,11 @@ async function callGroqStructured(systemInstruction, userPrompt) {
  * Multi-Provider Structured LLM Caller (Groq ➡️ Gemini Multi-Model Cascade)
  */
 async function callGeminiStructured(systemInstruction, userPrompt, customSchema = null) {
+    const groqKey = process.env.GROQ_API_KEY || GROQ_API_KEY;
+    const geminiKey = process.env.GEMINI_API_KEY || GEMINI_API_KEY;
+
     // 1. If GROQ_API_KEY is configured, prioritize Groq for 10x speed & zero 503 errors
-    if (GROQ_API_KEY) {
+    if (groqKey) {
         try {
             const groqResult = await callGroqStructured(systemInstruction, userPrompt);
             if (groqResult) return groqResult;
@@ -248,8 +252,8 @@ async function callGeminiStructured(systemInstruction, userPrompt, customSchema 
         }
     }
 
-    if (!GEMINI_API_KEY) {
-        throw new Error("NO_AI_PROVIDER_KEY_CONFIGURED (Please set GEMINI_API_KEY or GROQ_API_KEY in Vercel Environment Variables)");
+    if (!geminiKey) {
+        throw new Error("NO_AI_PROVIDER_KEY_CONFIGURED: Please set GROQ_API_KEY or GEMINI_API_KEY in your Vercel Environment Variables.");
     }
 
     const defaultSchema = {
