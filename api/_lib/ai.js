@@ -428,7 +428,7 @@ async function handleDiag(req, res) {
         envKeys: Object.keys(process.env).filter(k => k.includes('GROQ') || k.includes('GEMINI') || k.includes('OPENAI'))
     };
 
-    // Quick connectivity test
+    // List ALL Groq models
     if (groqKey) {
         try {
             const r = await fetch('https://api.groq.com/openai/v1/models', {
@@ -437,10 +437,47 @@ async function handleDiag(req, res) {
             diag.groq.status = r.ok ? 'CONNECTED' : `ERROR_${r.status}`;
             if (r.ok) {
                 const models = await r.json();
-                diag.groq.models = models.data?.map(m => m.id).slice(0, 5) || [];
+                const allModels = models.data?.map(m => m.id) || [];
+                diag.groq.allModels = allModels;
+                diag.groq.llamaModels = allModels.filter(m => m.includes('llama'));
+                diag.groq.totalModels = allModels.length;
             }
         } catch (e) {
             diag.groq.status = 'NETWORK_ERROR: ' + e.message;
+        }
+
+        // Live test call
+        try {
+            const testResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${groqKey}`
+                },
+                body: JSON.stringify({
+                    model: 'llama-3.3-70b-versatile',
+                    messages: [{ role: 'user', content: 'Reply with exactly: {"test":"ok"}' }],
+                    response_format: { type: 'json_object' },
+                    temperature: 0
+                })
+            });
+            if (testResp.ok) {
+                const testJson = await testResp.json();
+                diag.groq.liveTest = {
+                    status: 'SUCCESS',
+                    model: 'llama-3.3-70b-versatile',
+                    response: testJson.choices?.[0]?.message?.content
+                };
+            } else {
+                const errText = await testResp.text();
+                diag.groq.liveTest = {
+                    status: `ERROR_${testResp.status}`,
+                    model: 'llama-3.3-70b-versatile',
+                    error: errText.substring(0, 500)
+                };
+            }
+        } catch (e) {
+            diag.groq.liveTest = { status: 'NETWORK_ERROR', error: e.message };
         }
     }
 
