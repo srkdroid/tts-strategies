@@ -28,11 +28,11 @@ async function fetchNotesData() {
         
         renderNotesSidebar();
         
-        // Select first note by default if none active
+        // Select first note by default if none active (background DOM setup, do not log false view)
         if (!activeNoteId && allNotes.length > 0) {
-            selectNote(allNotes[0].id);
+            selectNote(allNotes[0].id, false);
         } else if (activeNoteId) {
-            selectNote(activeNoteId);
+            selectNote(activeNoteId, false);
         }
     } catch (e) {
         console.error("Notes load error:", e);
@@ -193,7 +193,7 @@ function showNotesMobileSidebar() {
 }
 
 // Select & Display Note in Main Viewer Pane (75%)
-function selectNote(noteId) {
+function selectNote(noteId, shouldTrack = true) {
     activeNoteId = noteId;
     renderNotesSidebar(); // Refresh sidebar active highlight
 
@@ -215,7 +215,7 @@ function selectNote(noteId) {
         return;
     }
 
-    if (typeof trackUserActivity === 'function') {
+    if (shouldTrack && typeof trackUserActivity === 'function') {
         trackUserActivity('NOTE_VIEW', `Viewed note: ${note.title}`, { noteId: note.id, category: note.category });
     }
 
