@@ -16,6 +16,7 @@ const fs = require('fs');
 const path = require('path');
 const { verifyToken, verifyAdminToken, parseCookies } = require('./common/auth');
 const { queryKV, queryKVSafe } = require('./common/redis');
+const { getDailyCalendarSchedule, formatDateString } = require('./calendar-engine');
 
 // Configuration
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -185,11 +186,16 @@ async function getScopedContext(caller, { includeNotes = true, includeTrades = f
         } catch (e) {}
     }
 
+    // 4. Calculate dynamic calendar schedule for today
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todaySchedule = getDailyCalendarSchedule(todayStr, strategies, holidays);
+
     return {
         strategies,
         holidays,
         notes: permittedNotes,
         userTrades,
+        todaySchedule,
         callerRole: caller.isAdmin ? 'admin' : 'member'
     };
 }
@@ -594,7 +600,7 @@ module.exports = async (req, res) => {
             }
 
             // Check if market is closed today (Weekend or NSE Holiday)
-            const { holidays } = loadDiskFallbacks();
+            const { strategies, holidays } = loadDiskFallbacks();
             const now = new Date();
             const dayOfWeek = now.getDay(); // 0 = Sun, 6 = Sat
             const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
@@ -625,39 +631,51 @@ module.exports = async (req, res) => {
                 return res.status(429).json({ error: rateCheck.reason });
             }
 
-            // Generate Enriched Daily Briefing with strategy context
-            const { strategies } = loadDiskFallbacks();
+            // Generate Enriched Daily Briefing with calendar dynamic schedule
             const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
-            const dayShort = dayName.substring(0, 3);
+            
+            const schedule = getDailyCalendarSchedule(today, strategies, holidays);
+            const todayDeployments = schedule.deploymentsToday;
+            const todayExits = schedule.exitsToday;
+            const activePositions = schedule.activeHoldingPositions;
 
-            // Build strategy context: which strategies deploy today and this week
-            const strategyContext = strategies.map(s => {
-                const deploysToday = (s.day || '').toLowerCase().includes(dayShort.toLowerCase());
-                return `• ${s.name} [${s.index}] — ${s.sheet} | Deploy: ${s.day} | DTE: ${s.dte} | Exit: ${s.exit?.target || 'N/A'} / SL: ${s.exit?.sl || 'N/A'} | Credit: ${s.conditions?.credit_range || 'N/A'}${deploysToday ? ' ⚡ DEPLOYS TODAY' : ''}`;
-            }).join('\n');
+            const deployLines = todayDeployments.map(d => {
+                const s = d.strategy;
+                const exitDateStr = d.exitDate ? formatDateString(d.exitDate) : 'N/A';
+                return `• DEPLOY TODAY: ${s.name} [${s.index}] (${s.sheet}) at ${s.time || '15:16'} | DTE: ${s.dte}, Target: ${s.exit?.target || 'N/A'}, SL: ${s.exit?.sl || 'N/A'}, Credit: ${s.conditions?.credit_range || 'N/A'}, Scheduled Exit: ${exitDateStr}`;
+            });
 
-            const todayStrategies = strategies.filter(s => (s.day || '').toLowerCase().includes(dayShort.toLowerCase()));
-            const todayNames = todayStrategies.map(s => `${s.name} (${s.index})`).join(', ');
+            const exitLines = todayExits.map(d => {
+                const s = d.strategy;
+                const depDateStr = d.actualDate ? formatDateString(d.actualDate) : 'N/A';
+                return `• SCHEDULED EXIT TODAY: ${s.name} [${s.index}] (deployed ${depDateStr}) | Target: ${s.exit?.target || 'N/A'}, SL: ${s.exit?.sl || 'N/A'}`;
+            });
+
+            const deployNames = todayDeployments.map(d => `${d.strategy.name} (${d.strategy.index})`).join(', ');
+            const exitNames = todayExits.map(d => `${d.strategy.name} (${d.strategy.index})`).join(', ');
 
             const systemPrompt = `You are the Pre-Market Intelligence Assistant for TTS Options Strategy Calendar.
-Today is ${dayName}, ${today}. Analyze the ACTUAL strategy schedule below and create a specific, actionable briefing.
+Today is ${dayName}, ${today}. Analyze the dynamic calendar schedule below and create a precise, actionable briefing.
 
-MASTER STRATEGY ROSTER:
-${strategyContext}
+VERIFIED CALENDAR SCHEDULE FOR TODAY (${today}):
+${todayDeployments.length > 0 ? `⚡ DEPLOYMENTS SCHEDULED FOR TODAY (${todayDeployments.length}):\n${deployLines.join('\n')}` : '• No new strategy deployments are scheduled for today.'}
 
-${todayStrategies.length > 0 ? `⚡ STRATEGIES DEPLOYING TODAY (${dayName}): ${todayNames}` : `No strategies are scheduled to deploy today (${dayName}).`}
+${todayExits.length > 0 ? `🔔 EXITS / SQUARE-OFFS SCHEDULED FOR TODAY (${todayExits.length}):\n${exitLines.join('\n')}` : '• No strategy exits are scheduled for today.'}
 
-RULES:
-- List specific strategy names that deploy today or need monitoring.
-- Mention specific exit targets, stop losses, and credit ranges from the data.
-- If no deployments today, highlight which strategies are currently in active positions and need monitoring.
-- Be concise but SPECIFIC — never give generic advice without referencing actual strategy names.`;
+${activePositions.length > 0 ? `📌 ACTIVE POSITIONS CURRENTLY IN PROGRESS (${activePositions.length}):\n` + activePositions.slice(0, 6).map(d => `• ${d.strategy.name} [${d.strategy.index}] (Deployed: ${formatDateString(d.actualDate)}, Exit: ${formatDateString(d.exitDate)})`).join('\n') : ''}
+
+CRITICAL RULES:
+1. ONLY state that a strategy is deploying if it is listed under "DEPLOYMENTS SCHEDULED FOR TODAY". DO NOT list any other strategy as deploying today.
+2. If a strategy is listed under "EXITS / SQUARE-OFFS", explicitly report it as a scheduled exit / square-off, NEVER as a deployment.
+3. If no deployments are scheduled today, state clearly that no new deployments take place today and focus on managing open positions.
+4. Include exact Target %, Stop Loss %, and Credit Ranges from the data.
+5. Create 3 to 5 concise bullet points.`;
 
             const briefingSchema = {
                 type: "OBJECT",
                 properties: {
-                    headline: { type: "STRING", description: "Briefing headline referencing today's key activity, e.g. 'Tuesday: Batman & Iron Fly Deployment Day'" },
-                    status: { type: "STRING", description: "Market status: 'ACTIVE', 'EXPIRY DAY', 'DEPLOYMENT DAY', or 'MONITORING'" },
+                    headline: { type: "STRING", description: "Briefing headline referencing today's key activity, e.g. 'Thursday: 3 Deployments & 2 Exits Scheduled'" },
+                    status: { type: "STRING", description: "Market status: 'DEPLOYMENT DAY', 'EXPIRY DAY', 'EXIT / SQUARE-OFF DAY', or 'MONITORING'" },
                     bullets: {
                         type: "ARRAY",
                         description: "Array of 3-5 concise, strategy-specific actionable bullet points",
@@ -668,8 +686,8 @@ RULES:
             };
 
             const userPrompt = `Generate today's pre-market briefing for ${dayName}, ${today}.
-${todayStrategies.length > 0 ? `Strategies deploying today: ${todayNames}. Include their specific deployment rules, DTE, credit ranges, and exit targets.` : `No deployments today. Focus on monitoring active positions and upcoming deployment days.`}
-Total active strategies: ${strategies.length}.`;
+${todayDeployments.length > 0 ? `Deployments today (${todayDeployments.length}): ${deployNames}. Detail their DTE, target, SL, and credit range rules.` : 'No new deployments scheduled today.'}
+${todayExits.length > 0 ? `Exits today (${todayExits.length}): ${exitNames}. Highlight square-off and profit target guidelines.` : ''}`;
             let briefResult = await callGeminiStructured(systemPrompt, userPrompt, briefingSchema);
 
             // Handle cases where answer/actions schema might be returned (Groq fallback)
@@ -764,9 +782,25 @@ Total active strategies: ${strategies.length}.`;
             });
 
             // Format context string safely with XML boundaries
+            const todayStr = new Date().toISOString().split('T')[0];
+            const sched = context.todaySchedule || {};
+            const depList = (sched.deploymentsToday || []).map(d => `${d.strategy.name} [${d.strategy.index}] (Deploy Time: ${d.strategy.time || '15:16'}, DTE: ${d.strategy.dte}, Target: ${d.strategy.exit?.target || 'N/A'}, SL: ${d.strategy.exit?.sl || 'N/A'}, Credit: ${d.strategy.conditions?.credit_range || 'N/A'})`).join('\n• ');
+            const exitList = (sched.exitsToday || []).map(d => `${d.strategy.name} [${d.strategy.index}] (Deployed: ${formatDateString(d.actualDate)}, Target: ${d.strategy.exit?.target || 'N/A'}, SL: ${d.strategy.exit?.sl || 'N/A'})`).join('\n• ');
+            const activeList = (sched.activeHoldingPositions || []).slice(0, 6).map(d => `${d.strategy.name} [${d.strategy.index}] (Deployed: ${formatDateString(d.actualDate)}, Exit by: ${formatDateString(d.exitDate)})`).join('\n• ');
+
             const contextText = `
 <retrieved_context>
 [USER_ROLE]: ${context.callerRole}
+[TODAYS_VERIFIED_CALENDAR_SCHEDULE (Date: ${todayStr})]:
+• DEPLOYMENTS TODAY (${(sched.deploymentsToday || []).length}):
+${depList ? '• ' + depList : '• None scheduled for today'}
+
+• EXITS / SQUARE-OFFS TODAY (${(sched.exitsToday || []).length}):
+${exitList ? '• ' + exitList : '• None scheduled for today'}
+
+• ACTIVE HOLDING POSITIONS CURRENTLY IN PROGRESS (${(sched.activeHoldingPositions || []).length}):
+${activeList ? '• ' + activeList : '• None'}
+
 [MASTER_STRATEGIES]:
 ${JSON.stringify(context.strategies.map(s => ({
     id: s.id, name: s.name, index: s.index, sheet: s.sheet,
@@ -786,10 +820,11 @@ You assist traders with options strategies (Iron Fly, Batman 1:3:2, No Brainer, 
 
 CRITICAL OPERATIONAL RULES:
 1. Ground your answers strictly in the verified knowledge provided in <retrieved_context>.
-2. Do not invent strikes or rules not present in the master strategies or notes.
-3. If asked about admin-only notes, private playbooks, or secrets, politely reply that you only have access to permitted public playbooks.
-4. When suggesting relevant actions (like viewing a note or opening a strike calculator), include them in the "actions" array with valid IDs.
-5. Format your answer in clean, readable Markdown with bullet points, bold headers, and code tags where appropriate.`;
+2. When asked what strategies deploy today, what exits today, or what the calendar schedule is, ALWAYS check [TODAYS_VERIFIED_CALENDAR_SCHEDULE] first. Only list strategies under "DEPLOYMENTS TODAY" as deploying today. Never guess based on generic weekday names.
+3. Do not invent strikes or rules not present in the master strategies or notes.
+4. If asked about admin-only notes, private playbooks, or secrets, politely reply that you only have access to permitted public playbooks.
+5. When suggesting relevant actions (like viewing a note or opening a strike calculator), include them in the "actions" array with valid IDs.
+6. Format your answer in clean, readable Markdown with bullet points, bold headers, and code tags where appropriate.`;
 
             const fullPrompt = `${contextText}\n\nUser Question: ${userMessage}`;
             const result = await callGeminiStructured(systemPrompt, fullPrompt);
