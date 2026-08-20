@@ -556,10 +556,25 @@ module.exports = async (req, res) => {
         try {
             const today = new Date().toISOString().split('T')[0];
             const cacheKey = `daily_brief:shared:${today}`;
-            const forceRefresh = req.query && (req.query.force === 'true' || req.query.force === '1');
+
+            // Auth Check: Either Bearer CRON_SECRET, regular user session, or admin session
+            const authHeader = req.headers['authorization'];
+            const isCronAuth = verifyCronSecret(authHeader);
+
+            const cookies = parseCookies(req.headers.cookie);
+            const userPhone = cookies.session_token ? verifyToken(cookies.session_token) : null;
+            const isAdmin = verifyAdminToken(cookies.admin_token);
+
+            if (!isCronAuth && !userPhone && !isAdmin) {
+                return res.status(401).json({ error: 'Unauthorized: Please log in to view the daily briefing.' });
+            }
+
+            // Force refresh is permitted ONLY for Admin or Cron secret
+            const wantsForce = req.query && (req.query.force === 'true' || req.query.force === '1');
+            const canForceRefresh = (isAdmin || isCronAuth) && wantsForce;
 
             // Check Idempotency / Cache First (0 LLM cost on subsequent hits)
-            if (!forceRefresh) {
+            if (!canForceRefresh) {
                 const cachedBrief = await queryKVSafe(['GET', cacheKey]);
                 if (cachedBrief) {
                     try {
@@ -582,21 +597,9 @@ module.exports = async (req, res) => {
                     }
                 }
             } else {
-                // Force refresh: delete existing cache
+                // Force refresh: delete existing cache (Admin / Cron only)
                 await queryKVSafe(['DEL', cacheKey]);
-                console.log('[DAILY-BRIEF] Force refresh requested, cache cleared.');
-            }
-
-            // Auth Check: Either Bearer CRON_SECRET or logged in session
-            const authHeader = req.headers['authorization'];
-            const isCronAuth = verifyCronSecret(authHeader);
-
-            const cookies = parseCookies(req.headers.cookie);
-            const userPhone = cookies.session_token ? verifyToken(cookies.session_token) : null;
-            const isAdmin = verifyAdminToken(cookies.admin_token);
-
-            if (!isCronAuth && !userPhone && !isAdmin) {
-                return res.status(401).json({ error: 'Unauthorized' });
+                console.log('[DAILY-BRIEF] Admin force refresh requested, cache cleared.');
             }
 
             // Check if market is closed today (Weekend or NSE Holiday)
@@ -755,8 +758,11 @@ ${todayExits.length > 0 ? `Exits today (${todayExits.length}): ${exitNames}. Hig
         isAdmin: !!isAdmin
     };
 
-    // 3. CHAT ENDPOINT (Interactive Strategy Co-Pilot)
+    // 3. CHAT ENDPOINT (Interactive Strategy Co-Pilot - Admin Only)
     if (action === 'chat' || req.method === 'POST') {
+        if (!caller.isAdmin) {
+            return res.status(403).json({ error: 'AI Strategy Co-Pilot is currently reserved for Admin users.' });
+        }
         try {
             const body = req.body || {};
             const userMessage = (body.message || '').trim();

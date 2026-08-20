@@ -625,25 +625,29 @@ document.addEventListener("DOMContentLoaded", async () => {
             document.getElementById("admin-user-info").innerText = `Logged in as Admin (${resJson.userPhone})`;
             fetchAdminDbData();
 
-            // AI Features: Visible exclusively in Admin mode for testing
+            // AI Co-Pilot: Visible exclusively in Admin mode
             const aiTriggerBtn = document.getElementById("ai-copilot-trigger-btn");
             if (aiTriggerBtn) aiTriggerBtn.style.display = "inline-flex";
-
-            const aiBriefContainer = document.getElementById("ai-daily-brief-container");
-            if (aiBriefContainer) {
-                aiBriefContainer.style.display = "block";
-                fetchDailyAiBrief(false);
-            }
         } else {
             const userLogoutBtn = document.getElementById("user-logout-btn");
             if (userLogoutBtn) userLogoutBtn.style.display = "block";
 
-            // Hide AI features for regular members during testing
+            // Hide AI Co-Pilot for regular members
             const aiTriggerBtn = document.getElementById("ai-copilot-trigger-btn");
             if (aiTriggerBtn) aiTriggerBtn.style.display = "none";
+        }
 
-            const aiBriefContainer = document.getElementById("ai-daily-brief-container");
-            if (aiBriefContainer) aiBriefContainer.style.display = "none";
+        // AI Daily Briefing: Available to ALL users (cached view)
+        const aiBriefContainer = document.getElementById("ai-daily-brief-container");
+        if (aiBriefContainer) {
+            aiBriefContainer.style.display = "block";
+            fetchDailyAiBrief(false);
+        }
+
+        // Refresh Button on Daily Briefing: Visible ONLY for Admin
+        const aiBriefRefreshBtn = document.getElementById("ai-brief-refresh-btn");
+        if (aiBriefRefreshBtn) {
+            aiBriefRefreshBtn.style.display = isAdminMode ? "inline-flex" : "none";
         }
 
         window.userPermissions = resJson.permissions || { catalog: false, journal: false };
