@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TTS Options Strategy Calendar</title>
-    <link rel="stylesheet" href="style.css?v=5.6">
+    <link rel="stylesheet" href="style.css?v=6.1">
     <link rel="icon" type="image/png" href="favicon.png">
     <!-- Marked.js Markdown Parser & DOMPurify Sanitizer (Pinned with SRI) -->
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous"></script>
@@ -651,6 +651,28 @@
             </article>
             </section>
         </main>
+
+        <!-- Application Footer & Statutory Disclaimers -->
+        <footer class="app-footer" style="margin-top: 3.5rem; padding: 2rem 1.2rem 3rem 1.2rem; border-top: 1px solid rgba(255, 255, 255, 0.08); text-align: center; font-size: 0.78rem; color: var(--text-secondary); line-height: 1.65; background: rgba(15, 23, 42, 0.4);">
+            <div style="max-width: 960px; margin: 0 auto;">
+                <div style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.75rem; border-radius: 20px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); color: #fca5a5; font-size: 0.72rem; font-weight: 600; margin-bottom: 0.8rem;">
+                    <span>🛡️ SEBI Statutory F&O Risk Disclosure</span>
+                </div>
+                <p style="margin: 0 0 0.6rem 0; font-weight: 500; color: #cbd5e1;">
+                    9 out of 10 individual traders in equity Futures & Options (F&O) segment incur net losses. Over and above net losses, loss-makers incur an additional ~28% in transaction costs.
+                </p>
+                <p style="margin: 0 0 1rem 0; font-size: 0.75rem; color: var(--text-secondary);">
+                    TTS Strategies is an educational, computational, and personal trade-journaling software. We are <strong>not a SEBI-registered Investment Adviser or Research Analyst</strong>. Content does not constitute financial advice or return guarantees.
+                </p>
+                <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; flex-wrap: wrap; font-size: 0.78rem;">
+                    <a href="javascript:void(0)" onclick="openTermsModal(false)" style="color: #a78bfa; text-decoration: underline; cursor: pointer;">📄 Terms of Service & Privacy Policy</a>
+                    <span style="color: rgba(255,255,255,0.2);">•</span>
+                    <a href="javascript:void(0)" onclick="openTermsModal(false)" style="color: #a78bfa; text-decoration: underline; cursor: pointer;">⚠️ Full Risk Disclaimers</a>
+                    <span style="color: rgba(255,255,255,0.2);">•</span>
+                    <span style="color: var(--text-secondary);">TTS Strategies &copy; 2026</span>
+                </div>
+            </div>
+        </footer>
     </div>
 
     <!-- Strategy Detail Modal -->
@@ -1623,16 +1645,131 @@
                 </button>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.4rem; font-size: 0.68rem; color: var(--text-secondary);">
-                <span>Free Tier Gemini Flash (25 turns/day)</span>
+                <span>Free Tier Groq / Gemini (25 turns/day)</span>
                 <span id="ai-quota-badge">● Active</span>
+            </div>
+            <div style="margin-top: 0.35rem; font-size: 0.64rem; color: rgba(255, 255, 255, 0.4); text-align: center; line-height: 1.3;">
+                ⚠️ AI outputs are for educational strategy navigation only. Verify strikes & margin on broker terminal.
             </div>
         </form>
     </aside>
 
+    <!-- ------------------------------------------------------------- -->
+    <!-- TERMS OF SERVICE, PRIVACY POLICY & RISK DISCLAIMERS MODAL    -->
+    <!-- ------------------------------------------------------------- -->
+    <div id="terms-modal" class="modal-backdrop" style="display: none; position: fixed; inset: 0; z-index: 99999; backdrop-filter: blur(8px); background: rgba(5, 7, 15, 0.88); align-items: center; justify-content: center;" role="dialog" aria-modal="true" aria-labelledby="terms-modal-title">
+        <div class="modal-dialog" style="max-width: 820px; width: 92%; max-height: 88vh; display: flex; flex-direction: column; background: #0f172a; border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,0.7); overflow: hidden;">
+            
+            <!-- Modal Header -->
+            <div style="padding: 1.2rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; background: rgba(30, 41, 59, 0.6);">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                    <span style="font-size: 1.4rem;">📜</span>
+                    <div>
+                        <h2 id="terms-modal-title" style="margin: 0; font-size: 1.15rem; font-family: var(--font-heading); color: #f8fafc;">Terms of Service, Privacy & Risk Disclaimers</h2>
+                        <span style="font-size: 0.72rem; color: #a78bfa;">Effective Version 1.0 • Updated August 2026</span>
+                    </div>
+                </div>
+                <button type="button" id="terms-close-x-btn" class="close-btn" onclick="closeTermsModal()" style="display: none;" aria-label="Close dialog">&times;</button>
+            </div>
+
+            <!-- Scrollable Terms Body -->
+            <div id="terms-scroll-body" style="padding: 1.5rem; overflow-y: auto; font-size: 0.86rem; line-height: 1.65; color: #cbd5e1; flex: 1;">
+                
+                <!-- Notice Banner -->
+                <div style="background: rgba(239, 68, 68, 0.12); border-left: 4px solid #ef4444; border-radius: 6px; padding: 0.9rem 1.1rem; margin-bottom: 1.2rem;">
+                    <strong style="color: #fca5a5; font-size: 0.92rem;">⚠️ Statutory SEBI Risk Disclosure on Derivatives (F&O):</strong>
+                    <ul style="margin: 0.4rem 0 0 1.2rem; padding: 0; color: #fecaca; font-size: 0.82rem;">
+                        <li><strong>9 out of 10</strong> individual traders in equity Futures & Options (F&O) segment incur net losses.</li>
+                        <li>Over and above net trading losses, loss-makers incur an additional <strong>~28%</strong> of net trading losses as transaction costs.</li>
+                        <li>Those making net trading profits incur between <strong>15% to 50%</strong> of such profits as transaction costs.</li>
+                    </ul>
+                </div>
+
+                <!-- Section 1 -->
+                <div style="margin-bottom: 1.2rem;">
+                    <h3 style="font-size: 0.98rem; color: #e2e8f0; margin: 0 0 0.4rem 0; display: flex; align-items: center; gap: 0.4rem;">
+                        <span>1.</span> Educational & Analytical Purpose Only (Not SEBI Registered)
+                    </h3>
+                    <p style="margin: 0 0 0.5rem 0;">
+                        TTS Strategies ("the Platform") is a computational and trade-journaling software tool developed strictly for <strong>educational, mathematical modeling, and personal self-directed tracking purposes</strong>.
+                    </p>
+                    <p style="margin: 0;">
+                        The Platform, its developers, operators, and administrators are <strong>not SEBI-registered Investment Advisers (RIA) or Research Analysts (RA)</strong>. None of the strategy playbooks (Batman, Iron Fly, No Brainer, STBT, Blaze Butterfly, etc.), strike calculators, capital allocation sequencing, or AI Co-Pilot answers constitute investment advice, financial planning, buy/sell recommendations, or solicitations.
+                    </p>
+                </div>
+
+                <!-- Section 2 -->
+                <div style="margin-bottom: 1.2rem;">
+                    <h3 style="font-size: 0.98rem; color: #e2e8f0; margin: 0 0 0.4rem 0; display: flex; align-items: center; gap: 0.4rem;">
+                        <span>2.</span> User Privacy & Data Handling Charter
+                    </h3>
+                    <p style="margin: 0 0 0.4rem 0;">
+                        We believe financial tracking requires absolute data privacy:
+                    </p>
+                    <ul style="margin: 0 0 0 1.2rem; padding: 0;">
+                        <li><strong>Trade Journal & Personal Notes:</strong> Your trade entries, screenshots, notes, and capital allocations are stored securely and isolated exclusively to your authenticated session. We do not sell, share, or monetize your trading data.</li>
+                        <li><strong>AI Co-Pilot Data Protection:</strong> Queries submitted to the AI Strategy Co-Pilot and Pre-Market Briefing are processed via secure API endpoints (Groq / Google Cloud). <strong>No personally identifiable information (PII) or phone numbers are transmitted to AI providers</strong>, and API interactions are not used to train public AI models.</li>
+                        <li><strong>Right to Deletion:</strong> You retain full control of your data and can clear your trade logs at any time upon request.</li>
+                    </ul>
+                </div>
+
+                <!-- Section 3 -->
+                <div style="margin-bottom: 1.2rem;">
+                    <h3 style="font-size: 0.98rem; color: #e2e8f0; margin: 0 0 0.4rem 0; display: flex; align-items: center; gap: 0.4rem;">
+                        <span>3.</span> AI Co-Pilot & Algorithmic Calculator Disclaimer
+                    </h3>
+                    <p style="margin: 0;">
+                        Outputs from the TTS Strategy Co-Pilot, Pre-Market Intelligence Briefing, and Strike Calculators are generated using algorithmic formulas and Large Language Models. While grounded in verified rules, AI outputs may occasionally contain approximations or market timing variations. <strong>You must independently verify all strikes, Greeks, spot prices, and margin requirements on your broker terminal before executing any order.</strong>
+                    </p>
+                </div>
+
+                <!-- Section 4 -->
+                <div style="margin-bottom: 1.2rem;">
+                    <h3 style="font-size: 0.98rem; color: #e2e8f0; margin: 0 0 0.4rem 0; display: flex; align-items: center; gap: 0.4rem;">
+                        <span>4.</span> Hypothetical Performance & No Guarantee of Profit
+                    </h3>
+                    <p style="margin: 0;">
+                        All references to profit targets (e.g., "2% Target", "5–6% Net Credit", "Stop Loss 2.5%") are theoretical rules and historical backtest benchmarks. Past performance does not guarantee future results. Real market conditions—including execution slippage, gap openings, IV spikes, and liquidity—will directly impact actual P&L.
+                    </p>
+                </div>
+
+                <!-- Section 5 -->
+                <div>
+                    <h3 style="font-size: 0.98rem; color: #e2e8f0; margin: 0 0 0.4rem 0; display: flex; align-items: center; gap: 0.4rem;">
+                        <span>5.</span> Limitation of Liability
+                    </h3>
+                    <p style="margin: 0;">
+                        The Platform does not connect to broker APIs for live order execution and does not hold user funds. The platform and its operators bear zero liability for any trading losses, missed deployments, execution slippage, system downtime, or financial damages resulting from the use of this software.
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- Modal Footer / Acceptance Controls -->
+            <div style="padding: 1.1rem 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(15, 23, 42, 0.95); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                
+                <!-- Consent Checkbox (Visible in Consent Mode) -->
+                <div id="terms-consent-controls" style="display: flex; align-items: center; gap: 0.6rem; flex: 1; min-width: 260px;">
+                    <input type="checkbox" id="terms-agree-checkbox" onchange="toggleTermsAcceptBtn(this.checked)" style="width: 1.2rem; height: 1.2rem; cursor: pointer; accent-color: #8b5cf6;">
+                    <label for="terms-agree-checkbox" style="font-size: 0.8rem; color: #e2e8f0; cursor: pointer; user-select: none; margin: 0;">
+                        I have read, understood, and agree to the Terms of Service, Privacy Policy, and F&O Risk Disclosures.
+                    </label>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 0.6rem; align-items: center; margin-left: auto;">
+                    <button type="button" id="terms-view-close-btn" class="admin-btn edit" onclick="closeTermsModal()" style="display: none; padding: 0.45rem 1.2rem; font-size: 0.85rem;">Close</button>
+                    <button type="button" id="terms-accept-btn" class="admin-btn add" onclick="submitTermsConsent()" disabled style="padding: 0.5rem 1.4rem; font-size: 0.85rem; background: #8b5cf6; border-color: #7c3aed; opacity: 0.5; cursor: not-allowed;">Accept & Continue</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
     <!-- Script imports -->
-    <script src="holidays.js?v=6.0"></script>
-    <script src="capital-planner-data.js?v=6.0"></script>
-    <script src="notes.js?v=6.0"></script>
-    <script src="app.js?v=6.0"></script>
+    <script src="holidays.js?v=6.1"></script>
+    <script src="capital-planner-data.js?v=6.1"></script>
+    <script src="notes.js?v=6.1"></script>
+    <script src="app.js?v=6.1"></script>
 </body>
 </html>

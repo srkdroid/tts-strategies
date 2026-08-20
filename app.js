@@ -612,6 +612,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         const plannerBtn = document.getElementById("mode-planner-btn");
         if (plannerBtn) plannerBtn.style.display = "inline-flex";
 
+        // Check Terms of Service, Privacy Policy & SEBI Disclaimers Consent
+        if (resJson.termsConsent && resJson.termsConsent.accepted === true) {
+            window.termsAccepted = true;
+        } else {
+            window.termsAccepted = false;
+            openTermsModal(true); // Open in mandatory Consent Gatekeeper mode
+        }
+
         if (isAdminMode) {
             document.getElementById("admin-bar").style.display = "flex";
             document.getElementById("admin-user-info").innerText = `Logged in as Admin (${resJson.userPhone})`;
@@ -4381,4 +4389,101 @@ async function fetchDailyAiBrief(forceRefresh = false) {
 }
 
 // Daily brief auto-fetch is handled inside initialize Dashboard after verifying adminMode
+
+// -------------------------------------------------------------
+// TERMS OF SERVICE, PRIVACY POLICY & RISK DISCLAIMERS CONTROLLER
+// -------------------------------------------------------------
+
+let isTermsConsentMode = false;
+
+function openTermsModal(isConsentMode = false) {
+    isTermsConsentMode = isConsentMode;
+    const modal = document.getElementById("terms-modal");
+    const closeXBtn = document.getElementById("terms-close-x-btn");
+    const viewCloseBtn = document.getElementById("terms-view-close-btn");
+    const consentControls = document.getElementById("terms-consent-controls");
+    const acceptBtn = document.getElementById("terms-accept-btn");
+    const checkbox = document.getElementById("terms-agree-checkbox");
+
+    if (!modal) return;
+
+    modal.style.display = "flex";
+
+    if (isConsentMode) {
+        if (closeXBtn) closeXBtn.style.display = "none";
+        if (viewCloseBtn) viewCloseBtn.style.display = "none";
+        if (consentControls) consentControls.style.display = "flex";
+        if (acceptBtn) {
+            acceptBtn.style.display = "inline-flex";
+            acceptBtn.disabled = true;
+            acceptBtn.style.opacity = "0.5";
+            acceptBtn.style.cursor = "not-allowed";
+            acceptBtn.innerText = "Accept & Continue";
+        }
+        if (checkbox) checkbox.checked = false;
+    } else {
+        if (closeXBtn) closeXBtn.style.display = "block";
+        if (viewCloseBtn) viewCloseBtn.style.display = "inline-flex";
+        if (consentControls) consentControls.style.display = "none";
+        if (acceptBtn) acceptBtn.style.display = "none";
+    }
+}
+
+function closeTermsModal() {
+    if (isTermsConsentMode && !window.termsAccepted) {
+        showToast("Please review and accept the Terms & Risk Disclosures to proceed.", "warning");
+        return;
+    }
+    const modal = document.getElementById("terms-modal");
+    if (modal) modal.style.display = "none";
+}
+
+function toggleTermsAcceptBtn(checked) {
+    const acceptBtn = document.getElementById("terms-accept-btn");
+    if (!acceptBtn) return;
+    if (checked) {
+        acceptBtn.disabled = false;
+        acceptBtn.style.opacity = "1";
+        acceptBtn.style.cursor = "pointer";
+    } else {
+        acceptBtn.disabled = true;
+        acceptBtn.style.opacity = "0.5";
+        acceptBtn.style.cursor = "not-allowed";
+    }
+}
+
+async function submitTermsConsent() {
+    const checkbox = document.getElementById("terms-agree-checkbox");
+    if (!checkbox || !checkbox.checked) return;
+
+    const acceptBtn = document.getElementById("terms-accept-btn");
+    if (acceptBtn) {
+        acceptBtn.disabled = true;
+        acceptBtn.innerText = "Recording Consent...";
+    }
+
+    try {
+        const response = await fetch('/api/data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'accept_terms', version: '1.0' })
+        });
+
+        if (!response.ok) throw new Error("Failed to record terms consent");
+
+        window.termsAccepted = true;
+        isTermsConsentMode = false;
+        const modal = document.getElementById("terms-modal");
+        if (modal) modal.style.display = "none";
+        showToast("Terms & Risk Disclosures acknowledged. Welcome to TTS Strategies!", "success");
+
+    } catch (err) {
+        console.error("Terms consent error:", err);
+        showToast("Failed to save consent. Please try again.", "error");
+        if (acceptBtn) {
+            acceptBtn.disabled = false;
+            acceptBtn.innerText = "Accept & Continue";
+        }
+    }
+}
 

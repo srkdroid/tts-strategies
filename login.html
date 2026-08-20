@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - TTS Strategy Calendar</title>
-    <link rel="stylesheet" href="style.css?v=5.6">
+    <link rel="stylesheet" href="style.css?v=6.1">
     <link rel="icon" type="image/png" href="favicon.png">
     <style>
         .login-grid-container {
@@ -287,13 +287,49 @@
                         <div class="step-num">5</div>
                         <div><strong>Instant Access:</strong> Upon verification, your browser automatically logs you in and redirects to your strategy dashboard!</div>
                     </div>
-                </div>
-
                 <div class="guide-tip">
                     🔒 <strong>Access Note:</strong> Your number must be whitelisted. If access is denied, please contact your administrator to get added.
                 </div>
             </div>
 
+        </div>
+
+        <!-- Statutory Disclaimer Footer -->
+        <footer style="max-width: 800px; margin: 1.5rem auto 3rem auto; text-align: center; font-size: 0.76rem; color: #94a3b8; line-height: 1.6; padding: 0 1rem;">
+            <p style="margin: 0 0 0.4rem 0;">
+                🛡️ <strong>SEBI Risk Disclosure:</strong> 9 out of 10 individual traders in equity F&O incur net losses (~28% additional transaction costs).
+            </p>
+            <p style="margin: 0 0 0.6rem 0; font-size: 0.72rem;">
+                TTS Strategies is an educational and personal trade-journaling tool. Not SEBI-registered. No financial advice or return guarantees.
+            </p>
+            <p style="margin: 0;">
+                By logging in, you agree to our <a href="javascript:void(0)" onclick="document.getElementById('login-terms-modal').style.display='flex'" style="color: #a78bfa; text-decoration: underline;">Terms of Service, Privacy Policy & Disclaimers</a>.
+            </p>
+        </footer>
+    </div>
+
+    <!-- Login Page Terms Modal -->
+    <div id="login-terms-modal" style="display: none; position: fixed; inset: 0; z-index: 99999; backdrop-filter: blur(8px); background: rgba(5, 7, 15, 0.88); align-items: center; justify-content: center; padding: 1rem;">
+        <div style="max-width: 780px; width: 100%; max-height: 85vh; display: flex; flex-direction: column; background: #0f172a; border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 14px; box-shadow: 0 20px 60px rgba(0,0,0,0.7); overflow: hidden;">
+            <div style="padding: 1.2rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; background: rgba(30, 41, 59, 0.6);">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                    <span style="font-size: 1.3rem;">📜</span>
+                    <h3 style="margin: 0; font-size: 1.1rem; color: #f8fafc;">Terms of Service & Risk Disclaimers</h3>
+                </div>
+                <button type="button" class="close-btn" onclick="document.getElementById('login-terms-modal').style.display='none'" style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div style="padding: 1.5rem; overflow-y: auto; font-size: 0.84rem; line-height: 1.6; color: #cbd5e1; flex: 1;">
+                <div style="background: rgba(239, 68, 68, 0.12); border-left: 4px solid #ef4444; border-radius: 6px; padding: 0.8rem 1rem; margin-bottom: 1rem; color: #fecaca; font-size: 0.8rem;">
+                    <strong>⚠️ Statutory SEBI Risk Warning:</strong> 9 out of 10 individual traders in equity Futures & Options (F&O) incur net losses. Over and above net losses, loss-makers incur an additional ~28% in transaction costs.
+                </div>
+                <p><strong>1. Educational & Analytical Purpose Only:</strong> TTS Strategies is not a SEBI-registered Investment Adviser or Research Analyst. Content does not constitute financial advice, trade recommendations, or solicitations.</p>
+                <p><strong>2. User Privacy:</strong> Your trade journal and capital settings are private to your session. We do not sell or monetize personal trading data. Enterprise AI queries are never used to train public models.</p>
+                <p><strong>3. Verification Rule:</strong> AI Co-Pilot answers and strike calculators are algorithmic tools. Always verify strikes, Greeks, spot prices, and margins on your broker terminal before executing orders.</p>
+                <p><strong>4. Limitation of Liability:</strong> The Platform does not execute trades or hold funds and bears zero liability for trading losses, missed deployments, or execution errors.</p>
+            </div>
+            <div style="padding: 1rem 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(15, 23, 42, 0.95); text-align: right;">
+                <button type="button" class="login-btn" onclick="document.getElementById('login-terms-modal').style.display='none'" style="display: inline-block; width: auto; padding: 0.45rem 1.5rem; margin: 0; font-size: 0.85rem;">Close</button>
+            </div>
         </div>
     </div>
     

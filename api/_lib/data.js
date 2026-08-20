@@ -52,14 +52,28 @@ module.exports = async (req, res) => {
             return res.status(401).json({ error: 'Unauthorized. Please login first.' });
         }
 
-        // Support POST /api/data for saving user trading capital
+        // Support POST /api/data for saving user trading capital or accepting terms
         if (req.method === 'POST') {
             const body = req.body || {};
+            const phoneKey = userPhone || (isAdmin ? 'admin' : 'unknown');
+
+            // 1. Accept Terms of Service & Privacy Disclaimers
+            if (body.action === 'accept_terms') {
+                const consentData = {
+                    accepted: true,
+                    version: body.version || '1.0',
+                    acceptedAt: new Date().toISOString(),
+                    ip: req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown'
+                };
+                await queryKV(['HSET', 'user_terms_consent', phoneKey, JSON.stringify(consentData)]);
+                return res.status(200).json({ success: true, termsConsent: consentData });
+            }
+
+            // 2. Save User Trading Capital
             const capital = parseFloat(body.capital);
             if (isNaN(capital) || capital < 0) {
                 return res.status(400).json({ error: 'Invalid capital amount' });
             }
-            const phoneKey = userPhone || 'admin';
             await queryKV(['HSET', 'user_capital', phoneKey, String(capital)]);
             return res.status(200).json({ success: true, capital });
         }
@@ -184,14 +198,22 @@ module.exports = async (req, res) => {
         }
 
         let userCapital = null;
+        let termsConsent = { accepted: false, version: '1.0' };
         try {
             const phoneKey = userPhone || (isAdmin ? 'admin' : null);
             if (phoneKey) {
                 const capStr = await queryKV(['HGET', 'user_capital', phoneKey]);
                 if (capStr) userCapital = parseFloat(capStr);
+
+                const consentStr = await queryKV(['HGET', 'user_terms_consent', phoneKey]);
+                if (consentStr) {
+                    try {
+                        termsConsent = JSON.parse(consentStr);
+                    } catch (e) {}
+                }
             }
         } catch (capErr) {
-            console.warn("User capital fetch failed:", capErr.message);
+            console.warn("User metadata fetch failed:", capErr.message);
         }
 
         return res.status(200).json({ 
@@ -200,7 +222,8 @@ module.exports = async (req, res) => {
             isAdmin: !!isAdmin,
             userPhone: userPhone || 'Admin',
             permissions: userPermissions,
-            userCapital: userCapital
+            userCapital: userCapital,
+            termsConsent: termsConsent
         });
 
     } catch (error) {

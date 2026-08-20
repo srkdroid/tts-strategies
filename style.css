@@ -2862,6 +2862,39 @@ select:focus-visible,
     }
 }
 
+/* ------------------------------------------------------------- */
+/* TERMS OF SERVICE & DISCLAIMER MODAL STYLING                  */
+/* ------------------------------------------------------------- */
+
+#terms-scroll-body::-webkit-scrollbar {
+    width: 6px;
+}
+#terms-scroll-body::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.4);
+}
+#terms-scroll-body::-webkit-scrollbar-thumb {
+    background: rgba(168, 85, 247, 0.35);
+    border-radius: 4px;
+}
+#terms-scroll-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(168, 85, 247, 0.6);
+}
+
+@media (max-width: 640px) {
+    #terms-modal .modal-dialog {
+        width: 96% !important;
+        max-height: 92vh !important;
+    }
+    #terms-consent-controls {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+    .app-footer {
+        padding: 1.5rem 1rem 2rem 1rem !important;
+        font-size: 0.72rem !important;
+    }
+}
+
 
 
 
