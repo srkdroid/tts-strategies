@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TTS Options Strategy Calendar</title>
-    <link rel="stylesheet" href="style.css?v=6.1">
+    <link rel="stylesheet" href="style.css?v=6.3">
     <link rel="icon" type="image/png" href="favicon.png">
     <!-- Marked.js Markdown Parser & DOMPurify Sanitizer (Pinned with SRI) -->
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous"></script>
@@ -157,21 +157,21 @@
             <section class="calendars-grid" id="calendar-view-container" style="display: none;">
             
             <!-- AI Pre-Market Intelligence Briefing Card -->
-            <article id="ai-daily-brief-container" class="month-container" style="display: none; max-width: 100%; margin-bottom: 1.5rem; background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 12px; padding: 1.2rem 1.5rem; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 0.8rem;">
-                    <div style="display: flex; align-items: center; gap: 0.6rem;">
-                        <span style="font-size: 1.4rem;">🤖</span>
+            <article id="ai-daily-brief-container" class="month-container ai-daily-brief-card" style="display: none;">
+                <div class="ai-brief-header">
+                    <div class="ai-brief-header-left">
+                        <span class="ai-brief-avatar">🤖</span>
                         <div>
-                            <h3 id="ai-brief-headline" style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #e9d5ff; font-family: var(--font-heading);">Today's AI Pre-Market Intelligence</h3>
-                            <span id="ai-brief-date" style="font-size: 0.75rem; color: #a78bfa;">Fetching today's schedule & market outlook...</span>
+                            <h3 id="ai-brief-headline" class="ai-brief-title">Today's AI Pre-Market Intelligence</h3>
+                            <span id="ai-brief-date" class="ai-brief-date">Fetching today's schedule & market outlook...</span>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                        <span id="ai-brief-cache-tag" style="font-size: 0.68rem; color: #10b981; background: rgba(16, 185, 129, 0.12); padding: 3px 8px; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.3);">⚡ Instant Cached</span>
-                        <button id="ai-brief-refresh-btn" onclick="fetchDailyAiBrief(true)" class="admin-btn edit" style="display: none; margin: 0; padding: 0.3rem 0.65rem; font-size: 0.75rem; background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2);" title="Refresh briefing (Admin Only)">↻ Refresh</button>
+                    <div class="ai-brief-header-right">
+                        <span id="ai-brief-cache-tag" class="ai-brief-cache-tag">⚡ Instant Cached</span>
+                        <button id="ai-brief-refresh-btn" onclick="fetchDailyAiBrief(true)" class="admin-btn edit ai-brief-refresh-btn" style="display: none;" title="Refresh briefing (Admin Only)">↻ Refresh</button>
                     </div>
                 </div>
-                <ul id="ai-brief-bullets" style="margin: 0; padding-left: 1.2rem; font-size: 0.88rem; line-height: 1.6; color: var(--text-primary);">
+                <ul id="ai-brief-bullets" class="ai-brief-bullets">
                     <li>Loading pre-market intelligence briefing...</li>
                 </ul>
             </article>

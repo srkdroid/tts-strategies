@@ -2554,6 +2554,187 @@ select:focus-visible,
 }
 
 /* ============================================================= */
+/* AI PRE-MARKET INTELLIGENCE DAILY BRIEFING CARD CSS            */
+/* ============================================================= */
+
+.ai-daily-brief-card {
+    max-width: 100%;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+    border: 1px solid rgba(168, 85, 247, 0.35);
+    border-radius: 12px;
+    padding: 1.2rem 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+
+.ai-brief-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    margin-bottom: 0.8rem;
+}
+
+.ai-brief-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.ai-brief-avatar {
+    font-size: 1.4rem;
+}
+
+.ai-brief-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #e9d5ff;
+    font-family: var(--font-heading);
+}
+
+.ai-brief-date {
+    font-size: 0.75rem;
+    color: #a78bfa;
+}
+
+.ai-brief-header-right {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.ai-brief-cache-tag {
+    font-size: 0.68rem;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.12);
+    padding: 3px 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    display: inline-block;
+}
+
+.ai-brief-refresh-btn {
+    margin: 0;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.75rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.ai-brief-refresh-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.ai-brief-bullets {
+    margin: 0;
+    padding-left: 1.2rem;
+    font-size: 0.88rem;
+    line-height: 1.65;
+    color: #f1f5f9;
+}
+
+.ai-brief-bullets li {
+    margin-bottom: 0.35rem;
+}
+
+/* ------------------------------------------------------------- */
+/* LIGHT THEME OVERRIDES FOR AI FEATURES                         */
+/* ------------------------------------------------------------- */
+
+.light-theme .ai-daily-brief-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
+    border: 1px solid rgba(147, 51, 234, 0.3);
+    box-shadow: 0 4px 20px rgba(147, 51, 234, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.light-theme .ai-brief-title {
+    color: #581c87;
+}
+
+.light-theme .ai-brief-date {
+    color: #7e22ce;
+}
+
+.light-theme .ai-brief-cache-tag {
+    color: #047857;
+    background: rgba(16, 185, 129, 0.12);
+    border-color: rgba(4, 120, 87, 0.3);
+}
+
+.light-theme .ai-brief-refresh-btn {
+    background: rgba(147, 51, 234, 0.08);
+    border-color: rgba(147, 51, 234, 0.25);
+    color: #6b21a8;
+}
+
+.light-theme .ai-brief-refresh-btn:hover {
+    background: rgba(147, 51, 234, 0.15);
+    color: #581c87;
+}
+
+.light-theme .ai-brief-bullets {
+    color: #1e293b;
+}
+
+.light-theme .ai-drawer-pane {
+    background: #ffffff;
+    border-left-color: rgba(0, 0, 0, 0.1);
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.15);
+}
+
+.light-theme .ai-drawer-header {
+    background: #f8fafc;
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+.light-theme .ai-quick-chips {
+    background: #f1f5f9;
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+.light-theme .ai-chip {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.12);
+    color: #475569;
+}
+
+.light-theme .ai-chip:hover {
+    background: #f3e8ff;
+    border-color: #a855f7;
+    color: #6b21a8;
+}
+
+.light-theme .ai-msg-content {
+    background: #f8fafc;
+    border-color: rgba(0, 0, 0, 0.08);
+    color: #1e293b;
+}
+
+.light-theme .ai-user-message .ai-msg-content {
+    background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+    border-color: transparent;
+    color: #ffffff;
+}
+
+.light-theme .ai-input-form input {
+    background: #f8fafc;
+    border-color: rgba(0, 0, 0, 0.15);
+    color: #0f172a;
+}
+
+.light-theme .ai-input-form input:focus {
+    border-color: #8b5cf6;
+    background: #ffffff;
+}
+
+/* ============================================================= */
 /* AI STRATEGY CO-PILOT FLOATING BUTTON & SLIDE-OVER DRAWER CSS  */
 /* ============================================================= */
 
