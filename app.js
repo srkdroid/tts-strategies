@@ -3380,13 +3380,19 @@ function renderJournalTradesTable() {
         const netPnlColor = netPnlVal > 0 ? '#34d399' : netPnlVal < 0 ? '#fca5a5' : 'var(--text-primary)';
         const roiColor = roiVal > 0 ? '#c084fc' : roiVal < 0 ? '#fca5a5' : 'var(--text-secondary)';
 
+        const isCustomTrade = trade.isCustom || trade.strategyId === 'custom';
+        const customBadge = isCustomTrade ? `<span class="badge" style="background: rgba(168, 85, 247, 0.18); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.35); font-size: 0.68rem; padding: 1px 5px;">✨ Custom</span>` : '';
+
         tr.innerHTML = `
             <td>
-                <strong style="color: var(--text-primary); font-size: 0.88rem; display: block;">${trade.strategyName}</strong>
+                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.15rem;">
+                    <strong style="color: var(--text-primary); font-size: 0.88rem;">${trade.strategyName}</strong>
+                    ${customBadge}
+                </div>
                 <span style="font-size: 0.74rem; color: var(--text-secondary);">${entryDateFormatted} • ${trade.index}</span>
             </td>
             <td>
-                <span class="badge monthly" style="font-size: 0.72rem;">${trade.sheet || trade.category || 'Strategy'}</span>
+                <span class="badge ${trade.category === 'discretionary' ? 'biweekly' : trade.category === 'adjustments' ? 'stbt' : 'monthly'}" style="font-size: 0.72rem;">${trade.sheet || trade.category || 'Strategy'}</span>
             </td>
             <td>${statusBadge}</td>
             <td style="font-weight: 600;">₹ ${marginVal.toLocaleString('en-IN')}</td>
@@ -3455,8 +3461,20 @@ function openNewTradeModal() {
         select.appendChild(opt);
     });
 
+    // Custom option at the very bottom
+    const customOpt = document.createElement("option");
+    customOpt.value = "custom";
+    customOpt.innerText = "✨ Custom / Discretionary Setup";
+    select.appendChild(customOpt);
+
+    document.getElementById("trade-custom-name-input").value = "";
+    document.getElementById("trade-custom-index-select").value = "Nifty";
+    document.getElementById("trade-custom-category-select").value = "discretionary";
+
     if (strats.length > 0) {
         onTradeStrategySelect(strats[0].id);
+    } else {
+        onTradeStrategySelect("custom");
     }
 
     onTradeStatusChange("OPEN");
@@ -3494,6 +3512,8 @@ function editTradeRecord(tradeId) {
         document.getElementById("trade-exit-date").value = now.toISOString().slice(0, 16);
     }
 
+    const isCustom = trade.isCustom || trade.strategyId === 'custom';
+
     // Populate strategy dropdown
     const select = document.getElementById("trade-strategy-select");
     select.innerHTML = "";
@@ -3503,11 +3523,31 @@ function editTradeRecord(tradeId) {
         opt.value = s.id;
         const catLabel = s.strategy_category === 'discretionary' ? '🎯 Discretionary' : s.strategy_category === 'adjustments' ? '🛠️ Adjustment' : '⚡ 0 Adj';
         opt.innerText = `${s.name} (${catLabel} • ${s.index})`;
-        if (s.id === trade.strategyId) opt.selected = true;
+        if (s.id === trade.strategyId && !isCustom) opt.selected = true;
         select.appendChild(opt);
     });
 
-    document.getElementById("trade-index-display").value = `${trade.index || 'Nifty'} • ${trade.sheet || 'Monthly'} (${trade.category || '0_adjustment'})`;
+    // Custom option at the very bottom
+    const customOpt = document.createElement("option");
+    customOpt.value = "custom";
+    customOpt.innerText = "✨ Custom / Discretionary Setup";
+    if (isCustom) customOpt.selected = true;
+    select.appendChild(customOpt);
+
+    const customRow = document.getElementById("trade-custom-fields-row");
+    const indexGroup = document.getElementById("trade-index-display-group");
+
+    if (isCustom) {
+        if (customRow) customRow.style.display = "grid";
+        if (indexGroup) indexGroup.style.display = "none";
+        document.getElementById("trade-custom-name-input").value = trade.strategyName || "";
+        document.getElementById("trade-custom-index-select").value = trade.index || "Nifty";
+        document.getElementById("trade-custom-category-select").value = trade.category || "discretionary";
+    } else {
+        if (customRow) customRow.style.display = "none";
+        if (indexGroup) indexGroup.style.display = "block";
+        document.getElementById("trade-index-display").value = `${trade.index || 'Nifty'} • ${trade.sheet || 'Monthly'} (${trade.category || '0_adjustment'})`;
+    }
 
     // Charges & Taxes
     if (trade.charges) {
@@ -3560,6 +3600,23 @@ function closeTradeModal() {
 }
 
 function onTradeStrategySelect(strategyId) {
+    const customRow = document.getElementById("trade-custom-fields-row");
+    const indexGroup = document.getElementById("trade-index-display-group");
+
+    if (strategyId === "custom") {
+        if (customRow) customRow.style.display = "grid";
+        if (indexGroup) indexGroup.style.display = "none";
+
+        const tbody = document.getElementById("trade-legs-tbody");
+        if (tbody && tbody.children.length === 0) {
+            addTradeLegRow();
+        }
+        return;
+    }
+
+    if (customRow) customRow.style.display = "none";
+    if (indexGroup) indexGroup.style.display = "block";
+
     const strat = (window.strategiesData || []).find(s => s.id === strategyId);
     if (!strat) return;
 
@@ -3617,10 +3674,48 @@ function onTradeStrategySelect(strategyId) {
     }
 }
 
+function onCustomTradeIndexChange(val) {
+    const defaultLot = val.includes("Bank Nifty") ? 15 : val.includes("Sensex") ? 10 : val.includes("Midcap") ? 50 : 25;
+    const defaultStrike = val.includes("Bank Nifty") ? 57500 : val.includes("Sensex") ? 85000 : val.includes("Midcap") ? 13000 : 25000;
+    
+    const qtyInputs = document.querySelectorAll("#trade-legs-tbody .leg-qty");
+    qtyInputs.forEach(input => {
+        if (input) {
+            input.value = defaultLot;
+            input.step = defaultLot;
+        }
+    });
+
+    const strikeInputs = document.querySelectorAll("#trade-legs-tbody .leg-strike");
+    strikeInputs.forEach(input => {
+        if (input && (input.value === "25000" || input.value === "57500" || input.value === "85000" || input.value === "13000")) {
+            input.value = defaultStrike;
+        }
+    });
+}
+
 function addTradeLegRow() {
     const tbody = document.getElementById("trade-legs-tbody");
     if (!tbody) return;
     const isClosed = document.getElementById("trade-status-select")?.value === "CLOSED";
+
+    // Determine current index lot size
+    const strategySelect = document.getElementById("trade-strategy-select")?.value;
+    let lotSize = 25;
+    let defaultStrike = 25000;
+
+    if (strategySelect === "custom") {
+        const customIdx = document.getElementById("trade-custom-index-select")?.value || "Nifty";
+        lotSize = customIdx.includes("Bank Nifty") ? 15 : customIdx.includes("Sensex") ? 10 : customIdx.includes("Midcap") ? 50 : 25;
+        defaultStrike = customIdx.includes("Bank Nifty") ? 57500 : customIdx.includes("Sensex") ? 85000 : customIdx.includes("Midcap") ? 13000 : 25000;
+    } else {
+        const strat = (window.strategiesData || []).find(s => s.id === strategySelect);
+        if (strat) {
+            lotSize = strat.index.includes("Bank Nifty") ? 15 : strat.index.includes("Sensex") ? 10 : 25;
+            defaultStrike = strat.index.includes("Bank Nifty") ? 57500 : strat.index.includes("Sensex") ? 85000 : 25000;
+        }
+    }
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
         <td>
@@ -3635,8 +3730,8 @@ function addTradeLegRow() {
                 <option value="PE">PE</option>
             </select>
         </td>
-        <td><input type="number" class="leg-strike" value="25000" step="50" style="width: 85px; font-weight: 700;"></td>
-        <td><input type="number" class="leg-qty" value="25" step="25" style="width: 70px;"></td>
+        <td><input type="number" class="leg-strike" value="${defaultStrike}" step="50" style="width: 85px; font-weight: 700;"></td>
+        <td><input type="number" class="leg-qty" value="${lotSize}" step="${lotSize}" style="width: 70px;"></td>
         <td><input type="number" class="leg-entry-price" value="100.00" step="0.5" style="width: 80px; font-weight: 600;"></td>
         <td class="leg-exit-cell" style="display: ${isClosed ? 'table-cell' : 'none'};"><input type="number" class="leg-exit-price" value="100.00" step="0.5" style="width: 80px; font-weight: 700;"></td>
         <td style="text-align: center;"><button type="button" onclick="this.closest('tr').remove()" style="background: none; border: none; cursor: pointer; font-size: 1rem;">🗑️</button></td>
@@ -3691,13 +3786,28 @@ async function saveTradeFromModal(e) {
         return;
     }
 
+    const isCustom = strategyId === 'custom';
+    let stratName = strat.name || 'Custom Trade';
+    let stratCategory = strat.strategy_category || '0_adjustment';
+    let stratIndex = strat.index || 'Nifty';
+    let stratSheet = strat.sheet || 'Monthly';
+
+    if (isCustom) {
+        const customNameInput = document.getElementById("trade-custom-name-input");
+        stratName = (customNameInput ? customNameInput.value.trim() : "") || "Custom Setup";
+        stratIndex = document.getElementById("trade-custom-index-select")?.value || "Nifty";
+        stratCategory = document.getElementById("trade-custom-category-select")?.value || "discretionary";
+        stratSheet = "Discretionary";
+    }
+
     const tradePayload = {
         id: tradeId,
         strategyId,
-        strategyName: strat.name || 'Custom Trade',
-        category: strat.strategy_category || '0_adjustment',
-        sheet: strat.sheet || 'Monthly',
-        index: strat.index || 'Nifty',
+        strategyName: stratName,
+        category: stratCategory,
+        sheet: stratSheet,
+        index: stratIndex,
+        isCustom: isCustom,
         status,
         marginUsed,
         entryDate,
