@@ -22,7 +22,7 @@ const { getDailyCalendarSchedule, formatDateString } = require('./calendar-engin
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 const GLOBAL_DAILY_LIMIT = 1300;
@@ -394,15 +394,14 @@ async function callGeminiStructured(systemInstruction, userPrompt, customSchema 
         }
     };
 
-    // Candidate Gemini models in order of priority
+    // Candidate Gemini models in order of priority (official active models on Google AI v1beta)
     const candidateModels = Array.from(new Set([
         GEMINI_MODEL,
-        'gemini-2.0-flash',
         'gemini-1.5-flash',
+        'gemini-2.0-flash',
         'gemini-1.5-flash-8b',
-        'gemini-2.5-flash',
-        'gemini-flash-latest'
-    ]));
+        'gemini-1.5-pro'
+    ])).filter(m => m && !m.includes('2.5') && !m.includes('latest'));
 
     let lastError = null;
 
@@ -427,15 +426,12 @@ async function callGeminiStructured(systemInstruction, userPrompt, customSchema 
                 if (!response.ok) {
                     const errText = await response.text();
                     const status = response.status;
-                    if (status === 503 || status === 429 || status === 404) {
-                        console.warn(`Gemini model ${model} returned ${status}, trying next model...`);
-                        lastError = new Error(`Gemini API returned ${status}: ${errText}`);
-                        if (attempt === 0 && (status === 503 || status === 429)) {
-                            continue;
-                        }
-                        break;
+                    console.warn(`[AI-ROUTER] Gemini model ${model} returned ${status}: ${errText.slice(0, 150)}`);
+                    lastError = new Error(`Gemini API returned ${status}: ${errText}`);
+                    if ((status === 503 || status === 429) && attempt === 0) {
+                        continue; // retry once for 503/429
                     }
-                    throw new Error(`Gemini API returned ${status}: ${errText}`);
+                    break; // try next candidate model
                 }
 
                 const resJson = await response.json();
