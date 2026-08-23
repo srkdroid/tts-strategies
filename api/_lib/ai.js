@@ -145,25 +145,53 @@ async function getScopedContext(caller, { includeNotes = true, includeTrades = f
             const kvNotes = await queryKV(['GET', 'notes']);
             let rawNotes = [];
             if (kvNotes) rawNotes = JSON.parse(kvNotes);
-            if (Array.isArray(rawNotes)) {
-                // Admin gets all notes; regular member only gets public notes
-                permittedNotes = caller.isAdmin ? rawNotes : rawNotes.filter(n => !n.isAdminOnly);
 
-                // If query is provided, rank by relevance to top 5
+            // Fallback to seed notes if KV is empty
+            if (!Array.isArray(rawNotes) || rawNotes.length === 0) {
+                try {
+                    const { SEED_NOTES } = require('./notes');
+                    rawNotes = SEED_NOTES || [];
+                } catch (seedErr) {}
+            }
+
+            if (Array.isArray(rawNotes) && rawNotes.length > 0) {
+                // Admin gets all notes; regular member only gets public notes
+                const roleNotes = caller.isAdmin ? rawNotes : rawNotes.filter(n => !n.isAdminOnly);
+
+                // Smart multi-keyword relevance scoring
                 if (query && query.trim()) {
-                    const q = query.toLowerCase();
-                    permittedNotes = permittedNotes.filter(n => {
-                        const titleMatch = (n.title || '').toLowerCase().includes(q);
-                        const catMatch = (n.category || '').toLowerCase().includes(q);
-                        const stratMatch = (n.strategyId || '').toLowerCase().includes(q);
-                        const contentMatch = (n.content || '').toLowerCase().includes(q);
-                        return titleMatch || catMatch || stratMatch || contentMatch;
-                    }).slice(0, 5);
+                    const stopwords = new Set(['the','a','an','is','in','on','at','of','for','to','and','or','what','how','give','me','show','tell','about','run','down','detailed','with','this','that','from','strategy']);
+                    const terms = query.toLowerCase().split(/\s+/).filter(t => t.length > 1 && !stopwords.has(t));
+
+                    if (terms.length > 0) {
+                        const scored = roleNotes.map(n => {
+                            let score = 0;
+                            const titleLower = (n.title || '').toLowerCase();
+                            const catLower = (n.category || '').toLowerCase();
+                            const stratLower = (n.strategyId || '').toLowerCase();
+                            const contentLower = (n.content || '').toLowerCase();
+
+                            terms.forEach(term => {
+                                if (titleLower.includes(term)) score += 12;
+                                if (stratLower.includes(term)) score += 10;
+                                if (catLower.includes(term)) score += 5;
+                                if (contentLower.includes(term)) score += 2;
+                            });
+                            return { note: n, score };
+                        });
+
+                        const matching = scored.filter(s => s.score > 0).sort((a, b) => b.score - a.score).map(s => s.note);
+                        permittedNotes = matching.length > 0 ? matching.slice(0, 6) : roleNotes.slice(0, 6);
+                    } else {
+                        permittedNotes = roleNotes.slice(0, 6);
+                    }
                 } else {
-                    permittedNotes = permittedNotes.slice(0, 10);
+                    permittedNotes = roleNotes.slice(0, 8);
                 }
             }
-        } catch (e) {}
+        } catch (e) {
+            console.warn('[AI-CONTEXT] Notes retrieval issue:', e);
+        }
     }
 
     // 3. Fetch Trade Journal with Strict Permission Scoping
@@ -261,7 +289,7 @@ async function callGroqStructured(systemInstruction, userPrompt, customSchema = 
                     response_format: { type: "json_object" },
                     temperature: 0.2
                 }),
-                signal: AbortSignal.timeout ? AbortSignal.timeout(4500) : undefined
+                signal: AbortSignal.timeout ? AbortSignal.timeout(9000) : undefined
             });
 
             if (!response.ok) {
@@ -393,7 +421,7 @@ async function callGeminiStructured(systemInstruction, userPrompt, customSchema 
                         'x-goog-api-key': GEMINI_API_KEY
                     },
                     body: JSON.stringify(payload),
-                    signal: AbortSignal.timeout ? AbortSignal.timeout(4500) : undefined
+                    signal: AbortSignal.timeout ? AbortSignal.timeout(9000) : undefined
                 });
 
                 if (!response.ok) {
