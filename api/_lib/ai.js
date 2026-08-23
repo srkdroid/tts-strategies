@@ -858,14 +858,17 @@ ${activeList ? '• ' + activeList : '• None'}
 ${JSON.stringify(context.strategies.map(s => ({
     id: s.id, name: s.name, index: s.index, sheet: s.sheet,
     deploy_day: s.day, deploy_time: s.time, expiry: s.expiry, dte: s.dte,
-    setup: s.setup, conditions: s.conditions, exit: s.exit,
-    deploy_rule: s.deploy_rule, exit_rule: s.exit_rule
-})), null, 2)}
+    setup: s.setup ? String(s.setup).substring(0, 400) : undefined,
+    conditions: s.conditions ? String(s.conditions).substring(0, 300) : undefined,
+    exit: s.exit ? String(s.exit).substring(0, 300) : undefined,
+    deploy_rule: s.deploy_rule ? String(s.deploy_rule).substring(0, 200) : undefined,
+    exit_rule: s.exit_rule ? String(s.exit_rule).substring(0, 200) : undefined
+})), null, 0)}
 
 [PERMITTED_KNOWLEDGE_NOTES]:
-${context.notes.map(n => `### Note: ${n.title} (ID: ${n.id}, Category: ${n.category})\n${n.content}`).join('\n\n')}
+${context.notes.map(n => `### ${n.title} (${n.category})\n${String(n.content || '').substring(0, 600)}`).join('\n\n')}
 
-${context.userTrades ? `[USER_ACTIVE_TRADES]:\n${JSON.stringify(context.userTrades, null, 2)}` : ''}
+${context.userTrades ? `[USER_ACTIVE_TRADES]:\n${JSON.stringify(context.userTrades, null, 0)}` : ''}
 </retrieved_context>`;
 
             const systemPrompt = `You are TTS Strategy Co-Pilot, an expert AI trading assistant for the TTS Options Strategy Calendar & Trade Journal platform.
@@ -892,12 +895,13 @@ CRITICAL OPERATIONAL RULES:
             });
 
         } catch (chatErr) {
-            console.error("AI Chat Error:", chatErr);
-            if (chatErr.message && chatErr.message.includes("429")) {
+            console.error("AI Chat Error:", chatErr.message || chatErr);
+            if (chatErr.message && (chatErr.message.includes("429") || chatErr.message.includes("rate_limit"))) {
                 return res.status(429).json({
                     error: "AI service is currently busy. Please try again in a few moments."
                 });
             }
+            // Return the real error message so the UI can show what's wrong
             return res.status(500).json({
                 error: chatErr.message || "Failed to generate AI response."
             });
