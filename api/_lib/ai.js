@@ -287,6 +287,7 @@ async function callGroqStructured(systemInstruction, userPrompt, customSchema = 
                         { role: 'user', content: userPrompt }
                     ],
                     response_format: { type: "json_object" },
+                    max_tokens: 2048,
                     temperature: 0.2
                 }),
                 signal: AbortSignal.timeout ? AbortSignal.timeout(9000) : undefined
@@ -389,19 +390,19 @@ async function callGeminiStructured(systemInstruction, userPrompt, customSchema 
         ],
         generationConfig: {
             temperature: 0.2,
+            maxOutputTokens: 2048,
             responseMimeType: "application/json",
             responseSchema: customSchema || defaultSchema
         }
     };
 
-    // Candidate Gemini models in order of priority (official active models on Google AI v1beta)
+    // Candidate Gemini models in order of priority (verified active on Google AI v1beta)
     const candidateModels = Array.from(new Set([
         GEMINI_MODEL,
         'gemini-1.5-flash',
         'gemini-2.0-flash',
         'gemini-1.5-flash-8b',
-        'gemini-1.5-pro'
-    ])).filter(m => m && !m.includes('2.5') && !m.includes('latest'));
+    ])).filter(m => m && !m.includes('pro') && !m.includes('2.5') && !m.includes('latest'));
 
     let lastError = null;
 
