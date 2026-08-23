@@ -22,7 +22,7 @@ const { getDailyCalendarSchedule, formatDateString } = require('./calendar-engin
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 const GLOBAL_DAILY_LIMIT = 1300;
@@ -258,12 +258,12 @@ async function callGroqStructured(systemInstruction, userPrompt, customSchema = 
     const groqKey = process.env.GROQ_API_KEY || GROQ_API_KEY;
     if (!groqKey) return null;
 
-    // Models in priority order (available on Groq free tier)
+    // Models confirmed available on this Groq key (from /v1/models diagnostic)
     const groqModels = [
-        'llama-3.3-70b-versatile',
-        'llama-3.1-8b-instant',
-        'gemma2-9b-it',
-        'mixtral-8x7b-32768'
+        'openai/gpt-oss-120b',
+        'qwen/qwen3.6-27b',
+        'openai/gpt-oss-20b',
+        'groq/compound'
     ];
 
     const schemaHint = schemaToTextDescription(customSchema);
@@ -396,13 +396,14 @@ async function callGeminiStructured(systemInstruction, userPrompt, customSchema 
         }
     };
 
-    // Candidate Gemini models in order of priority (verified active on Google AI v1beta)
+    // Candidate Gemini models confirmed available on this API key (from /v1beta/models diagnostic)
     const candidateModels = Array.from(new Set([
         GEMINI_MODEL,
-        'gemini-1.5-flash',
-        'gemini-2.0-flash',
-        'gemini-1.5-flash-8b',
-    ])).filter(m => m && !m.includes('pro') && !m.includes('2.5') && !m.includes('latest'));
+        'gemini-2.5-flash',
+        'gemini-flash-latest',
+        'gemini-3.5-flash',
+        'gemini-3.7-flash',
+    ])).filter(m => m && typeof m === 'string');
 
     let lastError = null;
 
