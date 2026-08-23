@@ -412,7 +412,7 @@ async function callGeminiStructured(systemInstruction, userPrompt, customSchema 
                     await new Promise(r => setTimeout(r, 600));
                 }
 
-                const url = `${GEMINI_API_BASE}/${model}:generateContent`;
+                const url = `${GEMINI_API_BASE}/${model}:generateContent?key=${GEMINI_API_KEY}`;
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 
@@ -526,7 +526,7 @@ async function handleDiag(req, res) {
 
         // Live test call
         try {
-            const testModel = 'qwen/qwen3.6-27b';
+            const testModel = 'llama-3.3-70b-versatile';
             const testResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -557,6 +557,23 @@ async function handleDiag(req, res) {
             }
         } catch (e) {
             diag.groq.liveTest = { status: 'NETWORK_ERROR', error: e.message };
+        }
+    }
+
+    // List ALL Gemini models
+    if (geminiKey) {
+        try {
+            const gemResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiKey}`);
+            diag.gemini.status = gemResp.ok ? 'CONNECTED' : `ERROR_${gemResp.status}`;
+            if (gemResp.ok) {
+                const gData = await gemResp.json();
+                diag.gemini.availableModels = (gData.models || []).map(m => m.name.replace('models/', ''));
+            } else {
+                const gErr = await gemResp.text();
+                diag.gemini.error = gErr.substring(0, 500);
+            }
+        } catch (e) {
+            diag.gemini.status = 'NETWORK_ERROR: ' + e.message;
         }
     }
 
