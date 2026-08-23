@@ -230,11 +230,12 @@ async function callGroqStructured(systemInstruction, userPrompt, customSchema = 
     const groqKey = process.env.GROQ_API_KEY || GROQ_API_KEY;
     if (!groqKey) return null;
 
-    // Models in priority order (available on Groq free tier as of Aug 2026)
+    // Models in priority order (available on Groq free tier)
     const groqModels = [
-        'qwen/qwen3.6-27b',
-        'openai/gpt-oss-120b',
-        'openai/gpt-oss-20b'
+        'llama-3.3-70b-versatile',
+        'llama-3.1-8b-instant',
+        'gemma2-9b-it',
+        'mixtral-8x7b-32768'
     ];
 
     const schemaHint = schemaToTextDescription(customSchema);
@@ -259,7 +260,8 @@ async function callGroqStructured(systemInstruction, userPrompt, customSchema = 
                     ],
                     response_format: { type: "json_object" },
                     temperature: 0.2
-                })
+                }),
+                signal: AbortSignal.timeout ? AbortSignal.timeout(4500) : undefined
             });
 
             if (!response.ok) {
@@ -367,10 +369,11 @@ async function callGeminiStructured(systemInstruction, userPrompt, customSchema 
     // Candidate Gemini models in order of priority
     const candidateModels = Array.from(new Set([
         GEMINI_MODEL,
-        'gemini-flash-latest',
         'gemini-2.0-flash',
+        'gemini-1.5-flash',
+        'gemini-1.5-flash-8b',
         'gemini-2.5-flash',
-        'gemini-1.5-flash'
+        'gemini-flash-latest'
     ]));
 
     let lastError = null;
@@ -389,7 +392,8 @@ async function callGeminiStructured(systemInstruction, userPrompt, customSchema 
                         'Content-Type': 'application/json',
                         'x-goog-api-key': GEMINI_API_KEY
                     },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(payload),
+                    signal: AbortSignal.timeout ? AbortSignal.timeout(4500) : undefined
                 });
 
                 if (!response.ok) {

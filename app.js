@@ -4361,21 +4361,32 @@ async function submitAiChat(event) {
             body: JSON.stringify({ message })
         });
 
-        const data = await res.json();
-
         if (typingIndicator) typingIndicator.style.display = "none";
 
-        if (res.ok && data.success) {
+        let data = null;
+        try {
+            data = await res.json();
+        } catch (jsonErr) {
+            // If response is not JSON (e.g. Vercel 504 timeout or HTML error)
+            if (res.status === 504) {
+                renderAiMessage('bot', "⚠️ **Timeout:** The AI provider took too long to respond. Please try asking again in a moment.");
+                return;
+            }
+            renderAiMessage('bot', `⚠️ **Server Error (${res.status}):** Unable to complete request. Please try again.`);
+            return;
+        }
+
+        if (res.ok && data && data.success) {
             renderAiMessage('bot', data.answer, data.actions);
         } else {
-            const errorMsg = data.error || "Sorry, I encountered an issue processing your request.";
+            const errorMsg = (data && data.error) || "Sorry, I encountered an issue processing your request.";
             renderAiMessage('bot', `⚠️ **Notice:** ${errorMsg}`);
         }
 
     } catch (err) {
         console.error("AI Chat Client Error:", err);
         if (typingIndicator) typingIndicator.style.display = "none";
-        renderAiMessage('bot', "⚠️ **Network Error:** Unable to reach AI Co-Pilot server. Please try again.");
+        renderAiMessage('bot', "⚠️ **Connection Error:** Unable to reach AI Co-Pilot server. Please check your network and try again.");
     }
 }
 
