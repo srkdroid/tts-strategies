@@ -40,7 +40,7 @@ const EXIT_RULES = {
     "monthly-hni-nifty":            { type: "nth_weekday_of_expiry_month", weekday: 5, n: 3 },
     "monthly-autopilot-finnifty":   { type: "next_weekday", weekday: 4 },
     "monthly-double-decker":        { type: "day_of_expiry_month", day: 12 },
-    "monthly-iron-fly-nifty":       { type: "day_of_expiry_month", day: 10 },
+    "monthly-iron-fly-nifty":       { type: "day_of_expiry_month", day: 1 },
     "biweekly-bwb-2":               { type: "next_weekday", weekday: 4 },
     "biweekly-broken-wing-3":       { type: "next_weekday", weekday: 2 },
     "biweekly-hni-4":               { type: "next_weekday", weekday: 5 },
@@ -190,18 +190,31 @@ function calculateDeploymentsForRange(startDate, endDate) {
                     }
                 } else if (rule.type === "preceding_month_friday") {
                     if (expiry.isMonthly) {
-                        let expMonth = expiry.actual.getMonth();
-                        let expYear = expiry.actual.getFullYear();
-                        let dTemp = new Date(expYear, expMonth - 1, 1);
-                        while (dTemp.getMonth() === (expMonth - 1 + 12) % 12) {
-                            if (dTemp.getDay() === 5) { // Friday
-                                let diff = Math.round((expiry.actual - dTemp) / (1000 * 60 * 60 * 24));
-                                if (diff >= rule.dte_min && diff <= rule.dte_max) {
-                                    nominalDate = new Date(dTemp.getTime());
-                                    break;
-                                }
-                            }
+                        const expMonth = expiry.actual.getMonth();
+                        const expYear = expiry.actual.getFullYear();
+                        // Collect all Fridays in the preceding month
+                        const precMonth = (expMonth - 1 + 12) % 12;
+                        const precYear = expMonth === 0 ? expYear - 1 : expYear;
+                        const fridays = [];
+                        let dTemp = new Date(precYear, precMonth, 1);
+                        while (dTemp.getMonth() === precMonth) {
+                            if (dTemp.getDay() === 5) fridays.push(new Date(dTemp));
                             dTemp.setDate(dTemp.getDate() + 1);
+                        }
+                        // Start with the 2nd Friday of preceding month
+                        // If its DTE > dte_max (too far out), move to 3rd Friday
+                        // If its DTE < dte_min (too close), it's invalid
+                        const candidates = fridays.slice(1); // [2nd, 3rd, 4th, ...]
+                        for (const fri of candidates) {
+                            const diff = Math.round((expiry.actual - fri) / (1000 * 60 * 60 * 24));
+                            if (diff <= rule.dte_max) {
+                                // Found a Friday within the max DTE window
+                                if (diff >= rule.dte_min) {
+                                    nominalDate = new Date(fri);
+                                }
+                                break; // stop at first Friday that's within max DTE
+                            }
+                            // diff > dte_max means this Friday is too far from expiry — try next Friday
                         }
                     }
                 }
