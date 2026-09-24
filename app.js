@@ -40,6 +40,7 @@ const EXIT_RULES = {
     "monthly-hni-nifty":            { type: "nth_weekday_of_expiry_month", weekday: 5, n: 3 },
     "monthly-autopilot-finnifty":   { type: "next_weekday", weekday: 4 },
     "monthly-double-decker":        { type: "day_of_expiry_month", day: 12 },
+    "monthly-iron-fly-nifty":       { type: "day_of_expiry_month", day: 10 },
     "biweekly-bwb-2":               { type: "next_weekday", weekday: 4 },
     "biweekly-broken-wing-3":       { type: "next_weekday", weekday: 2 },
     "biweekly-hni-4":               { type: "next_weekday", weekday: 5 },
@@ -58,6 +59,7 @@ const DEPLOY_RULES = {
     "monthly-hni-nifty":            { type: "preceding_month_friday", dte_min: 39, dte_max: 43 },
     "monthly-autopilot-finnifty":   { type: "expiry_offset", offset_days: -12, monthly_only: true },
     "monthly-double-decker":        { type: "preceding_month_friday", dte_min: 39, dte_max: 43 },
+    "monthly-iron-fly-nifty":       { type: "preceding_month_friday", dte_min: 39, dte_max: 46 },
     "biweekly-bwb-2":               { type: "expiry_offset", offset_days: -12 },
     "biweekly-broken-wing-3":       { type: "expiry_offset", offset_days: -7 },
     "biweekly-hni-4":               { type: "expiry_offset", offset_days: -8 },
@@ -147,12 +149,26 @@ function calculateDeploymentsForRange(startDate, endDate) {
     );
 
     calendarStrategies.forEach(strategy => {
+        // Normalize a string to bare alphanum tokens for fuzzy key matching
+        const normalize = str => (str || '').toLowerCase().replace(/[\s\-–_]+/g, '').replace(/[^a-z0-9]/g, '');
+
         // Auto-heal missing or corrupted rules (e.g. from legacy saves)
-        const masterDeploy = DEPLOY_RULES[strategy.id] || (strategy.name ? DEPLOY_RULES[Object.keys(DEPLOY_RULES).find(k => k && strategy.name.toLowerCase().includes(k.replace(/^(monthly|biweekly|stbt)-/, '').replace(/-\d+$/, '')))] : null);
+        const normName = normalize(strategy.name);
+        const deployKey = Object.keys(DEPLOY_RULES).find(k => {
+            if (k === strategy.id) return true;
+            const slug = normalize(k.replace(/^(monthly|biweekly|stbt)-/, '').replace(/-\d+$/, ''));
+            return slug && normName.includes(slug);
+        });
+        const masterDeploy = deployKey ? DEPLOY_RULES[deployKey] : null;
         if (masterDeploy && (!strategy.deploy_rule || (strategy.deploy_rule.type === 'expiry_offset' && strategy.deploy_rule.offset_days === -5 && (strategy.sheet === 'Monthly' || strategy.name.includes('Batman'))))) {
             strategy.deploy_rule = masterDeploy;
         }
-        const masterExit = EXIT_RULES[strategy.id] || (strategy.name ? EXIT_RULES[Object.keys(EXIT_RULES).find(k => k && strategy.name.toLowerCase().includes(k.replace(/^(monthly|biweekly|stbt)-/, '').replace(/-\d+$/, '')))] : null);
+        const exitKey = Object.keys(EXIT_RULES).find(k => {
+            if (k === strategy.id) return true;
+            const slug = normalize(k.replace(/^(monthly|biweekly|stbt)-/, '').replace(/-\d+$/, ''));
+            return slug && normName.includes(slug);
+        });
+        const masterExit = exitKey ? EXIT_RULES[exitKey] : null;
         if (masterExit && (!strategy.exit_rule || (strategy.exit_rule.type === 'next_weekday' && strategy.exit_rule.weekday === 5 && strategy.sheet === 'Monthly'))) {
             strategy.exit_rule = masterExit;
         }
@@ -1613,28 +1629,44 @@ async function saveStrategyForm(event) {
     // Normalize position type string
     const normalizedType = type === "Both sides" ? "Both (CE & PE)" : type;
 
-    // Resolve deployment rule with master fallback
+    // Pre-compute slug ID for rule lookups (same logic as generatedId below)
+    const _sheetPre = (sheet || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const _nameSlug = (name || '').toLowerCase().replace(/[\s\-–]+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    const lookupId = _sheetPre && _nameSlug ? `${_sheetPre}-${_nameSlug}` : null;
+
+    // Resolve deployment rule: existing → by ID → by slug → DTE-based fallback
     let deploy_rule = (existingStrat && existingStrat.deploy_rule) ? existingStrat.deploy_rule : null;
     if (!deploy_rule && id && DEPLOY_RULES[id]) deploy_rule = DEPLOY_RULES[id];
     if (!deploy_rule && existingStrat && DEPLOY_RULES[existingStrat.id]) deploy_rule = DEPLOY_RULES[existingStrat.id];
+    if (!deploy_rule && lookupId && DEPLOY_RULES[lookupId]) deploy_rule = DEPLOY_RULES[lookupId];
     if (!deploy_rule) {
-        deploy_rule = {
-            type: "expiry_offset",
-            offset_days: dte.includes("8 DTE") ? -8 : (dte.includes("12 DTE") ? -12 : (dte.includes("39") ? -39 : -5)),
-            monthly_only: sheet === "Monthly"
-        };
+        // Parse DTE range like "39 - 46 DTE" → use preceding_month_friday for Monthly, offset for others
+        const dteNums = (dte || '').match(/\d+/g) || [];
+        const dteMin = dteNums.length > 0 ? parseInt(dteNums[0]) : 5;
+        const dteMax = dteNums.length > 1 ? parseInt(dteNums[1]) : dteMin;
+        if (sheet === 'Monthly' && dteMin >= 25) {
+            deploy_rule = { type: "preceding_month_friday", dte_min: dteMin, dte_max: dteMax };
+        } else {
+            deploy_rule = { type: "expiry_offset", offset_days: -dteMin, monthly_only: sheet === "Monthly" };
+        }
     }
 
-    // Resolve exit rule with master fallback
+    // Resolve exit rule: existing → by ID → by slug → weekday fallback
     let exit_rule = (existingStrat && existingStrat.exit_rule) ? existingStrat.exit_rule : null;
     if (!exit_rule && id && EXIT_RULES[id]) exit_rule = EXIT_RULES[id];
     if (!exit_rule && existingStrat && EXIT_RULES[existingStrat.id]) exit_rule = EXIT_RULES[existingStrat.id];
+    if (!exit_rule && lookupId && EXIT_RULES[lookupId]) exit_rule = EXIT_RULES[lookupId];
     if (!exit_rule) {
         exit_rule = { type: "next_weekday", weekday: 5 };
     }
 
+    // Generate a predictable slug-based ID so strategies match DEPLOY_RULES/EXIT_RULES keys
+    const sheetPrefix = (sheet || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const nameSlug = (name || '').toLowerCase().replace(/[\s\-–]+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    const generatedId = sheetPrefix && nameSlug ? `${sheetPrefix}-${nameSlug}` : `strat_${Date.now()}`;
+
     const updatedStrat = {
-        id: id || `strat_${Date.now()}`,
+        id: id || generatedId,
         sheet,
         strategy_category,
         name,
