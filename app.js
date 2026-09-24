@@ -152,7 +152,8 @@ function calculateDeploymentsForRange(startDate, endDate) {
         // Normalize a string to bare alphanum tokens for fuzzy key matching
         const normalize = str => (str || '').toLowerCase().replace(/[\s\-–_]+/g, '').replace(/[^a-z0-9]/g, '');
 
-        // Auto-heal missing or corrupted rules (e.g. from legacy saves)
+        // Auto-heal: master DEPLOY_RULES/EXIT_RULES are always authoritative.
+        // Always override stored rule when a named master key matches (fixes stale KV data).
         const normName = normalize(strategy.name);
         const deployKey = Object.keys(DEPLOY_RULES).find(k => {
             if (k === strategy.id) return true;
@@ -160,7 +161,7 @@ function calculateDeploymentsForRange(startDate, endDate) {
             return slug && normName.includes(slug);
         });
         const masterDeploy = deployKey ? DEPLOY_RULES[deployKey] : null;
-        if (masterDeploy && (!strategy.deploy_rule || (strategy.deploy_rule.type === 'expiry_offset' && strategy.deploy_rule.offset_days === -5 && (strategy.sheet === 'Monthly' || strategy.name.includes('Batman'))))) {
+        if (masterDeploy) {
             strategy.deploy_rule = masterDeploy;
         }
         const exitKey = Object.keys(EXIT_RULES).find(k => {
@@ -169,7 +170,7 @@ function calculateDeploymentsForRange(startDate, endDate) {
             return slug && normName.includes(slug);
         });
         const masterExit = exitKey ? EXIT_RULES[exitKey] : null;
-        if (masterExit && (!strategy.exit_rule || (strategy.exit_rule.type === 'next_weekday' && strategy.exit_rule.weekday === 5 && strategy.sheet === 'Monthly'))) {
+        if (masterExit) {
             strategy.exit_rule = masterExit;
         }
 
