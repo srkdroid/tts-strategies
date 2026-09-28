@@ -1570,13 +1570,134 @@ function hideModal() {
 
 function openAppGuideModal() {
     const modal = document.getElementById("app-guide-modal");
-    if (modal) modal.style.display = "flex";
+    if (modal) {
+        modal.style.display = "flex";
+        clearGuideSearch();
+        switchGuideTab("guide-sec-calendar");
+    }
 }
 
 function closeAppGuideModal() {
     const modal = document.getElementById("app-guide-modal");
     if (modal) modal.style.display = "none";
 }
+
+function switchGuideTab(targetSectionId) {
+    if (!targetSectionId) return;
+
+    // 1. Update navigation items active state
+    const navItems = document.querySelectorAll(".guide-nav-item");
+    navItems.forEach(item => {
+        if (item.getAttribute("data-target") === targetSectionId) {
+            item.classList.add("active");
+            item.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        } else {
+            item.classList.remove("active");
+        }
+    });
+
+    // 2. Update content sections
+    const sections = document.querySelectorAll(".guide-content-section");
+    sections.forEach(sec => {
+        if (sec.id === targetSectionId) {
+            sec.classList.add("active");
+        } else {
+            sec.classList.remove("active");
+        }
+    });
+
+    // 3. Scroll content pane to top
+    const pane = document.getElementById("guide-content-pane");
+    if (pane) pane.scrollTop = 0;
+}
+
+function onGuideSearchInput(query) {
+    const q = (query || '').toLowerCase().trim();
+    const clearBtn = document.getElementById("guide-search-clear-btn");
+    if (clearBtn) clearBtn.style.display = q ? "block" : "none";
+
+    const navItems = document.querySelectorAll(".guide-nav-item");
+
+    if (!q) {
+        // Reset: show all nav items
+        navItems.forEach(item => item.style.display = "flex");
+        // Ensure active tab is displayed
+        const activeNav = document.querySelector(".guide-nav-item.active");
+        if (activeNav) {
+            const targetId = activeNav.getAttribute("data-target");
+            switchGuideTab(targetId);
+        } else {
+            switchGuideTab("guide-sec-calendar");
+        }
+        return;
+    }
+
+    let firstMatchId = null;
+
+    navItems.forEach(item => {
+        const targetId = item.getAttribute("data-target");
+        const sec = document.getElementById(targetId);
+        const itemText = item.innerText.toLowerCase();
+        const secText = sec ? sec.innerText.toLowerCase() : '';
+
+        if (itemText.includes(q) || secText.includes(q)) {
+            item.style.display = "flex";
+            if (!firstMatchId) firstMatchId = targetId;
+        } else {
+            item.style.display = "none";
+        }
+    });
+
+    if (firstMatchId) {
+        switchGuideTab(firstMatchId);
+    }
+}
+
+function clearGuideSearch() {
+    const input = document.getElementById("guide-search-input");
+    if (input) {
+        input.value = "";
+    }
+    const clearBtn = document.getElementById("guide-search-clear-btn");
+    if (clearBtn) clearBtn.style.display = "none";
+
+    const navItems = document.querySelectorAll(".guide-nav-item");
+    navItems.forEach(item => item.style.display = "flex");
+}
+
+// Global Keyboard Shortcuts (Esc to close modals, Alt+1 Calendar, Alt+2 Capital Flow)
+document.addEventListener("keydown", (e) => {
+    // Esc: close top active modal
+    if (e.key === "Escape") {
+        const guideModal = document.getElementById("app-guide-modal");
+        if (guideModal && guideModal.style.display === "flex") {
+            closeAppGuideModal();
+            return;
+        }
+        const stratModal = document.getElementById("strategy-modal");
+        if (stratModal && stratModal.style.display === "flex") {
+            hideModal();
+            return;
+        }
+        const tradeModal = document.getElementById("trade-modal");
+        if (tradeModal && tradeModal.style.display === "flex") {
+            closeTradeModal();
+            return;
+        }
+    }
+
+    // Alt + 1: Calendar View
+    if (e.altKey && e.key === "1") {
+        e.preventDefault();
+        if (typeof switchViewMode === "function") switchViewMode("calendar");
+    }
+
+    // Alt + 2: Capital Flow View
+    if (e.altKey && e.key === "2") {
+        e.preventDefault();
+        if (typeof switchViewMode === "function") switchViewMode("flow");
+    }
+});
 
 // -------------------------------------------------------------
 // ADMIN CONTROLS INTERACTIVE LOGIC

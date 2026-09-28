@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TTS Options Strategy Calendar</title>
-    <link rel="stylesheet" href="style.css?v=6.3">
+    <link rel="stylesheet" href="style.css?v=7.0">
     <link rel="icon" type="image/png" href="favicon.png">
     <!-- Marked.js Markdown Parser & DOMPurify Sanitizer (Pinned with SRI) -->
     <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous"></script>
@@ -1263,134 +1263,547 @@
         </div>
     </div>
 
-    <!-- User Features Guide Modal -->
+    <!-- User Features Guide Modal (Institutional Two-Column Reference) -->
     <div id="app-guide-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="guide-modal-title">
-        <div class="modal-content" style="max-width: 780px;">
-            <div class="modal-header">
-                <div class="modal-header-left" style="display: flex; align-items: center; gap: 0.6rem;">
-                    <h2 id="guide-modal-title" style="margin: 0; font-size: 1.35rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem;">❓ TTS Strategy Calendar — User Guide</h2>
-                </div>
-                <button type="button" class="close-btn" onclick="closeAppGuideModal()" aria-label="Close dialog">&times;</button>
-            </div>
+        <div class="modal-content guide-modal-window">
             
-            <div style="padding: 1rem 0; display: flex; flex-direction: column; gap: 1.2rem; max-height: 70vh; overflow-y: auto;">
+            <!-- Modal Header -->
+            <div class="guide-header">
+                <div class="guide-header-title-group">
+                    <div class="guide-book-icon">📖</div>
+                    <div>
+                        <div class="guide-title-row">
+                            <h2 id="guide-modal-title">TTS Strategy Platform Guide &amp; Technical Reference</h2>
+                            <span class="guide-version-badge">v6.9 RULES ENGINE</span>
+                        </div>
+                        <p class="guide-subtitle">Options Playbooks · Strike Calculation · Capital Flow Sequencing · Trade Journaling · RoI Analytics</p>
+                    </div>
+                </div>
+
+                <div class="guide-header-actions">
+                    <div class="guide-search-wrap">
+                        <span class="guide-search-icon">🔍</span>
+                        <input type="text" id="guide-search-input" placeholder="Search topics, strategies, rules..." oninput="onGuideSearchInput(this.value)" autocomplete="off">
+                        <button type="button" id="guide-search-clear-btn" onclick="clearGuideSearch()" style="display:none;" title="Clear search">✕</button>
+                    </div>
+                    <button type="button" class="guide-close-btn" onclick="closeAppGuideModal()" aria-label="Close dialog">✕</button>
+                </div>
+            </div>
+
+            <!-- Modal Main Body: 2-Column Split -->
+            <div class="guide-split-body">
                 
-                <!-- Feature 1: Calendar View -->
-                <div class="guide-card">
-                    <h4 style="margin: 0 0 0.5rem 0; color: #a855f7; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">📅 1. Interactive Deployment Calendar View</h4>
-                    <p class="guide-desc">View scheduled option strategy deployments across calendar months mapped to exact trading days.</p>
-                    <ul class="guide-list">
-                        <li><strong>Holiday Awareness:</strong> Automatically adjusts for Indian F&O market holidays and expiries.</li>
-                        <li><strong>Shifted Expiry Notice:</strong> Displays an orange badge (<span style="color: #f59e0b; font-weight:600;">Holiday Adjusted</span>) when a deployment date moves to the previous trading day.</li>
-                        <li><strong>How to Use:</strong> Click <strong>📅 Calendar</strong> in the top filter bar and click any strategy card to open full details.</li>
-                    </ul>
-                </div>
+                <!-- Left Sidebar: Table of Contents -->
+                <aside class="guide-sidebar">
+                    <div class="guide-toc-header">TABLE OF CONTENTS</div>
+                    <nav class="guide-toc-nav" id="guide-toc-nav">
+                        <button type="button" class="guide-nav-item active" data-target="guide-sec-calendar" onclick="switchGuideTab('guide-sec-calendar')">
+                            <span class="guide-nav-icon">📅</span>
+                            <span class="guide-nav-text">1. Deployment Calendar &amp; Holidays</span>
+                        </button>
+                        <button type="button" class="guide-nav-item" data-target="guide-sec-capitalflow" onclick="switchGuideTab('guide-sec-capitalflow')">
+                            <span class="guide-nav-icon">📊</span>
+                            <span class="guide-nav-text">2. Capital Flow Timeline (Gantt)</span>
+                        </button>
+                        <button type="button" class="guide-nav-item" data-target="guide-sec-strategy-modal" onclick="switchGuideTab('guide-sec-strategy-modal')">
+                            <span class="guide-nav-icon">🧮</span>
+                            <span class="guide-nav-text">3. Strategy Modal &amp; ATM Calculator</span>
+                        </button>
+                        <button type="button" class="guide-nav-item" data-target="guide-sec-portfolio" onclick="switchGuideTab('guide-sec-portfolio')">
+                            <span class="guide-nav-icon">⭐</span>
+                            <span class="guide-nav-text">4. Starred "My Portfolio" System</span>
+                        </button>
+                        <button type="button" class="guide-nav-item" data-target="guide-sec-catalog" onclick="switchGuideTab('guide-sec-catalog')">
+                            <span class="guide-nav-icon">📖</span>
+                            <span class="guide-nav-text">5. Strategy Master Catalog</span>
+                        </button>
+                        <button type="button" class="guide-nav-item" data-target="guide-sec-notes" onclick="switchGuideTab('guide-sec-notes')">
+                            <span class="guide-nav-icon">📝</span>
+                            <span class="guide-nav-text">6. Knowledge Base &amp; Strategy Notes</span>
+                        </button>
+                        <button type="button" class="guide-nav-item" data-target="guide-sec-journal" onclick="switchGuideTab('guide-sec-journal')">
+                            <span class="guide-nav-icon">📔</span>
+                            <span class="guide-nav-text">7. Trade Journal &amp; RoI Analytics</span>
+                        </button>
+                        <button type="button" class="guide-nav-item" data-target="guide-sec-planner" onclick="switchGuideTab('guide-sec-planner')">
+                            <span class="guide-nav-icon">💰</span>
+                            <span class="guide-nav-text">8. Capital Planner &amp; Expectancy</span>
+                        </button>
+                        <button type="button" class="guide-nav-item" data-target="guide-sec-copilot" onclick="switchGuideTab('guide-sec-copilot')">
+                            <span class="guide-nav-icon">🤖</span>
+                            <span class="guide-nav-text">9. AI Strategy Co-Pilot</span>
+                        </button>
+                        <button type="button" class="guide-nav-item" data-target="guide-sec-shortcuts" onclick="switchGuideTab('guide-sec-shortcuts')">
+                            <span class="guide-nav-icon">⌨️</span>
+                            <span class="guide-nav-text">10. Shortcuts, Themes &amp; Security</span>
+                        </button>
+                    </nav>
 
-                <!-- Feature 2: Capital Flow -->
-                <div class="guide-card">
-                    <h4 style="margin: 0 0 0.5rem 0; color: #3b82f6; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">📊 2. Capital Flow & Timeline (Gantt Chart View)</h4>
-                    <p class="guide-desc">Visual horizontal timeline showing entry dates, active durations, and exit points across calendar months.</p>
-                    <ul class="guide-list">
-                        <li>🟣 <strong>Monthly Strategies:</strong> Long DTE monthly strategies (e.g. <em>Batman 1:3:2</em>, <em>No Brainer</em>).</li>
-                        <li>🔵 <strong>Bi-Weekly & Weekly Strategies:</strong> Medium/short DTE strategies (e.g. <em>Auto-Pilot</em>, <em>Double Decker</em>).</li>
-                        <li>🟢 <strong>STBT Strategies:</strong> Short Term Buy Today / Sell Tomorrow overnight strategies.</li>
-                        <li><strong>How to Use:</strong> Click <strong>📊 Capital Flow</strong> in the filter bar. Navigate months using <strong>◀ Prev Month</strong> / <strong>Next Month ▶</strong>.</li>
-                    </ul>
-                </div>
+                    <div class="guide-sidebar-footer">
+                        💡 <strong>Tip:</strong> Press <kbd>Esc</kbd> anytime to close this guide.
+                    </div>
+                </aside>
 
-                <!-- Feature 3: Multi-Criteria Filter Bar -->
-                <div class="guide-card">
-                    <h4 style="margin: 0 0 0.5rem 0; color: #38bdf8; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">🔍 3. Multi-Criteria Filter Bar</h4>
-                    <p class="guide-desc">Filter deployments across the entire application instantly without page reloads.</p>
-                    <ul class="guide-list">
-                        <li><strong>Index:</strong> Filter by <em>Nifty, Bank Nifty, Fin Nifty, Midcap Nifty</em>.</li>
-                        <li><strong>Strategy Type:</strong> Filter by <em>PE & CE, Directional PE, Directional CE, Hedged Spread</em>.</li>
-                        <li><strong>My Portfolio:</strong> Toggle to view only your bookmarked strategies.</li>
-                    </ul>
-                </div>
+                <!-- Right Content Pane -->
+                <main class="guide-content-pane" id="guide-content-pane">
+                    
+                    <!-- Section 1: Deployment Calendar & Holidays -->
+                    <section class="guide-content-section active" id="guide-sec-calendar">
+                        <div class="guide-section-header">
+                            <h3>📅 1. Interactive Deployment Calendar &amp; Holiday Adjustments</h3>
+                            <p>Multi-index systematic deployment calendar synchronizing trading days against verified Indian F&amp;O settlement cycles and exchange trading holidays.</p>
+                        </div>
 
-                <!-- Feature 4: Interactive Strategy Modal & ATM Calculator -->
-                <div class="guide-card">
-                    <h4 style="margin: 0 0 0.5rem 0; color: #f472b6; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">🧮 4. Interactive Strategy Modal & ATM Strike Calculator</h4>
-                    <p class="guide-desc">Inspect setup legs, target profit, stop loss, and calculate exact strike prices live.</p>
-                    <ul class="guide-list">
-                        <li><strong>Live ATM Calculator:</strong> Type any custom ATM price into the <code>ATM:</code> box to calculate exact strike numbers for all PE and CE legs.</li>
-                        <li><strong>Reset Button (↺):</strong> Reset ATM price back to default benchmark value.</li>
-                        <li><strong>How to Use:</strong> Click any strategy card or timeline row to open the modal.</li>
-                    </ul>
-                </div>
+                        <div class="guide-ref-card">
+                            <h4 class="guide-ref-card-title">⏰ Operational Settlement &amp; Holiday Shift Engine</h4>
+                            <div class="guide-table-wrap">
+                                <table class="guide-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Index / Underlying</th>
+                                            <th>Expiry Cycle</th>
+                                            <th>Settlement Logic</th>
+                                            <th>Holiday Shift Behavior</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>Nifty 50</strong></td>
+                                            <td>Monthly &amp; Weekly</td>
+                                            <td>Monthly: Last Tuesday of contract month</td>
+                                            <td>Shifts backwards to previous active trading session (<span class="guide-pill holiday">Holiday Adjusted</span>)</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Bank Nifty</strong></td>
+                                            <td>Monthly &amp; Weekly</td>
+                                            <td>Monthly: Last Tuesday of contract month</td>
+                                            <td>Automatic holiday shift with amber highlight badge</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Fin Nifty</strong></td>
+                                            <td>Weekly &amp; Monthly</td>
+                                            <td>Every Tuesday</td>
+                                            <td>Shifts to Monday or prior Friday if holiday</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Sensex</strong></td>
+                                            <td>Weekly &amp; Monthly</td>
+                                            <td>Every Thursday</td>
+                                            <td>Shifts to Wednesday if Thursday is an exchange holiday</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
 
-                <!-- Feature 5: Starred Portfolio System -->
-                <div class="guide-card">
-                    <h4 style="margin: 0 0 0.5rem 0; color: #f59e0b; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">⭐ 5. Starred Portfolio System ("My Portfolio")</h4>
-                    <p class="guide-desc">Save your frequently traded strategies to a custom portfolio for quick access.</p>
-                    <ul class="guide-list">
-                        <li><strong>How to Use:</strong> Click <strong>⭐ Add to Portfolio</strong> inside any strategy modal or row. Check <strong>⭐ MY PORTFOLIO</strong> in the filter bar anytime to view only your saved strategies.</li>
-                    </ul>
-                </div>
+                            <div class="guide-feature-grid">
+                                <div class="guide-feature-box">
+                                    <h5>🏷️ Holiday Adjusted Badge</h5>
+                                    <p>When an entry day or expiry falls on an exchange holiday (e.g. Gandhi Jayanti Oct 2), the engine shifts backwards to the preceding active trading session and marks it in amber.</p>
+                                </div>
+                                <div class="guide-feature-box">
+                                    <h5>🗓️ Monthly Navigation</h5>
+                                    <p>Seamlessly navigate through calendar months using the top header controls to inspect forward deployment schedules or verify historical trade dates.</p>
+                                </div>
+                            </div>
+                        </div>
 
-                <!-- Feature 6: Knowledge Base & Strategy Notes -->
-                <div class="guide-card">
-                    <h4 style="margin: 0 0 0.5rem 0; color: #34d399; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">📝 6. Knowledge Base & Strategy Notes System</h4>
-                    <p class="guide-desc">Read operational guidelines, margin rules, and adjustment protocols formatted in Markdown with GitHub callouts.</p>
-                    <ul class="guide-list">
-                        <li><strong>Drag-to-Resize Sidebar:</strong> Click and drag the vertical divider bar between the sidebar and reader pane to adjust width dynamically.</li>
-                        <li><strong>Categorized Notes:</strong> Filter notes across Generic, Strategy, Discretionary, and Adjustment guidelines.</li>
-                        <li><strong>How to Use:</strong> Click <strong>📝 Notes</strong> in the top header bar.</li>
-                    </ul>
-                </div>
+                        <div class="guide-callout">
+                            <strong>How to Use:</strong> Click <strong>📅 Calendar</strong> in the top filter bar. Click on any strategy pill on a trading day to open its full mathematical setup, entry credit targets, and strike calculations.
+                        </div>
+                    </section>
 
-                <!-- Feature 7: Strategy Master Catalog -->
-                <div class="guide-card">
-                    <h4 style="margin: 0 0 0.5rem 0; color: #c084fc; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">📖 7. Strategy Master Catalog (Cards & Single-Line List View)</h4>
-                    <p class="guide-desc">Browse all strategies including 0-Adjustment, Discretionary, and Adjustment repair strategies.</p>
-                    <ul class="guide-list">
-                        <li><strong>Dual Layout Views:</strong> Toggle between <strong>🎴 Card View</strong> (rich cards) and <strong>📋 Single Line List</strong> (compact single-line summaries).</li>
-                        <li><strong>Category Filters:</strong> Filter by <em>⚡ 0 Adjustment</em>, <em>🎯 Discretionary</em>, or <em>🛠️ Adjustments</em>.</li>
-                        <li><strong>Calendar Isolation:</strong> Discretionary and Adjustment strategies are on-demand only and stay isolated from calendar deployment timelines.</li>
-                        <li><strong>How to Use:</strong> Click <strong>📖 Strategy Catalog</strong> in the top header bar.</li>
-                    </ul>
-                </div>
+                    <!-- Section 2: Capital Flow Timeline (Gantt) -->
+                    <section class="guide-content-section" id="guide-sec-capitalflow">
+                        <div class="guide-section-header">
+                            <h3>📊 2. Capital Flow Timeline (Gantt Chart Sequencing)</h3>
+                            <p>Visual Gantt timeline showing concurrent active strategies, holding durations, and capital turnover over calendar months.</p>
+                        </div>
 
-                <!-- Feature 8: Interactive Trade Journal & Multi-Level RoI Analytics -->
-                <div class="guide-card">
-                    <h4 style="margin: 0 0 0.5rem 0; color: #34d399; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">📔 8. Interactive Trade Journal & Multi-Level RoI Analytics</h4>
-                    <p class="guide-desc">Log live trade executions, track margin, record entry/exit/psychology notes, and analyze multi-level RoI performance.</p>
-                    <ul class="guide-list">
-                        <li><strong>Auto-Populate Legs:</strong> Selecting any strategy auto-populates setup legs, with freedom to add/remove legs, adjust quantities, strikes, and entry prices.</li>
-                        <li><strong>Margin & Exit Tracking:</strong> Capture <code>Margin Used (₹)</code> on entry. Record leg exit prices, brokerage (₹), and STT/taxes (₹) on exit to compute Net Realized P&L & Trade RoI %.</li>
-                        <li><strong>3-Way Journaling:</strong> Record <em>Entry Rationale Notes</em>, <em>Exit Review Notes</em>, and <em>Mindset & Psychology Notes</em>.</li>
-                        <li><strong>Integrated Multi-Level Analytics:</strong> Switch to the <strong>📈 Performance & RoI Analytics</strong> sub-tab inside Trade Journal to view:
-                            <ul>
-                                <li>📊 <strong>Category Level RoI Breakdown:</strong> Monthly, Bi-Weekly/Weekly, STBT, Discretionary & Adjustments.</li>
-                                <li>🎯 <strong>Strategy Level Performance:</strong> Win Rate %, Margin Used, Net P&L, and Realized RoI % per strategy.</li>
-                                <li>🗓️ <strong>Timeframe Breakdown:</strong> Aggregated performance across Daily, Weekly, Monthly, Quarterly, & Annual timeframes.</li>
-                            </ul>
-                        </li>
-                        <li><strong>How to Use:</strong> Click <strong>📔 Trade Journal</strong> in the top header bar.</li>
-                    </ul>
-                </div>
+                        <div class="guide-ref-card">
+                            <h4 class="guide-ref-card-title">📈 Strategy Lifespan &amp; Visual Indicators</h4>
+                            <div class="guide-table-wrap">
+                                <table class="guide-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Strategy Bucket</th>
+                                            <th>Color Code</th>
+                                            <th>Typical DTE</th>
+                                            <th>Holding Period</th>
+                                            <th>Standard Exit Rules</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>Monthly</strong></td>
+                                            <td><span class="guide-pill monthly">Purple</span></td>
+                                            <td>39 - 46 DTE</td>
+                                            <td>10 to 15 Days</td>
+                                            <td>Fixed target day (e.g. 1st, 7th, 12th, or 21st of expiry month)</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Bi-Weekly &amp; Weekly</strong></td>
+                                            <td><span class="guide-pill biweekly">Blue</span></td>
+                                            <td>7 - 12 DTE</td>
+                                            <td>3 to 7 Days</td>
+                                            <td>Next weekday (e.g. next Friday or Monday after entry)</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>STBT</strong></td>
+                                            <td><span class="guide-pill stbt">Emerald</span></td>
+                                            <td>1 - 5 DTE</td>
+                                            <td>Overnight (1 Session)</td>
+                                            <td>Exit next trading session at 09:15 AM open</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
 
-                <!-- Feature 9: Capital Allocation Planner & RoI Model -->
-                <div class="guide-card">
-                    <h4 style="margin: 0 0 0.5rem 0; color: #f59e0b; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">💰 9. Capital Allocation Planner & Probability-Weighted RoI Engine</h4>
-                    <p class="guide-desc">Simulate 100% week-by-week capital utilization, win rates, and expected net returns across your portfolio.</p>
-                    <ul class="guide-list">
-                        <li><strong>Capital Base Simulation:</strong> Enter your custom total capital (e.g. ₹ 50,00,000) to simulate exact rupee allocation across all weekly deployment cycles.</li>
-                        <li><strong>Week-wise Heatmap Matrix:</strong> Track capital deployment percentages across W1–W5 cycles to eliminate idle capital leakage.</li>
-                        <li><strong>Probability-Weighted Expectancy:</strong> Adjust win rate percentages per strategy bucket to calculate expected net monthly returns and annualized RoI %.</li>
-                        <li><strong>How to Use:</strong> Click <strong>💰 Capital Planner</strong> in the top header bar next to Trade Journal.</li>
-                    </ul>
-                </div>
+                            <div class="guide-feature-grid">
+                                <div class="guide-feature-box">
+                                    <h5>▶ / ◻ Deployment Marker</h5>
+                                    <p>Marks the exact calendar date margin is locked and legs are executed in the market at their designated session entry time.</p>
+                                </div>
+                                <div class="guide-feature-box">
+                                    <h5>― Holding Timeline Bar</h5>
+                                    <p>Colored horizontal bar representing the duration margin is committed. Hover over any bar to inspect exact deployment and exit dates.</p>
+                                </div>
+                                <div class="guide-feature-box">
+                                    <h5>↩ Exit Square-Off Marker</h5>
+                                    <p>Indicates target profit reached, maximum holding threshold reached, or contract expiry square-off.</p>
+                                </div>
+                            </div>
+                        </div>
 
-                <!-- Feature 10: Theme & Logout -->
-                <div class="guide-card">
-                    <h4 style="margin: 0 0 0.5rem 0; color: #a855f7; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">☀️ 10. Theme Toggle & 🚪 Secure Logout</h4>
-                    <ul class="guide-list">
-                        <li><strong>Theme Toggle:</strong> Click <strong>☀️ / 🌙</strong> in the header bar to switch between dark and light modes.</li>
-                        <li><strong>Logout:</strong> Click <strong>🚪 Logout</strong> to end your session safely anytime.</li>
-                    </ul>
-                </div>
+                        <div class="guide-callout">
+                            <strong>How to Use:</strong> Click <strong>📊 Capital Flow</strong> in the filter bar. Toggle between <strong>Deploy</strong>, <strong>Exit</strong>, or <strong>Both</strong> in the VIEW dropdown to isolate entries vs square-offs.
+                        </div>
+                    </section>
+
+                    <!-- Section 3: Strategy Modal & Dynamic ATM Calculator -->
+                    <section class="guide-content-section" id="guide-sec-strategy-modal">
+                        <div class="guide-section-header">
+                            <h3>🧮 3. Strategy Inspection &amp; Dynamic ATM Strike Calculator</h3>
+                            <p>Full playbook blueprint with mathematical leg generation for any underlying spot or ATM strike price.</p>
+                        </div>
+
+                        <div class="guide-ref-card">
+                            <h4 class="guide-ref-card-title">🎯 Strike Calculation &amp; Playbook Blueprint</h4>
+                            <div class="guide-feature-grid">
+                                <div class="guide-feature-box">
+                                    <h5>⚡ Dynamic ATM Recalculation</h5>
+                                    <p>Type any custom ATM price in the <code>ATM:</code> input box (e.g. <code>25500</code> for Nifty, <code>57500</code> for Bank Nifty). All CE &amp; PE leg strikes recalculate live.</p>
+                                </div>
+                                <div class="guide-feature-box">
+                                    <h5>↺ Instant Reset</h5>
+                                    <p>Click the reset icon (<code>↺</code>) next to the ATM input box to immediately return to the benchmark spot strike price.</p>
+                                </div>
+                                <div class="guide-feature-box">
+                                    <h5>🛡️ Blue Line Hedging Rules</h5>
+                                    <p>Displays exact guidelines to refine credit and overhedge CE or PE wings to equalize tail risk before confirming orders.</p>
+                                </div>
+                                <div class="guide-feature-box">
+                                    <h5>🚪 Strict Exit Targets</h5>
+                                    <p>Explicit parameters for Target Profit % (e.g. 2% to 3%), Stop Loss limit (2.5% to 3%), Breakeven breach rules, and Gap-up notices.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="guide-callout">
+                            <strong>How to Use:</strong> Click any strategy row in Capital Flow, card in Calendar, or playbook in Strategy Catalog to open the full interactive blueprint.
+                        </div>
+                    </section>
+
+                    <!-- Section 4: Starred "My Portfolio" System -->
+                    <section class="guide-content-section" id="guide-sec-portfolio">
+                        <div class="guide-section-header">
+                            <h3>⭐ 4. Starred "My Portfolio" System</h3>
+                            <p>Personalize your workspace by curating active strategies into your dedicated portfolio view across all calendar and timeline views.</p>
+                        </div>
+
+                        <div class="guide-ref-card">
+                            <h4 class="guide-ref-card-title">⭐ Portfolio Workflow</h4>
+                            <div class="guide-feature-grid">
+                                <div class="guide-feature-box">
+                                    <h5>1. Star Any Strategy</h5>
+                                    <p>Click the star icon (<code>☆</code> / <code>★</code>) next to any strategy name in the Capital Flow view, or click <strong>⭐ Add to Portfolio</strong> inside the strategy modal.</p>
+                                </div>
+                                <div class="guide-feature-box">
+                                    <h5>2. Isolate Active Universe</h5>
+                                    <p>Toggle the <strong>⭐ MY PORTFOLIO</strong> checkbox in the top filter bar. All non-starred strategies are instantly filtered out.</p>
+                                </div>
+                                <div class="guide-feature-box">
+                                    <h5>3. Browser Persistence</h5>
+                                    <p>Starred strategies are saved locally in your browser so your customized portfolio is immediately active upon every return.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Section 5: Strategy Master Catalog -->
+                    <section class="guide-content-section" id="guide-sec-catalog">
+                        <div class="guide-section-header">
+                            <h3>📖 5. Strategy Master Catalog &amp; Playbook Library</h3>
+                            <p>Master repository of all systematic, discretionary, and adjustment repair playbooks categorized by execution profile.</p>
+                        </div>
+
+                        <div class="guide-ref-card">
+                            <h4 class="guide-ref-card-title">📚 Catalog Groups &amp; Layout Options</h4>
+                            <div class="guide-table-wrap">
+                                <table class="guide-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Group Name</th>
+                                            <th>Badge</th>
+                                            <th>Description</th>
+                                            <th>Calendar Behavior</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>0 Adjustment</strong></td>
+                                            <td><span class="guide-pill stbt">0 Adjustment</span></td>
+                                            <td>Purely rule-based algorithmic strategies (e.g. Batman, Axis Fly, No Brainer)</td>
+                                            <td>Appears on Interactive Calendar &amp; Capital Flow</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Discretionary</strong></td>
+                                            <td><span class="guide-pill discretionary">Discretionary</span></td>
+                                            <td>Regime-triggered opportunistic trades (e.g. High VIX Iron Condor)</td>
+                                            <td>On-demand only; isolated from calendar schedule</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Adjustments &amp; Repairs</strong></td>
+                                            <td><span class="guide-pill repair">Repair Playbook</span></td>
+                                            <td>Firefighting playbooks to roll strikes or lock profits on market breaches</td>
+                                            <td>Catalog reference only; deployed dynamically</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="guide-feature-grid">
+                                <div class="guide-feature-box">
+                                    <h5>🎴 Card View</h5>
+                                    <p>Comprehensive strategy cards featuring full conditions, leg breakdowns, stop losses, and duration targets.</p>
+                                </div>
+                                <div class="guide-feature-box">
+                                    <h5>📋 Single Line List</h5>
+                                    <p>High-density condensed table for rapid scanning across all strategies, underlying indices, DTEs, and timings.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="guide-callout">
+                            <strong>How to Use:</strong> Click <strong>📖 Strategy Catalog</strong> in the top header navigation. Use the group filter buttons to switch between 0 Adjustment, Discretionary, and Repairs.
+                        </div>
+                    </section>
+
+                    <!-- Section 6: Knowledge Base & Strategy Notes -->
+                    <section class="guide-content-section" id="guide-sec-notes">
+                        <div class="guide-section-header">
+                            <h3>📝 6. Knowledge Base &amp; Strategy Notes</h3>
+                            <p>Comprehensive markdown repository containing margin management, adjustment tactics, and operational guidelines.</p>
+                        </div>
+
+                        <div class="guide-ref-card">
+                            <h4 class="guide-ref-card-title">🧠 Knowledge Engine &amp; Reader Pane</h4>
+                            <div class="guide-feature-grid">
+                                <div class="guide-feature-box">
+                                    <h5>↔️ Drag-to-Resize Splitter</h5>
+                                    <p>Click and drag the vertical divider between the notes list and reader pane to adjust reading width to your screen preference.</p>
+                                </div>
+                                <div class="guide-feature-box">
+                                    <h5>📌 Categorized Knowledge</h5>
+                                    <p>Filter notes across Generic, Strategy, Discretionary, and Adjustment guidelines with real-time text search.</p>
+                                </div>
+                                <div class="guide-feature-box">
+                                    <h5>🔒 Role-Based Visibility</h5>
+                                    <p>Public master playbooks are accessible to all verified members, while private operational directives remain secured for admins.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="guide-callout">
+                            <strong>How to Use:</strong> Click <strong>📝 Notes</strong> in the header bar. Select any note in the left sidebar to read its rich Markdown content.
+                        </div>
+                    </section>
+
+                    <!-- Section 7: Trade Journal & Multi-Level RoI Analytics -->
+                    <section class="guide-content-section" id="guide-sec-journal">
+                        <div class="guide-section-header">
+                            <h3>📔 7. Trade Journal &amp; Multi-Level RoI Analytics</h3>
+                            <p>Complete trade execution lifecycle tracking with automatic P&amp;L calculations and multi-dimensional performance attribution.</p>
+                        </div>
+
+                        <div class="guide-ref-card">
+                            <h4 class="guide-ref-card-title">📊 Execution Logging &amp; Performance Dimensions</h4>
+                            <div class="guide-table-wrap">
+                                <table class="guide-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Dimension</th>
+                                            <th>Key Metrics Captured</th>
+                                            <th>Analytical Purpose</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>Trade Entry</strong></td>
+                                            <td>Strategy, underlying, strikes, entry prices, lots, Margin Used (₹)</td>
+                                            <td>Pre-populates legs while allowing full strike &amp; quantity customization</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Trade Exit</strong></td>
+                                            <td>Exit prices, brokerage (₹), STT &amp; exchange taxes (₹)</td>
+                                            <td>Computes Gross P&amp;L, Net Realized P&amp;L, and Trade RoI % automatically</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>3-Way Journaling</strong></td>
+                                            <td>Entry Rationale, Exit Review, Mindset &amp; Psychology</td>
+                                            <td>Tracks trader discipline, execution errors, and emotional state</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Category RoI</strong></td>
+                                            <td>Monthly, Bi-Weekly, STBT, Discretionary</td>
+                                            <td>Identifies which strategy categories deliver the highest capital efficiency</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Strategy RoI</strong></td>
+                                            <td>Win Rate %, Total Net P&amp;L, Realized RoI % per playbook</td>
+                                            <td>Highlights top-performing alpha engines and flags loss drags</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Timeframe RoI</strong></td>
+                                            <td>Daily, Weekly, Monthly, Quarterly, Annual aggregation</td>
+                                            <td>Analyzes portfolio compounding consistency across reporting cycles</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="guide-callout">
+                            <strong>How to Use:</strong> Click <strong>📔 Trade Journal</strong> in the top header. Click <strong>➕ Record Trade</strong> to log a live execution, or switch to the <strong>📈 Performance &amp; RoI Analytics</strong> sub-tab to inspect analytics.
+                        </div>
+                    </section>
+
+                    <!-- Section 8: Capital Allocation Planner & Expectancy Engine -->
+                    <section class="guide-content-section" id="guide-sec-planner">
+                        <div class="guide-section-header">
+                            <h3>💰 8. Capital Allocation Planner &amp; Expectancy Engine</h3>
+                            <p>Institutional mathematical simulator to maximize capital utilization and model probability-weighted portfolio returns.</p>
+                        </div>
+
+                        <div class="guide-ref-card">
+                            <h4 class="guide-ref-card-title">💵 Capital Optimization Framework</h4>
+                            <div class="guide-feature-grid">
+                                <div class="guide-feature-box">
+                                    <h5>💼 Total Capital Base Simulation</h5>
+                                    <p>Enter your total trading capital corpus (e.g. <code>₹ 50,00,000</code>). The simulator maps exact rupee allocations across strategy buckets.</p>
+                                </div>
+                                <div class="guide-feature-box">
+                                    <h5>🗓️ 5-Week Deployment Heatmap</h5>
+                                    <p>Visualizes week-by-week capital utilization (W1 to W5) to ensure 100% margin efficiency and eliminate idle cash drag.</p>
+                                </div>
+                                <div class="guide-feature-box">
+                                    <h5>🎲 Probability Expectancy Model</h5>
+                                    <p>Simulates expected net monthly returns (₹) and annualized yield % based on customizable win-rate probabilities and profit targets.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="guide-callout">
+                            <strong>How to Use:</strong> Click <strong>💰 Capital Planner</strong> in the top navigation bar next to Trade Journal.
+                        </div>
+                    </section>
+
+                    <!-- Section 9: AI Strategy Co-Pilot -->
+                    <section class="guide-content-section" id="guide-sec-copilot">
+                        <div class="guide-section-header">
+                            <h3>🤖 9. AI Strategy Co-Pilot Grounded in Master Playbooks</h3>
+                            <p>Context-aware AI assistant providing instant answers on strategy rules, adjustments, strikes, and calendar events.</p>
+                        </div>
+
+                        <div class="guide-ref-card">
+                            <h4 class="guide-ref-card-title">🧠 Co-Pilot Intelligence Architecture</h4>
+                            <div class="guide-feature-grid">
+                                <div class="guide-feature-box">
+                                    <h5>📚 Strict Grounding</h5>
+                                    <p>Answers are grounded strictly in the verified knowledge of the master strategies, active calendar schedules, and operational notes.</p>
+                                </div>
+                                <div class="guide-feature-box">
+                                    <h5>⚡ Suggested Prompt Chips</h5>
+                                    <p>One-click question starters at the top of the chat (e.g. <em>"Weekly HNI"</em>, <em>"Batman 1:3:2"</em>, <em>"Capital Allocation"</em>, <em>"0-Adjustment Setups"</em>).</p>
+                                </div>
+                                <div class="guide-feature-box">
+                                    <h5>🔗 Interactive Action Links</h5>
+                                    <p>Co-Pilot can output actionable buttons directly in responses to open note readers or strike calculators.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="guide-callout">
+                            <strong>How to Use:</strong> Click the floating <strong>🤖 AI Co-Pilot</strong> button in the bottom right corner of any page.
+                        </div>
+                    </section>
+
+                    <!-- Section 10: Shortcuts, Themes & Security -->
+                    <section class="guide-content-section" id="guide-sec-shortcuts">
+                        <div class="guide-section-header">
+                            <h3>⌨️ 10. Shortcuts, Themes &amp; Data Privacy</h3>
+                            <p>Platform keyboard ergonomics, high-contrast themes, and strict data security protocols.</p>
+                        </div>
+
+                        <div class="guide-ref-card">
+                            <h4 class="guide-ref-card-title">⌨️ Keyboard Shortcuts &amp; Ergonomics</h4>
+                            <div class="guide-table-wrap">
+                                <table class="guide-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Key Combination</th>
+                                            <th>Scope</th>
+                                            <th>Action Executed</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><kbd>Esc</kbd></td>
+                                            <td>Global</td>
+                                            <td>Close any active modal window (Guide, Strategy Modal, Trade Modal)</td>
+                                        </tr>
+                                        <tr>
+                                            <td><kbd>Alt</kbd> + <kbd>1</kbd></td>
+                                            <td>Global</td>
+                                            <td>Quick-switch to <strong>📅 Calendar View</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td><kbd>Alt</kbd> + <kbd>2</kbd></td>
+                                            <td>Global</td>
+                                            <td>Quick-switch to <strong>📊 Capital Flow View</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd></td>
+                                            <td>Browser</td>
+                                            <td>Hard reload cache to immediately pull latest rule engines</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="guide-feature-grid">
+                                <div class="guide-feature-box">
+                                    <h5>☀️ / 🌙 High-Contrast Themes</h5>
+                                    <p>Toggle between Dark mode (optimized for trading desk screens) and Light mode (crisp daytime readability) via the header theme button.</p>
+                                </div>
+                                <div class="guide-feature-box">
+                                    <h5>🔒 Enterprise Security &amp; Isolation</h5>
+                                    <p>Protected by secure session tokens with HTTP-only cookies. Trade journals are sandboxed per user phone number with 256-bit encrypted storage.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                </main>
 
             </div>
         </div>
@@ -1800,6 +2213,6 @@
     <script src="holidays.js?v=6.5"></script>
     <script src="capital-planner-data.js?v=6.5"></script>
     <script src="notes.js?v=6.5"></script>
-    <script src="app.js?v=6.9"></script>
+    <script src="app.js?v=7.0"></script>
 </body>
 </html>
