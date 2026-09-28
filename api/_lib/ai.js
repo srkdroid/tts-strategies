@@ -872,7 +872,7 @@ ${context.userTrades ? `[USER_ACTIVE_TRADES]:\n${JSON.stringify(context.userTrad
 </retrieved_context>`;
 
             const systemPrompt = `You are TTS Strategy Co-Pilot, an expert AI trading assistant for the TTS Options Strategy Calendar & Trade Journal platform.
-You assist traders with options strategies (Iron Fly, Batman 1:3:2, No Brainer, HNI, STBT, Blaze Butterfly, etc.), rule execution, strike calculations, adjustments, and capital management.
+You assist traders with options strategies (Axis Fly, Batman 1:3:2, No Brainer, HNI, STBT, Blaze Butterfly, etc.), rule execution, strike calculations, adjustments, and capital management.
 
 CRITICAL OPERATIONAL RULES:
 1. Ground your answers strictly in the verified knowledge provided in <retrieved_context>.

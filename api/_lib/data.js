@@ -115,6 +115,28 @@ module.exports = async (req, res) => {
                 strategiesData = await runStrategiesMigration();
             }
 
+            // Automatic Migration: Rename "Iron Fly - Nifty" to "Axis Fly - Nifty"
+            if (Array.isArray(strategiesData)) {
+                let renamed = false;
+                strategiesData.forEach(s => {
+                    if (s && (s.name === 'Iron Fly - Nifty' || s.id === 'monthly-iron-fly-nifty')) {
+                        s.name = 'Axis Fly - Nifty';
+                        if (s.id === 'monthly-iron-fly-nifty' || !s.id) {
+                            s.id = 'monthly-axis-fly-nifty';
+                        }
+                        renamed = true;
+                    }
+                });
+                if (renamed) {
+                    try {
+                        await queryKV(['SET', 'strategies', JSON.stringify(strategiesData)]);
+                        console.log("Renamed 'Iron Fly - Nifty' to 'Axis Fly - Nifty' in Redis KV");
+                    } catch (e) {
+                        console.error("Failed to persist renamed strategy:", e);
+                    }
+                }
+            }
+
             // Fetch holidays from KV
             const holRes = await queryKV(['GET', 'holidays']);
             if (holRes) {

@@ -32,6 +32,11 @@ const indexSpotPrices = {
     "Fin Nifty (Expiry Tue)": 25000
 };
 
+// Normalize a strategy name/key to bare alphanum tokens for fuzzy matching
+function normalizeStrategyKey(str) {
+    return (str || '').toLowerCase().replace(/[\s\-–_]+/g, '').replace(/[^a-z0-9]/g, '');
+}
+
 // Machine-readable fallback exit rules for backward compatibility
 const EXIT_RULES = {
     "monthly-batman":               { type: "day_of_expiry_month", day: 7 },
@@ -40,6 +45,7 @@ const EXIT_RULES = {
     "monthly-hni-nifty":            { type: "nth_weekday_of_expiry_month", weekday: 5, n: 3 },
     "monthly-autopilot-finnifty":   { type: "next_weekday", weekday: 4 },
     "monthly-double-decker":        { type: "day_of_expiry_month", day: 12 },
+    "monthly-axis-fly-nifty":       { type: "day_of_expiry_month", day: 1 },
     "monthly-iron-fly-nifty":       { type: "day_of_expiry_month", day: 1 },
     "biweekly-bwb-2":               { type: "next_weekday", weekday: 4 },
     "biweekly-broken-wing-3":       { type: "next_weekday", weekday: 2 },
@@ -59,6 +65,7 @@ const DEPLOY_RULES = {
     "monthly-hni-nifty":            { type: "preceding_month_friday", dte_min: 39, dte_max: 43 },
     "monthly-autopilot-finnifty":   { type: "expiry_offset", offset_days: -12, monthly_only: true },
     "monthly-double-decker":        { type: "preceding_month_friday", dte_min: 39, dte_max: 43 },
+    "monthly-axis-fly-nifty":       { type: "preceding_month_friday", dte_min: 39, dte_max: 46 },
     "monthly-iron-fly-nifty":       { type: "preceding_month_friday", dte_min: 39, dte_max: 46 },
     "biweekly-bwb-2":               { type: "expiry_offset", offset_days: -12 },
     "biweekly-broken-wing-3":       { type: "expiry_offset", offset_days: -7 },
@@ -149,15 +156,20 @@ function calculateDeploymentsForRange(startDate, endDate) {
     );
 
     calendarStrategies.forEach(strategy => {
-        // Normalize a string to bare alphanum tokens for fuzzy key matching
-        const normalize = str => (str || '').toLowerCase().replace(/[\s\-–_]+/g, '').replace(/[^a-z0-9]/g, '');
+        // In-memory rename for Iron Fly -> Axis Fly
+        if (strategy.name === 'Iron Fly - Nifty') {
+            strategy.name = 'Axis Fly - Nifty';
+            if (strategy.id === 'monthly-iron-fly-nifty') {
+                strategy.id = 'monthly-axis-fly-nifty';
+            }
+        }
 
         // Auto-heal: master DEPLOY_RULES/EXIT_RULES are always authoritative.
         // Always override stored rule when a named master key matches (fixes stale KV data).
-        const normName = normalize(strategy.name);
+        const normName = normalizeStrategyKey(strategy.name);
         const deployKey = Object.keys(DEPLOY_RULES).find(k => {
             if (k === strategy.id) return true;
-            const slug = normalize(k.replace(/^(monthly|biweekly|stbt)-/, '').replace(/-\d+$/, ''));
+            const slug = normalizeStrategyKey(k.replace(/^(monthly|biweekly|stbt)-/, '').replace(/-\d+$/, ''));
             return slug && normName.includes(slug);
         });
         const masterDeploy = deployKey ? DEPLOY_RULES[deployKey] : null;
@@ -166,7 +178,7 @@ function calculateDeploymentsForRange(startDate, endDate) {
         }
         const exitKey = Object.keys(EXIT_RULES).find(k => {
             if (k === strategy.id) return true;
-            const slug = normalize(k.replace(/^(monthly|biweekly|stbt)-/, '').replace(/-\d+$/, ''));
+            const slug = normalizeStrategyKey(k.replace(/^(monthly|biweekly|stbt)-/, '').replace(/-\d+$/, ''));
             return slug && normName.includes(slug);
         });
         const masterExit = exitKey ? EXIT_RULES[exitKey] : null;
@@ -536,6 +548,9 @@ function loadStarredStrategies() {
         const stored = localStorage.getItem('my_deployed_strategies');
         if (stored) {
             starredStrategies = new Set(JSON.parse(stored));
+            if (starredStrategies.has('monthly-iron-fly-nifty')) {
+                starredStrategies.add('monthly-axis-fly-nifty');
+            }
         }
     } catch (e) {
         console.error("Failed to load portfolio strategies", e);
@@ -607,12 +622,30 @@ document.addEventListener("DOMContentLoaded", async () => {
         window.strategiesData = strategiesData;
         if (Array.isArray(strategiesData)) {
             strategiesData.forEach(strat => {
-                const masterDeploy = DEPLOY_RULES[strat.id] || (strat.name ? DEPLOY_RULES[Object.keys(DEPLOY_RULES).find(k => k && strat.name.toLowerCase().includes(k.replace(/^(monthly|biweekly|stbt)-/, '').replace(/-\d+$/, '')))] : null);
-                if (masterDeploy && (!strat.deploy_rule || (strat.deploy_rule.type === 'expiry_offset' && strat.deploy_rule.offset_days === -5 && (strat.sheet === 'Monthly' || strat.name.includes('Batman'))))) {
+                // In-memory rename for Iron Fly -> Axis Fly
+                if (strat.name === 'Iron Fly - Nifty') {
+                    strat.name = 'Axis Fly - Nifty';
+                    if (strat.id === 'monthly-iron-fly-nifty') {
+                        strat.id = 'monthly-axis-fly-nifty';
+                    }
+                }
+                const normName = normalizeStrategyKey(strat.name);
+                const deployKey = Object.keys(DEPLOY_RULES).find(k => {
+                    if (k === strat.id) return true;
+                    const slug = normalizeStrategyKey(k.replace(/^(monthly|biweekly|stbt)-/, '').replace(/-\d+$/, ''));
+                    return slug && normName.includes(slug);
+                });
+                const masterDeploy = deployKey ? DEPLOY_RULES[deployKey] : null;
+                if (masterDeploy) {
                     strat.deploy_rule = masterDeploy;
                 }
-                const masterExit = EXIT_RULES[strat.id] || (strat.name ? EXIT_RULES[Object.keys(EXIT_RULES).find(k => k && strat.name.toLowerCase().includes(k.replace(/^(monthly|biweekly|stbt)-/, '').replace(/-\d+$/, '')))] : null);
-                if (masterExit && (!strat.exit_rule || (strat.exit_rule.type === 'next_weekday' && strat.exit_rule.weekday === 5 && strat.sheet === 'Monthly'))) {
+                const exitKey = Object.keys(EXIT_RULES).find(k => {
+                    if (k === strat.id) return true;
+                    const slug = normalizeStrategyKey(k.replace(/^(monthly|biweekly|stbt)-/, '').replace(/-\d+$/, ''));
+                    return slug && normName.includes(slug);
+                });
+                const masterExit = exitKey ? EXIT_RULES[exitKey] : null;
+                if (masterExit) {
                     strat.exit_rule = masterExit;
                 }
                 if (strat.index && strat.index.includes("Bank Nifty")) {
@@ -1679,8 +1712,13 @@ async function saveStrategyForm(event) {
     const nameSlug = (name || '').toLowerCase().replace(/[\s\-–]+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '');
     const generatedId = sheetPrefix && nameSlug ? `${sheetPrefix}-${nameSlug}` : `strat_${Date.now()}`;
 
+    let finalId = id;
+    if (!finalId || finalId === 'monthly-iron-fly-nifty') {
+        finalId = generatedId;
+    }
+
     const updatedStrat = {
-        id: id || generatedId,
+        id: finalId,
         sheet,
         strategy_category,
         name,
