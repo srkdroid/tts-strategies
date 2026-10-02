@@ -313,6 +313,60 @@ const strategiesData = [
         }
     },
     {
+        "id": "monthly-axis-fly-nifty",
+        "sheet": "Monthly",
+        "name": "Axis Fly - Nifty",
+        "index": "Nifty",
+        "expiry": "Monthly, Next Month",
+        "dte": "39 - 46 DTE",
+        "day": "Fri",
+        "time": "15:16:00",
+        "type": "PE & CE",
+        "setup": {
+            "PE": [
+                "Sell 1 ATM PE",
+                "Buy 1 ATM - 500 PE"
+            ],
+            "CE": [
+                "Sell 1 ATM CE",
+                "Buy 1 ATM + 500 CE"
+            ],
+            "notes": "Iron Fly structure: Sell ATM Straddle + Buy OTM Strangle as hedge. Deploy on 2nd Friday of preceding month; if DTE > 46, shift to 3rd Friday."
+        },
+        "strike_example": {
+            "ATM": 25000,
+            "notes": "ATM = spot rounded to nearest 50",
+            "CE": [
+                "Sell 1 25000 CE",
+                "Buy 1 25500 CE"
+            ],
+            "PE": [
+                "Sell 1 25000 PE",
+                "Buy 1 24500 PE"
+            ]
+        },
+        "conditions": {
+            "credit_range": "5 to 6%",
+            "refine_credit": "If credit > 6%, shift hedge legs further OTM until credit < 6%.",
+            "refine_blue_line": null
+        },
+        "exit": {
+            "target": "2 % Profit",
+            "sl": "2.5 % Loss",
+            "market_move": null,
+            "duration": "Hold max till 1st of Expiry month"
+        },
+        "deploy_rule": {
+            "type": "preceding_month_friday",
+            "dte_min": 39,
+            "dte_max": 46
+        },
+        "exit_rule": {
+            "type": "day_of_expiry_month",
+            "day": 1
+        }
+    },
+    {
         "id": "biweekly-bwb-2",
         "sheet": "BiWkly",
         "name": "BWB",
