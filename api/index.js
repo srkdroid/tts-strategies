@@ -11,24 +11,79 @@ const trackHandler = require('./_lib/track');
 const uploadHandler = require('./_lib/upload');
 
 module.exports = async (req, res) => {
-    // Determine route from query param (set by vercel rewrites) or req.url
+    // 1. Determine host and URL
+    const host = (req.headers && req.headers.host) ? req.headers.host : 'localhost';
+    let urlObj;
+    try {
+        urlObj = new URL(req.url || '', `http://${host}`);
+    } catch (e) {
+        urlObj = { pathname: '', searchParams: new URLSearchParams() };
+    }
+
+    // 2. Determine route from query param (set by vercel rewrites) or req.url
     let route = req.query ? req.query.route : null;
     if (!route) {
+        route = urlObj.pathname.replace(/^\/api\/?/, '');
+    }
+
+    // 3. Temporary database export for migration
+    const secret = (req.query && req.query.secret) || urlObj.searchParams.get('secret');
+    if ((route === 'export-db' || urlObj.pathname === '/api/export-db') && secret === 'migrate2026') {
         try {
-            const host = (req.headers && req.headers.host) ? req.headers.host : 'localhost';
-            const urlObj = new URL(req.url || '', `http://${host}`);
-            route = urlObj.pathname.replace(/^\/api\/?/, '');
-        } catch (e) {
-            route = '';
+            const { queryKV } = require('./_lib/common/redis');
+            const allKeys = await queryKV(['KEYS', '*']) || [];
+            const dump = {
+                _meta: {
+                    exportedAt: new Date().toISOString(),
+                    totalKeys: allKeys.length,
+                    KV_REST_API_URL: process.env.KV_REST_API_URL || null,
+                    KV_REST_API_TOKEN: process.env.KV_REST_API_TOKEN || null
+                }
+            };
+
+            for (const key of allKeys) {
+                // Skip short-lived session locks and ephemeral tokens
+                if (
+                    key.startsWith('auth_token:') ||
+                    key.startsWith('auth_session_log:') ||
+                    key.startsWith('tg_session:') ||
+                    key.startsWith('rate_limit:') ||
+                    key.startsWith('ai_rate:')
+                ) {
+                    continue;
+                }
+                try {
+                    const type = await queryKV(['TYPE', key]);
+                    if (type === 'string') {
+                        dump[key] = { type, value: await queryKV(['GET', key]) };
+                    } else if (type === 'hash') {
+                        dump[key] = { type, value: await queryKV(['HGETALL', key]) };
+                    } else if (type === 'list') {
+                        dump[key] = { type, value: await queryKV(['LRANGE', key, 0, -1]) };
+                    } else if (type === 'set') {
+                        dump[key] = { type, value: await queryKV(['SMEMBERS', key]) };
+                    } else if (type === 'zset') {
+                        dump[key] = { type, value: await queryKV(['ZRANGE', key, 0, -1, 'WITHSCORES']) };
+                    }
+                } catch (keyErr) {
+                    console.warn(`Skipping key ${key}:`, keyErr.message);
+                }
+            }
+
+            res.setHeader('Content-Disposition', 'attachment; filename="kv-backup.json"');
+            res.setHeader('Content-Type', 'application/json');
+            return res.status(200).send(JSON.stringify(dump, null, 2));
+        } catch (err) {
+            return res.status(500).json({ error: 'Export failed: ' + err.message });
         }
     }
 
-    // Route admin requests (e.g. /api/admin/login, /api/admin/save, /api/admin/get)
+    // 4. Route admin requests (e.g. /api/admin/login, /api/admin/save, /api/admin/get)
     if (route === 'admin' || (typeof route === 'string' && route.startsWith('admin'))) {
         return adminHandler(req, res);
     }
 
-    // Route all other API requests
+    // 5. Route all other API requests
     switch (route) {
         case 'data':
             return dataHandler(req, res);
