@@ -99,3 +99,7 @@ function getExpiriesForMonth(year, month, dayOfWeek) {
     
     return expiries;
 }
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = marketHolidays2026;
+}

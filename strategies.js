@@ -845,6 +845,98 @@ const strategiesData = [
         }
     },
     {
+        "id": "discretionary-nifty-sniper",
+        "sheet": "STBT",
+        "name": "Nifty Sniper",
+        "strategy_category": "discretionary",
+        "index": "Nifty",
+        "expiry": "Weekly",
+        "dte": "Upto 6 DTE",
+        "day": "Any",
+        "time": "13:00:00",
+        "type": "Either CE or PE",
+        "rounding_step": 50,
+        "setup": {
+            "notes": "Credit spread on weekly Nifty options (at-the-money short leg, hedge 200 points away). Trade fakeouts at POC before 1 PM.",
+            "PE": [
+                "Sell 1 ATM PE",
+                "Buy 1 ATM - 200 PE"
+            ],
+            "CE": [
+                "Sell 1 ATM CE",
+                "Buy 1 ATM + 200 CE"
+            ]
+        },
+        "strike_example": {
+            "ATM": 25000,
+            "notes": "Triggered when price fakes out at the POC (Point of Control) line drawn from prior day 5-min chart.",
+            "CE": [
+                "Sell 1 25000 CE",
+                "Buy 1 25200 CE"
+            ],
+            "PE": [
+                "Sell 1 25000 PE",
+                "Buy 1 24800 PE"
+            ]
+        },
+        "conditions": {
+            "credit_range": "Trade fakeouts at the POC (Point of Control), not breakouts",
+            "refine_credit": "Breakdown + fakeout back above POC: buy (bullish view, sell puts)\nBreakout + fakeout back below POC: sell (bearish view, sell calls)\nDo not trade simple reversals at support/resistance; wait for the trap.",
+            "refine_blue_line": "Draw POC the evening before using 5-min chart, first to last candle of prior session. Only trade signals that trigger before 1 PM; post-1 PM signals are skipped (market needs time to move).\nInstrument: credit spread on weekly Nifty options (at-the-money short leg, hedge 200 points away)"
+        },
+        "exit": {
+            "target": "1.0 % Profit",
+            "sl": "Stop loss: recent high/low of the fakeout candle",
+            "duration": "Intraday / till 1 PM session"
+        }
+    },
+    {
+        "id": "discretionary-volcano-calendar",
+        "sheet": "Monthly",
+        "name": "Volcano Calendar",
+        "strategy_category": "discretionary",
+        "index": "Nifty",
+        "expiry": "Monthly + Next-Month",
+        "dte": "28 - 35 DTE",
+        "day": "Last Fri of month",
+        "time": "15:30:00",
+        "type": "PE & CE",
+        "rounding_step": 50,
+        "setup": {
+            "notes": "Low-IV environment strategy (VIX 10-12). Calendar spread component: sell near-month, buy far-month for positive Vega.",
+            "PE": [
+                "Sell 1 Near-Month ATM PE",
+                "Buy 1 Far-Month ATM PE"
+            ],
+            "CE": [
+                "Sell 1 Near-Month ATM CE",
+                "Buy 1 Far-Month ATM CE"
+            ]
+        },
+        "strike_example": {
+            "ATM": 25000,
+            "notes": "Deployed on the last Friday of the month when India VIX is in the 10–12 range.",
+            "CE": [
+                "Sell 1 Current Expiry 25000 CE",
+                "Buy 1 Next Month 25000 CE"
+            ],
+            "PE": [
+                "Sell 1 Current Expiry 25000 PE",
+                "Buy 1 Next Month 25000 PE"
+            ]
+        },
+        "conditions": {
+            "credit_range": "Positive Vega debit / calendar entry",
+            "refine_credit": "Ideal entry: VIX in 10–12 range where IV expansion is likely. Caution: deploying when VIX is already elevated risks Vega working against the position.",
+            "refine_blue_line": "Holding period: 15–20 days maximum. Deploy at 3:30–3:35 PM on last Friday."
+        },
+        "exit": {
+            "target": "2.0 % Profit",
+            "sl": "2.5 % Loss",
+            "duration": "15 to 20 days maximum"
+        }
+    },
+    {
         "id": "adjustment-batman-repair-ce",
         "sheet": "Adjustments",
         "name": "Batman Up-Move CE Roll Repair",

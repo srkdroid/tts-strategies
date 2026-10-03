@@ -1,19 +1,26 @@
-const fs = require('fs');
-const path = require('path');
 const { verifyToken, verifyAdminToken, parseCookies } = require('./common/auth');
 const { queryKV } = require('./common/redis');
 
+let seedStrategies = [];
+try {
+    seedStrategies = require('../../strategies.js');
+} catch (e) {
+    console.warn("Could not require strategies.js statically:", e.message);
+}
+
+let seedHolidays = {};
+try {
+    seedHolidays = require('../../holidays.js');
+} catch (e) {
+    console.warn("Could not require holidays.js statically:", e.message);
+}
+
 async function runStrategiesMigration() {
     try {
-        const strategiesPath = path.join(process.cwd(), 'strategies.js');
-        if (fs.existsSync(strategiesPath)) {
-            const content = fs.readFileSync(strategiesPath, 'utf8');
-            const match = content.match(/(?:const|let)?\s*strategiesData\s*=\s*(\[[\s\S]*\])\s*;?/);
-            if (match) {
-                await queryKV(['SET', 'strategies', match[1]]);
-                console.log("Migration: strategies.js imported to Vercel KV");
-                return JSON.parse(match[1]);
-            }
+        if (Array.isArray(seedStrategies) && seedStrategies.length > 0) {
+            await queryKV(['SET', 'strategies', JSON.stringify(seedStrategies)]);
+            console.log("Migration: strategies.js imported to Vercel KV via require");
+            return seedStrategies;
         }
     } catch (e) {
         console.error("Strategies migration failed:", e);
@@ -23,15 +30,10 @@ async function runStrategiesMigration() {
 
 async function runHolidaysMigration() {
     try {
-        const holPath = path.join(process.cwd(), 'holidays.js');
-        if (fs.existsSync(holPath)) {
-            const content = fs.readFileSync(holPath, 'utf8');
-            const match = content.match(/(?:const|let)\s+marketHolidays2026\s*=\s*(\{[\s\S]*?\});/);
-            if (match) {
-                await queryKV(['SET', 'holidays', match[1]]);
-                console.log("Migration: holidays.js imported to Vercel KV");
-                return JSON.parse(match[1]);
-            }
+        if (seedHolidays && typeof seedHolidays === 'object') {
+            await queryKV(['SET', 'holidays', JSON.stringify(seedHolidays)]);
+            console.log("Migration: holidays.js imported to Vercel KV via require");
+            return seedHolidays;
         }
     } catch (e) {
         console.error("Holidays migration failed:", e);
@@ -40,6 +42,7 @@ async function runHolidaysMigration() {
 }
 
 module.exports = async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     try {
         const cookies = parseCookies(req.headers.cookie);
         const token = cookies['session_token'];
@@ -133,6 +136,26 @@ module.exports = async (req, res) => {
                         console.log("Renamed 'Iron Fly - Nifty' to 'Axis Fly - Nifty' in Redis KV");
                     } catch (e) {
                         console.error("Failed to persist renamed strategy:", e);
+                    }
+                }
+
+                // Auto-merge any missing master strategies from seedStrategies into KV
+                if (Array.isArray(strategiesData) && Array.isArray(seedStrategies) && seedStrategies.length > 0) {
+                    let added = false;
+                    seedStrategies.forEach(diskStrat => {
+                        const exists = strategiesData.some(s => s && (s.id === diskStrat.id || s.name === diskStrat.name));
+                        if (!exists) {
+                            strategiesData.push(diskStrat);
+                            added = true;
+                        }
+                    });
+                    if (added) {
+                        try {
+                            await queryKV(['SET', 'strategies', JSON.stringify(strategiesData)]);
+                            console.log("Auto-merged missing seed strategies (including Nifty Sniper & Axis Fly) into KV database");
+                        } catch (saveErr) {
+                            console.error("Failed to persist auto-merged strategies:", saveErr);
+                        }
                     }
                 }
             }
