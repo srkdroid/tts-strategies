@@ -158,6 +158,18 @@ module.exports = async (req, res) => {
                         }
                     }
                 }
+
+                // Remove Volcano Calendar from KV strategies if present (pending verification)
+                const hadVolcano = strategiesData.some(s => s && (s.id === 'discretionary-volcano-calendar' || s.name === 'Volcano Calendar'));
+                if (hadVolcano) {
+                    strategiesData = strategiesData.filter(s => s && s.id !== 'discretionary-volcano-calendar' && s.name !== 'Volcano Calendar');
+                    try {
+                        await queryKV(['SET', 'strategies', JSON.stringify(strategiesData)]);
+                        console.log("Removed Volcano Calendar from KV strategies (pending details verification)");
+                    } catch (remErr) {
+                        console.error("Failed to update KV after removing Volcano Calendar:", remErr);
+                    }
+                }
             }
 
             // Fetch holidays from KV

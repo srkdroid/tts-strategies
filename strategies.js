@@ -891,52 +891,6 @@ const strategiesData = [
         }
     },
     {
-        "id": "discretionary-volcano-calendar",
-        "sheet": "Monthly",
-        "name": "Volcano Calendar",
-        "strategy_category": "discretionary",
-        "index": "Nifty",
-        "expiry": "Monthly + Next-Month",
-        "dte": "28 - 35 DTE",
-        "day": "Last Fri of month",
-        "time": "15:30:00",
-        "type": "PE & CE",
-        "rounding_step": 50,
-        "setup": {
-            "notes": "Low-IV environment strategy (VIX 10-12). Calendar spread component: sell near-month, buy far-month for positive Vega.",
-            "PE": [
-                "Sell 1 Near-Month ATM PE",
-                "Buy 1 Far-Month ATM PE"
-            ],
-            "CE": [
-                "Sell 1 Near-Month ATM CE",
-                "Buy 1 Far-Month ATM CE"
-            ]
-        },
-        "strike_example": {
-            "ATM": 25000,
-            "notes": "Deployed on the last Friday of the month when India VIX is in the 10–12 range.",
-            "CE": [
-                "Sell 1 Current Expiry 25000 CE",
-                "Buy 1 Next Month 25000 CE"
-            ],
-            "PE": [
-                "Sell 1 Current Expiry 25000 PE",
-                "Buy 1 Next Month 25000 PE"
-            ]
-        },
-        "conditions": {
-            "credit_range": "Positive Vega debit / calendar entry",
-            "refine_credit": "Ideal entry: VIX in 10–12 range where IV expansion is likely. Caution: deploying when VIX is already elevated risks Vega working against the position.",
-            "refine_blue_line": "Holding period: 15–20 days maximum. Deploy at 3:30–3:35 PM on last Friday."
-        },
-        "exit": {
-            "target": "2.0 % Profit",
-            "sl": "2.5 % Loss",
-            "duration": "15 to 20 days maximum"
-        }
-    },
-    {
         "id": "adjustment-batman-repair-ce",
         "sheet": "Adjustments",
         "name": "Batman Up-Move CE Roll Repair",
