@@ -203,8 +203,9 @@ function calculateDeploymentsForRange(startDate, endDate) {
                     }
                 } else if (rule.type === "preceding_month_friday") {
                     if (expiry.isMonthly) {
-                        const expMonth = expiry.actual.getMonth();
-                        const expYear = expiry.actual.getFullYear();
+                        const targetExpiry = expiry.original || expiry.actual;
+                        const expMonth = targetExpiry.getMonth();
+                        const expYear = targetExpiry.getFullYear();
                         // Collect all Fridays in the preceding month
                         const precMonth = (expMonth - 1 + 12) % 12;
                         const precYear = expMonth === 0 ? expYear - 1 : expYear;
@@ -219,7 +220,7 @@ function calculateDeploymentsForRange(startDate, endDate) {
                         // If its DTE < dte_min (too close), it's invalid
                         const candidates = fridays.slice(1); // [2nd, 3rd, 4th, ...]
                         for (const fri of candidates) {
-                            const diff = Math.round((expiry.actual - fri) / (1000 * 60 * 60 * 24));
+                            const diff = Math.round((targetExpiry - fri) / (1000 * 60 * 60 * 24));
                             if (diff <= rule.dte_max) {
                                 // Found a Friday within the max DTE window
                                 if (diff >= rule.dte_min) {
@@ -227,7 +228,7 @@ function calculateDeploymentsForRange(startDate, endDate) {
                                 }
                                 break; // stop at first Friday that's within max DTE
                             }
-                            // diff > dte_max means this Friday is too far from expiry — try next Friday
+                            // diff > dte_max means this Friday is too far from expiry - try next Friday
                         }
                     }
                 }
@@ -271,12 +272,13 @@ function calculateDeploymentsForRange(startDate, endDate) {
                     }
                 } else if (strategy.sheet === "Monthly" && expiry.isMonthly) {
                     if (strategy.name === "Batman 1:3:2" || strategy.name === "Double Decker" || strategy.name === "HNI (Nifty)" || strategy.name === "No Brainer (Nifty)") {
-                        let expMonth = expiry.actual.getMonth();
-                        let expYear = expiry.actual.getFullYear();
+                        const targetExp = expiry.original || expiry.actual;
+                        let expMonth = targetExp.getMonth();
+                        let expYear = targetExp.getFullYear();
                         let dTemp = new Date(expYear, expMonth - 1, 1);
                         while (dTemp.getMonth() === (expMonth - 1 + 12) % 12) {
                             if (dTemp.getDay() === 5) {
-                                let diff = Math.round((expiry.actual - dTemp) / (1000 * 60 * 60 * 24));
+                                let diff = Math.round((targetExp - dTemp) / (1000 * 60 * 60 * 24));
                                 if (diff >= 29 && diff <= 44) {
                                     nominalDate = new Date(dTemp.getTime());
                                     break;
