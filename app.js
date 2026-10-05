@@ -198,7 +198,8 @@ function calculateDeploymentsForRange(startDate, endDate) {
             if (rule) {
                 if (rule.type === "expiry_offset") {
                     if (!rule.monthly_only || expiry.isMonthly) {
-                        nominalDate = new Date(expiry.actual.getTime());
+                        const targetExpiry = expiry.original || expiry.actual;
+                        nominalDate = new Date(targetExpiry.getTime());
                         nominalDate.setDate(nominalDate.getDate() + rule.offset_days);
                     }
                 } else if (rule.type === "preceding_month_friday") {
@@ -234,40 +235,41 @@ function calculateDeploymentsForRange(startDate, endDate) {
                 }
             } else {
                 // Fallback for legacy database strategies without deploy_rule field
+                const targetExpiry = expiry.original || expiry.actual;
                 if (strategy.sheet === "STBT") {
                     if (strategy.name === "Nifty 3D Ladder") {
-                        nominalDate = new Date(expiry.actual.getTime());
+                        nominalDate = new Date(targetExpiry.getTime());
                         nominalDate.setDate(nominalDate.getDate() - 5);
                     } else if (strategy.name === "CE Dominator") {
-                        nominalDate = new Date(expiry.actual.getTime());
+                        nominalDate = new Date(targetExpiry.getTime());
                         nominalDate.setDate(nominalDate.getDate() - 4);
                     } else if (strategy.name === "Fin Nifty 2D Ladder") {
                         if (expiry.isMonthly) {
-                            nominalDate = new Date(expiry.actual.getTime());
+                            nominalDate = new Date(targetExpiry.getTime());
                             nominalDate.setDate(nominalDate.getDate() - 4);
                         }
                     } else if (strategy.name === "Sensex No brainer") {
-                        nominalDate = new Date(expiry.actual.getTime());
+                        nominalDate = new Date(targetExpiry.getTime());
                         nominalDate.setDate(nominalDate.getDate() - 6);
                     } else if (strategy.name === "Matrix Calendar") {
-                        nominalDate = new Date(expiry.actual.getTime());
+                        nominalDate = new Date(targetExpiry.getTime());
                         nominalDate.setDate(nominalDate.getDate() - 11);
                     } else {
-                        nominalDate = new Date(expiry.actual.getTime());
+                        nominalDate = new Date(targetExpiry.getTime());
                         nominalDate.setDate(nominalDate.getDate() - 5);
                     }
                 } else if (strategy.sheet === "BiWkly") {
                     if (strategy.name === "BWB") {
-                        nominalDate = new Date(expiry.actual.getTime());
+                        nominalDate = new Date(targetExpiry.getTime());
                         nominalDate.setDate(nominalDate.getDate() - 12);
                     } else if (strategy.name === "Broken Wing") {
-                        nominalDate = new Date(expiry.actual.getTime());
+                        nominalDate = new Date(targetExpiry.getTime());
                         nominalDate.setDate(nominalDate.getDate() - 7);
                     } else if (strategy.name === "HNI" || strategy.name === "Blaze Butterfly" || strategy.name === "Blaze BF (Nifty)" || strategy.id === "biweekly-blazeBF-1") {
-                        nominalDate = new Date(expiry.actual.getTime());
+                        nominalDate = new Date(targetExpiry.getTime());
                         nominalDate.setDate(nominalDate.getDate() - 8);
                     } else {
-                        nominalDate = new Date(expiry.actual.getTime());
+                        nominalDate = new Date(targetExpiry.getTime());
                         nominalDate.setDate(nominalDate.getDate() - 8);
                     }
                 } else if (strategy.sheet === "Monthly" && expiry.isMonthly) {
