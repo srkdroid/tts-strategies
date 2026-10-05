@@ -1933,6 +1933,15 @@ select:focus-visible,
     width: 100%;
 }
 
+/* Same-Day Rollover Visual Separation (Morning Exit vs Afternoon Entry) */
+.flow-bar-container.same-day-roll-exit {
+    padding-right: 22px;
+}
+
+.flow-bar-container.same-day-roll-entry {
+    padding-left: 22px;
+}
+
 /* Lifespan bar line (substantial 7px thickness) */
 .flow-bar {
     width: 100%;

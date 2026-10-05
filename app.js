@@ -3068,8 +3068,19 @@ function renderCapitalFlow() {
                 const startCol = finalStartIdx + 3;
                 const endCol = finalEndIdx + 4;
                 
+                const hasSameDayRollExit = strategyDeployments.some(other => 
+                    other !== dep && 
+                    formatDateString(other.actualDate) === formatDateString(dep.exitDate)
+                );
+                const hasSameDayRollEntry = strategyDeployments.some(other => 
+                    other !== dep && 
+                    formatDateString(other.exitDate) === formatDateString(dep.actualDate)
+                );
+
                 const barContainer = document.createElement("div");
-                barContainer.className = "flow-bar-container";
+                barContainer.className = "flow-bar-container" + 
+                    (hasSameDayRollExit ? " same-day-roll-exit" : "") + 
+                    (hasSameDayRollEntry ? " same-day-roll-entry" : "");
                 barContainer.style.gridColumn = `${startCol} / ${endCol}`;
                 barContainer.style.gridRow = `${rowIdx}`;
                 
@@ -3094,7 +3105,11 @@ function renderCapitalFlow() {
                 
                 const deployLabel = dep.actualDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
                 const exitLabel = dep.exitDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-                barContainer.title = `${strat.name} (${strat.index})\nDeployed: ${deployLabel}\nExit: ${exitLabel}`;
+                const deployTimeStr = strat.time ? ` (${strat.time.slice(0, 5)})` : "";
+                const exitTimeStr = (strat.exit && strat.exit.duration && strat.exit.duration.includes("9:30")) ? " (09:30 AM)" : 
+                                    (strat.exit && strat.exit.duration && strat.exit.duration.includes("3:00")) ? " (03:00 PM)" : "";
+                const rollNote = (hasSameDayRollExit || hasSameDayRollEntry) ? "\n⚡ Same-day rollover (Morning exit ➔ Afternoon entry, no capital overlap)" : "";
+                barContainer.title = `${strat.name} (${strat.index})\nDeployed: ${deployLabel}${deployTimeStr}\nExit: ${exitLabel}${exitTimeStr}${rollNote}`;
                 
                 barContainer.addEventListener("click", () => {
                     showStrategyDetails(dep);
