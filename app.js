@@ -2867,7 +2867,7 @@ function navigateFlowMonth(dir) {
 
 // Helper to get start symbol shape
 function getStartSymbol(sheet, time) {
-    const isSolid = !time || time.startsWith("15:16");
+    const isSolid = !time || time.startsWith("15:30") || time.startsWith("15:16");
     if (sheet === "Monthly") {
         return isSolid ? "■" : "□";
     } else if (sheet === "BiWkly") {

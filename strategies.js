@@ -8,7 +8,7 @@ const strategiesData = [
         "expiry": "Monthly, Next Month",
         "dte": "39 - 44 DTE",
         "day": "Fri",
-        "time": "15:16:00",
+        "time": "15:30:00",
         "type": "PE & CE",
         "setup": {
             "PE": [
@@ -65,7 +65,7 @@ const strategiesData = [
         "expiry": "Monthly, Next Month",
         "dte": "29 - 34 DTE",
         "day": "Fri",
-        "time": "15:16:00",
+        "time": "15:30:00",
         "type": "CE Only",
         "setup": {
             "CE": [
@@ -113,7 +113,7 @@ const strategiesData = [
         "expiry": "Monthly",
         "dte": "12 DTE",
         "day": "Thur",
-        "time": "15:16:00",
+        "time": "15:30:00",
         "type": "CE Only",
         "setup": {
             "CE": [
@@ -160,7 +160,7 @@ const strategiesData = [
         "expiry": "Monthly",
         "dte": "39 - 44 DTE",
         "day": "Fri",
-        "time": "15:16:00",
+        "time": "15:30:00",
         "type": "CE Only",
         "setup": {
             "CE": [
@@ -259,7 +259,7 @@ const strategiesData = [
         "expiry": "Monthly, Next Month",
         "dte": "39 - 43 DTE",
         "day": "Fri",
-        "time": "15:16:00",
+        "time": "15:30:00",
         "type": "PE & CE",
         "setup": {
             "PE": [
@@ -320,7 +320,7 @@ const strategiesData = [
         "expiry": "Monthly, Next Month",
         "dte": "39 - 46 DTE",
         "day": "Fri",
-        "time": "15:16:00",
+        "time": "15:30:00",
         "type": "PE & CE",
         "setup": {
             "PE": [
@@ -374,7 +374,7 @@ const strategiesData = [
         "expiry": "Bi Weekly",
         "dte": "12 DTE",
         "day": "Thur",
-        "time": "15:16:00",
+        "time": "15:30:00",
         "type": "PE Only",
         "setup": {
             "PE": [
@@ -421,7 +421,7 @@ const strategiesData = [
         "expiry": "Weekly",
         "dte": "Previous Expiry day",
         "day": "Thur",
-        "time": "15:16:00",
+        "time": "15:30:00",
         "type": "PE Only",
         "setup": {
             "PE": [
@@ -515,7 +515,7 @@ const strategiesData = [
         "expiry": "Bi Weekly",
         "dte": "8 DTE",
         "day": "Monday",
-        "time": "15:16:00",
+        "time": "15:30:00",
         "type": "PE Only",
         "setup": {
             "PE": [
@@ -562,7 +562,7 @@ const strategiesData = [
         "expiry": "Weekly - STBT",
         "dte": "3 DTE",
         "day": "Thur",
-        "time": "15:16:00",
+        "time": "15:30:00",
         "type": "CE Only",
         "setup": {
             "CE": [
@@ -612,7 +612,7 @@ const strategiesData = [
         "expiry": "Weekly - STBT",
         "dte": "2 DTE",
         "day": "Fri",
-        "time": "15:16:00",
+        "time": "15:30:00",
         "type": "CE Only",
         "setup": {
             "CE": [
@@ -660,7 +660,7 @@ const strategiesData = [
         "expiry": "Bi-Weekly - STBT",
         "dte": "11 DTE",
         "day": "Fri",
-        "time": "15:16:00",
+        "time": "15:30:00",
         "type": "CE Only",
         "setup": {
             "CE": [
@@ -710,7 +710,7 @@ const strategiesData = [
         "expiry": "Weekly - STBT",
         "dte": "6 DTE",
         "day": "Fri",
-        "time": "15:16:00",
+        "time": "15:30:00",
         "type": "CE Only",
         "setup": {
             "CE": [
@@ -758,7 +758,7 @@ const strategiesData = [
         "expiry": "Weekly - STBT",
         "dte": "2 DTE",
         "day": "Last Fri before Expiry",
-        "time": "15:16:00",
+        "time": "15:30:00",
         "type": "CE Only",
         "setup": {
             "CE": [

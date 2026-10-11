@@ -139,6 +139,23 @@ module.exports = async (req, res) => {
                     }
                 }
 
+                // Migrate any strategies with time '15:16:00' or '15:16' to '15:30:00' in Redis KV
+                let timeUpdated = false;
+                (strategiesData || []).forEach(strat => {
+                    if (strat && (strat.time === '15:16:00' || strat.time === '15:16')) {
+                        strat.time = '15:30:00';
+                        timeUpdated = true;
+                    }
+                });
+                if (timeUpdated) {
+                    try {
+                        await queryKV(['SET', 'strategies', JSON.stringify(strategiesData)]);
+                        console.log("Updated entry time from 15:16 to 15:30:00 in Redis KV");
+                    } catch (timeErr) {
+                        console.error("Failed to persist updated strategy times:", timeErr);
+                    }
+                }
+
                 // Auto-merge any missing master strategies from seedStrategies into KV
                 if (Array.isArray(strategiesData) && Array.isArray(seedStrategies) && seedStrategies.length > 0) {
                     let added = false;

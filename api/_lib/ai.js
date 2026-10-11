@@ -692,7 +692,7 @@ module.exports = async (req, res) => {
             const deployLines = todayDeployments.map(d => {
                 const s = d.strategy;
                 const exitDateStr = d.exitDate ? formatDateString(d.exitDate) : 'N/A';
-                return `• DEPLOY TODAY: ${s.name} [${s.index}] (${s.sheet}) at ${s.time || '15:16'} | DTE: ${s.dte}, Target: ${s.exit?.target || 'N/A'}, SL: ${s.exit?.sl || 'N/A'}, Credit: ${s.conditions?.credit_range || 'N/A'}, Scheduled Exit: ${exitDateStr}`;
+                return `• DEPLOY TODAY: ${s.name} [${s.index}] (${s.sheet}) at ${s.time || '15:30'} | DTE: ${s.dte}, Target: ${s.exit?.target || 'N/A'}, SL: ${s.exit?.sl || 'N/A'}, Credit: ${s.conditions?.credit_range || 'N/A'}, Scheduled Exit: ${exitDateStr}`;
             });
 
             const exitLines = todayExits.map(d => {
@@ -837,7 +837,7 @@ ${todayExits.length > 0 ? `Exits today (${todayExits.length}): ${exitNames}. Hig
             // Format context string safely with XML boundaries
             const todayStr = new Date().toISOString().split('T')[0];
             const sched = context.todaySchedule || {};
-            const depList = (sched.deploymentsToday || []).map(d => `${d.strategy.name} [${d.strategy.index}] (Deploy Time: ${d.strategy.time || '15:16'}, DTE: ${d.strategy.dte}, Target: ${d.strategy.exit?.target || 'N/A'}, SL: ${d.strategy.exit?.sl || 'N/A'}, Credit: ${d.strategy.conditions?.credit_range || 'N/A'})`).join('\n• ');
+            const depList = (sched.deploymentsToday || []).map(d => `${d.strategy.name} [${d.strategy.index}] (Deploy Time: ${d.strategy.time || '15:30'}, DTE: ${d.strategy.dte}, Target: ${d.strategy.exit?.target || 'N/A'}, SL: ${d.strategy.exit?.sl || 'N/A'}, Credit: ${d.strategy.conditions?.credit_range || 'N/A'})`).join('\n• ');
             const exitList = (sched.exitsToday || []).map(d => `${d.strategy.name} [${d.strategy.index}] (Deployed: ${formatDateString(d.actualDate)}, Target: ${d.strategy.exit?.target || 'N/A'}, SL: ${d.strategy.exit?.sl || 'N/A'})`).join('\n• ');
             const activeList = (sched.activeHoldingPositions || []).slice(0, 6).map(d => `${d.strategy.name} [${d.strategy.index}] (Deployed: ${formatDateString(d.actualDate)}, Exit by: ${formatDateString(d.exitDate)})`).join('\n• ');
 
