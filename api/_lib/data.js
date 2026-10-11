@@ -187,6 +187,18 @@ module.exports = async (req, res) => {
                         console.error("Failed to update KV after removing Volcano Calendar:", remErr);
                     }
                 }
+
+                // Remove Batman Up-Move CE Roll Repair from KV strategies if present
+                const hadBatmanRepair = strategiesData.some(s => s && (s.id === 'adjustment-batman-repair-ce' || s.name === 'Batman Up-Move CE Roll Repair'));
+                if (hadBatmanRepair) {
+                    strategiesData = strategiesData.filter(s => s && s.id !== 'adjustment-batman-repair-ce' && s.name !== 'Batman Up-Move CE Roll Repair');
+                    try {
+                        await queryKV(['SET', 'strategies', JSON.stringify(strategiesData)]);
+                        console.log("Removed Batman Up-Move CE Roll Repair from KV strategies");
+                    } catch (remErr) {
+                        console.error("Failed to update KV after removing Batman Up-Move CE Roll Repair:", remErr);
+                    }
+                }
             }
 
             // Fetch holidays from KV

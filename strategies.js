@@ -889,44 +889,6 @@ const strategiesData = [
             "sl": "Stop loss: recent high/low of the fakeout candle",
             "duration": "Intraday / till 1 PM session"
         }
-    },
-    {
-        "id": "adjustment-batman-repair-ce",
-        "sheet": "Adjustments",
-        "name": "Batman Up-Move CE Roll Repair",
-        "strategy_category": "adjustments",
-        "index": "Nifty",
-        "expiry": "Monthly",
-        "dte": "Position Repair",
-        "day": "Adjustment Trigger",
-        "time": "Intraday Test",
-        "type": "CE Adjustment",
-        "rounding_step": 50,
-        "setup": {
-            "CE": [
-                "Close Original CE Buy Leg",
-                "Roll CE Short Legs 200 pts OTM",
-                "Buy 1 Outer Hedge CE 400 pts OTM"
-            ]
-        },
-        "strike_example": {
-            "ATM": 25000,
-            "notes": "Triggered when underlying moves > 2% towards CE Sell legs within 3 days of entry",
-            "CE": [
-                "Close 25400 CE",
-                "Sell 3 25800 CE",
-                "Buy 2 26600 CE"
-            ]
-        },
-        "conditions": {
-            "credit_range": "Neutralize Delta",
-            "refine_credit": "Reduce upside risk profile to flat delta."
-        },
-        "exit": {
-            "target": "Break-even or +0.5% net",
-            "sl": "Original Batman SL + 0.5%",
-            "duration": "Until Monthly Expiry"
-        }
     }
 ];
 
