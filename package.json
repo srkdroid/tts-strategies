@@ -1,0 +1,13 @@
+{
+  "name": "tts-strategies",
+  "version": "1.0.0",
+  "main": "local-server.js",
+  "scripts": {
+    "start": "node local-server.js",
+    "export-kv": "node scripts/kv-export.js",
+    "import-kv": "node scripts/kv-import.js"
+  },
+  "dependencies": {
+    "redis": "^6.3.0"
+  }
+}
