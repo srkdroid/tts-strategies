@@ -89,4 +89,36 @@ server.listen(PORT, () => {
     console.log(`TTS Options Strategy Calendar local server running!`);
     console.log(`URL: http://localhost:${PORT}/index.html`);
     console.log(`=============================================================\n`);
+
+    // Start background alert timer
+    startAlertWorker();
 });
+
+// Background PnL Alert Polling Worker Timer
+let alertTimer = null;
+
+async function startAlertWorker() {
+    try {
+        const { evaluateAlertsCycle } = require('./api/_lib/alert-worker');
+        const { getUpstoxConfig } = require('./api/_lib/upstox');
+        const config = await getUpstoxConfig();
+        const intervalSec = config.pollInterval || 60;
+
+        console.log(`[AlertWorker] Background alert worker armed (interval: ${intervalSec}s, active window: 09:15 - 15:40 IST).`);
+        
+        if (alertTimer) clearInterval(alertTimer);
+
+        alertTimer = setInterval(async () => {
+            try {
+                const res = await evaluateAlertsCycle();
+                if (res.status === 'EVALUATED') {
+                    console.log(`[AlertWorker] Evaluated ${res.totalOpenTrades} open trades in ${res.durationMs}ms. Triggered: ${res.triggeredCount}`);
+                }
+            } catch (err) {
+                console.warn('[AlertWorker] Tick error:', err.message);
+            }
+        }, intervalSec * 1000);
+    } catch (e) {
+        console.warn('[AlertWorker] Worker initialization deferred:', e.message);
+    }
+}

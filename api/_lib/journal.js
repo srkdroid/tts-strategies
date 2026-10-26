@@ -156,6 +156,7 @@ module.exports = async (req, res) => {
                 }
 
                 await queryKV(['SET', kvKey, JSON.stringify(currentTrades)]);
+                try { await queryKV(['SADD', 'active_traders', phone]); } catch (e) {}
                 logActivity(phone, isNew ? 'JOURNAL_ADD_TRADE' : 'JOURNAL_EDIT_TRADE', `${isNew ? 'Added new trade' : 'Updated trade'}: ${trade.strategyName || 'Trade'} (${trade.status || 'OPEN'})`, { tradeId: trade.id, strategyName: trade.strategyName, pnl: trade.pnlNet });
                 return res.status(200).json({ success: true, message: 'Trade saved successfully', trade });
             }
@@ -196,6 +197,7 @@ module.exports = async (req, res) => {
                 currentTrades[existingIdx] = trade;
 
                 await queryKV(['SET', kvKey, JSON.stringify(currentTrades)]);
+                try { await queryKV(['SADD', 'active_traders', phone]); } catch (e) {}
                 logActivity(phone, 'JOURNAL_EXIT_TRADE', `Closed trade: ${trade.strategyName || 'Trade'} with Net P&L ₹${(trade.pnlNet || 0).toLocaleString('en-IN')}`, { tradeId: trade.id, strategyName: trade.strategyName, pnl: trade.pnlNet });
                 return res.status(200).json({ success: true, message: 'Trade position closed successfully', trade });
             }
@@ -204,6 +206,7 @@ module.exports = async (req, res) => {
                 const deletedTrade = currentTrades.find(t => t.id === data.id);
                 currentTrades = currentTrades.filter(t => t.id !== data.id);
                 await queryKV(['SET', kvKey, JSON.stringify(currentTrades)]);
+                try { await queryKV(['SADD', 'active_traders', phone]); } catch (e) {}
                 logActivity(phone, 'JOURNAL_DELETE_TRADE', `Deleted trade record: ${deletedTrade ? deletedTrade.strategyName : data.id}`, { tradeId: data.id });
                 return res.status(200).json({ success: true, message: 'Trade record deleted successfully' });
             }

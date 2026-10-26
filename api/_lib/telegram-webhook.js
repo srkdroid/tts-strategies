@@ -1,30 +1,8 @@
 const { normalizePhoneNumber } = require('./common/auth');
 const { queryKV } = require('./common/redis');
+const { sendTelegramMessage } = require('./common/telegram');
 
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
-
-async function sendTelegramMessage(chatId, text, replyMarkup = null) {
-    if (!BOT_TOKEN) {
-        console.warn("TELEGRAM_BOT_TOKEN environment variable not configured.");
-        return;
-    }
-    const body = { chat_id: chatId, text };
-    if (replyMarkup) {
-        body.reply_markup = replyMarkup;
-    }
-    try {
-        await fetch(`${TELEGRAM_API}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-    } catch (e) {
-        console.error("Failed to send telegram message:", e);
-    }
-}
-
-module.exports = async (req, res) => {
+const handler = async (req, res) => {
     if (req.method !== 'POST') {
         res.setHeader('Allow', ['POST']);
         return res.status(405).json({ error: 'Method Not Allowed' });
@@ -145,6 +123,13 @@ module.exports = async (req, res) => {
                     // Map Telegram Chat ID to phone number for future one-click widget logins
                     await queryKV(['SET', `tg_user:${fromId}`, contactPhone]);
 
+                    // Map phone number to Telegram Chat ID for automated PnL alerts
+                    await queryKV(['SET', `tg_chat:${contactPhone}`, String(chatId)]);
+                    const digits10 = contactPhone.replace(/\D/g, '').slice(-10);
+                    if (digits10) {
+                        await queryKV(['SET', `tg_chat:${digits10}`, String(chatId)]);
+                    }
+
                     // Cleanup session
                     await queryKV(['DEL', `tg_session:${chatId}`]);
 
@@ -167,3 +152,6 @@ module.exports = async (req, res) => {
         return res.status(200).json({ success: true, error: 'Internal server error' }); // Always return 200 to Telegram to prevent retries
     }
 };
+
+handler.sendTelegramMessage = sendTelegramMessage;
+module.exports = handler;

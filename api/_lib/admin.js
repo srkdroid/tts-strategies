@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { verifyAdminToken, generateAdminToken, parseCookies } = require('./common/auth');
 const { queryKV } = require('./common/redis');
+const { getUpstoxConfig, saveUpstoxConfig, maskToken, testUpstoxConnection } = require('./upstox');
 
 const ADMIN_PASS = process.env.ADMIN_PASSWORD;
 if (!ADMIN_PASS) {
@@ -119,6 +120,19 @@ module.exports = async (req, res) => {
                 adminOnlyMode = aomRes === 'true' || aomRes === '1';
             } catch (e) {}
 
+            let upstox_config = null;
+            try {
+                const uCfg = await getUpstoxConfig();
+                upstox_config = {
+                    hasToken: Boolean(uCfg.token),
+                    tokenMasked: maskToken(uCfg.token),
+                    pollInterval: uCfg.pollInterval || 60,
+                    telegramAlertsEnabled: uCfg.telegramAlertsEnabled !== false,
+                    marketHoursOnly: uCfg.marketHoursOnly !== false,
+                    updatedAt: uCfg.updatedAt
+                };
+            } catch (e) {}
+
             return res.status(200).json({
                 success: true,
                 adminOnlyMode,
@@ -127,7 +141,8 @@ module.exports = async (req, res) => {
                 auditLogs,
                 strategies,
                 holidays,
-                dispatch_settings
+                dispatch_settings,
+                upstox_config
             });
         }
 
@@ -138,6 +153,28 @@ module.exports = async (req, res) => {
             if (typeof body === 'string') { try { body = JSON.parse(body); } catch(e){} }
             const { type, data } = body;
             const saveType = type || body.action;
+
+            if (saveType === 'save_upstox_config') {
+                const saved = await saveUpstoxConfig(data || {});
+                return res.status(200).json({
+                    success: true,
+                    message: 'Upstox configuration saved successfully',
+                    upstox_config: {
+                        hasToken: Boolean(saved.token),
+                        tokenMasked: maskToken(saved.token),
+                        pollInterval: saved.pollInterval,
+                        telegramAlertsEnabled: saved.telegramAlertsEnabled,
+                        marketHoursOnly: saved.marketHoursOnly,
+                        updatedAt: saved.updatedAt
+                    }
+                });
+            }
+
+            if (saveType === 'test_upstox_token') {
+                const candidateToken = data && data.token ? data.token : null;
+                const testRes = await testUpstoxConnection(candidateToken);
+                return res.status(200).json(testRes);
+            }
 
             if (saveType === 'save_admin_only_mode' || saveType === 'admin_only_mode') {
                 const isEnabled = Boolean(data && data.enabled);

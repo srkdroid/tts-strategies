@@ -814,6 +814,111 @@
                     </div>
                 </div>
             </div>
+            <!-- Tab Content: Upstox & PnL Alerts Engine Settings -->
+            <div id="tab-alerts-content" class="admin-tab-content" style="display: none; flex-direction: column; flex-grow: 1; overflow-y: auto; gap: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h4 style="margin: 0 0 0.3rem 0; font-size: 1.1rem; color: #60a5fa;">🔔 Upstox Live Quotes & Automated PnL Alert Engine</h4>
+                        <p style="margin: 0; font-size: 0.82rem; color: var(--text-secondary);">Manage Upstox Analytics Token, live polling frequency, market window guardrails, and automated Telegram bot dispatches.</p>
+                    </div>
+                </div>
+
+                <!-- 1. Upstox Analytics Token Configuration Card -->
+                <div class="modal-card" style="background: rgba(59, 130, 246, 0.06); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 10px; padding: 1.2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+                        <h5 style="margin: 0; font-size: 0.95rem; color: #93c5fd; display: flex; align-items: center; gap: 0.5rem;">
+                            🔑 Upstox Analytics Bearer Token
+                        </h5>
+                        <span id="upstox-token-status-badge" style="font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.65rem; border-radius: 9999px; background: rgba(148, 163, 184, 0.2); color: #94a3b8;">
+                            Checking...
+                        </span>
+                    </div>
+                    <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0 0 0.8rem 0;">
+                        Enter your Upstox Analytics Token with live quote reading privileges. All active trade legs across all users are aggregated into <strong>a single batch call</strong> via this token.
+                    </p>
+                    <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+                        <div style="flex-grow: 1; min-width: 260px; position: relative;">
+                            <input type="password" id="admin-upstox-token-input" placeholder="Paste Upstox Bearer token (eyJ...)" style="width: 100%; padding: 0.6rem 0.8rem; border-radius: 6px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); color: #fff; font-family: monospace; font-size: 0.82rem;">
+                        </div>
+                        <button type="button" onclick="toggleUpstoxTokenVisibility()" class="admin-btn edit" style="margin: 0; padding: 0.55rem 0.8rem; font-size: 0.8rem;" title="Show / Hide Token">👁️</button>
+                        <button type="button" id="admin-test-upstox-btn" onclick="testUpstoxConnectionFromAdmin()" class="admin-btn sync" style="margin: 0; padding: 0.55rem 0.9rem; font-size: 0.8rem;">⚡ Test Connection</button>
+                        <button type="button" id="admin-save-upstox-btn" onclick="saveUpstoxConfigFromAdmin()" class="admin-btn add" style="margin: 0; padding: 0.55rem 1rem; font-size: 0.8rem;">💾 Save Token</button>
+                    </div>
+                    <div id="upstox-test-result-box" style="display: none; margin-top: 0.8rem; font-size: 0.8rem; padding: 0.5rem 0.8rem; border-radius: 6px;"></div>
+                </div>
+
+                <!-- 2. Engine Runtime & Market Hours Guardrails Card -->
+                <div class="modal-card" style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 10px; padding: 1.2rem;">
+                    <h5 style="margin: 0 0 0.8rem 0; font-size: 0.95rem; color: #6ee7b7; display: flex; align-items: center; gap: 0.5rem;">
+                        ⏱️ Polling Engine & Execution Guardrails
+                    </h5>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.35rem; color: var(--text-primary);">
+                                Polling Interval:
+                            </label>
+                            <select id="admin-alert-poll-interval" style="width: 100%; padding: 0.5rem; border-radius: 6px; background: rgba(0,0,0,0.25); border: 1px solid var(--border-color); color: #fff; font-size: 0.85rem;">
+                                <option value="30">30 seconds (High Frequency)</option>
+                                <option value="60" selected>60 seconds (Recommended Default)</option>
+                                <option value="120">120 seconds (2 minutes)</option>
+                                <option value="300">300 seconds (5 minutes)</option>
+                            </select>
+                            <span style="font-size: 0.72rem; color: var(--text-secondary); display: block; margin-top: 0.25rem;">
+                                At 60s default, ~385 total API calls are made across an entire 6.4h trading session.
+                            </span>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.35rem; color: var(--text-primary);">
+                                Active Market Window & CAS:
+                            </label>
+                            <div style="padding: 0.5rem; background: rgba(0,0,0,0.2); border-radius: 6px; font-size: 0.82rem; color: #a7f3d0; border: 1px solid rgba(16, 185, 129, 0.2);">
+                                🕒 <strong>09:15:00 to 15:40:00 IST</strong>
+                                <span style="display: block; font-size: 0.72rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                                    Includes NSE F&O Closing Auction Session (15:30 - 15:40 IST). Skipped on holidays.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1.5rem; margin-top: 1rem; padding-top: 0.8rem; border-top: 1px dashed rgba(255,255,255,0.1); flex-wrap: wrap;">
+                        <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.82rem;">
+                            <input type="checkbox" id="admin-telegram-alerts-toggle" checked style="width: 16px; height: 16px;">
+                            <span>📱 Enable Telegram Bot Alert Dispatching (@TTSStrategiesBot)</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.82rem;">
+                            <input type="checkbox" id="admin-market-hours-toggle" checked style="width: 16px; height: 16px;">
+                            <span>🛡️ Restrict Polling Strictly to Active Market Hours</span>
+                        </label>
+                    </div>
+
+                    <div style="margin-top: 1rem; text-align: right;">
+                        <button type="button" onclick="saveAlertEngineSettingsFromAdmin()" class="admin-btn edit" style="padding: 0.5rem 1.2rem; font-size: 0.82rem;">
+                            💾 Save Engine Settings
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3. Telemetry & Live Monitor Card -->
+                <div class="modal-card" style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: 10px; padding: 1.2rem;">
+                    <h5 style="margin: 0 0 0.8rem 0; font-size: 0.95rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                        📊 Alert Engine Telemetry & Live Health
+                    </h5>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.8rem;">
+                        <div style="background: rgba(255,255,255,0.03); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                            <span style="font-size: 0.72rem; color: var(--text-secondary); display: block;">ENGINE STATUS</span>
+                            <strong id="telemetry-engine-status" style="font-size: 0.95rem; color: #6ee7b7;">🟢 Ready</strong>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.03); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                            <span style="font-size: 0.72rem; color: var(--text-secondary); display: block;">LAST TOKEN UPDATE</span>
+                            <span id="telemetry-token-updated-at" style="font-size: 0.82rem; font-weight: 600; color: #fff;">Never</span>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.03); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                            <span style="font-size: 0.72rem; color: var(--text-secondary); display: block;">TELEGRAM BOT STATUS</span>
+                            <span id="telemetry-tg-status" style="font-size: 0.82rem; font-weight: 600; color: #6ee7b7;">Ready (@TTSStrategiesBot)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -990,6 +1095,7 @@
                 <button id="tab-activity-btn" class="tab-nav-btn" onclick="switchDbTab('activity')">📊 User Activity Audit</button>
                 <button id="tab-dispatch-btn" class="tab-nav-btn" onclick="switchDbTab('dispatch')">Dispatch Settings</button>
                 <button id="tab-ai-btn" class="tab-nav-btn" onclick="switchDbTab('ai')">🤖 AI Settings</button>
+                <button id="tab-alerts-btn" class="tab-nav-btn" onclick="switchDbTab('alerts')">🔔 Upstox & Alerts</button>
             </div>
 
             <!-- Tab Content: Users -->
@@ -1863,7 +1969,7 @@
 
                     <div class="form-group">
                         <label for="trade-margin-input">Margin Used (₹) *</label>
-                        <input type="number" id="trade-margin-input" placeholder="e.g. 250000" step="1000" min="0" required style="width: 100%; font-weight: 700;">
+                        <input type="number" id="trade-margin-input" placeholder="e.g. 250000" oninput="recalculateAlertValuesFromMargin()" step="1000" min="0" required style="width: 100%; font-weight: 700;">
                     </div>
                 </div>
 
@@ -1906,6 +2012,11 @@
                         <input type="datetime-local" id="trade-exit-date" style="width: 100%;">
                     </div>
 
+                    <div class="form-group">
+                        <label for="trade-contract-expiry">Contract Expiry Date *</label>
+                        <input type="date" id="trade-contract-expiry" required style="width: 100%; font-weight: 700;">
+                    </div>
+
                     <div class="form-group" id="trade-index-display-group">
                         <label for="trade-index-display">Strategy Index & Category</label>
                         <input type="text" id="trade-index-display" readonly style="width: 100%; opacity: 0.8; background: rgba(0,0,0,0.15);">
@@ -1936,6 +2047,99 @@
                                 <!-- Dynamically populated legs -->
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                <!-- PnL Alert Rules & Automated Monitoring Card -->
+                <div class="pnl-alerts-card" style="border: 1px solid rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.05); border-radius: 8px; padding: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                        <h4 style="margin: 0; font-size: 0.95rem; color: #60a5fa; display: flex; align-items: center; gap: 0.4rem;">
+                            🔔 Automated PnL Alerts & Upstox Live Monitoring
+                        </h4>
+                        <label style="font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; font-weight: 700; color: #93c5fd;">
+                            <input type="checkbox" id="trade-alert-enabled" checked onchange="toggleAlertFields(this.checked)">
+                            <span>Enable Live Alerts</span>
+                        </label>
+                    </div>
+
+                    <div id="trade-alerts-container">
+                        <!-- Row 1: Target Profit & Stop Loss Columns -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0.9rem;">
+                            <!-- 1. Target Profit Column -->
+                            <div class="alert-box-target" style="background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 6px; padding: 0.75rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                    <strong style="color: #34d399; font-size: 0.85rem;">🎯 Target Profit Alert</strong>
+                                    <input type="checkbox" id="alert-profit-active" checked onchange="onAlertProfitToggle(this.checked)">
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                                    <div>
+                                        <label style="font-size: 0.75rem; color: var(--text-secondary); display: block;">Target (%)</label>
+                                        <input type="number" id="alert-profit-pct" step="0.1" min="0" placeholder="2.0" value="2.0" oninput="onProfitPctInput(this.value)" style="width: 100%; font-weight: 700;">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 0.75rem; color: var(--text-secondary); display: block;">Target (₹)</label>
+                                        <input type="number" id="alert-profit-abs" step="100" min="0" placeholder="5000" oninput="onProfitAbsInput(this.value)" style="width: 100%; font-weight: 700;">
+                                    </div>
+                                </div>
+                                <!-- 90% Early Warning Row -->
+                                <div style="margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px dashed rgba(16, 185, 129, 0.2); font-size: 0.78rem;">
+                                    <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+                                        <input type="checkbox" id="alert-profit-warn-active" checked onchange="onProfitWarnToggle(this.checked)">
+                                        <span>Early Warning at</span>
+                                        <input type="number" id="alert-profit-warn-pct" value="90" min="50" max="99" style="width: 48px; text-align: center; padding: 2px 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: #fff;" oninput="onProfitWarnPctChange(this.value)">
+                                        <span>% (₹ <strong id="alert-profit-warn-preview" style="color: #34d399;">4,500</strong>)</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- 2. Stop Loss Column -->
+                            <div class="alert-box-sl" style="background: rgba(239, 68, 68, 0.06); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 6px; padding: 0.75rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                    <strong style="color: #f87171; font-size: 0.85rem;">🛑 Stop Loss Alert</strong>
+                                    <input type="checkbox" id="alert-loss-active" checked onchange="onAlertLossToggle(this.checked)">
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                                    <div>
+                                        <label style="font-size: 0.75rem; color: var(--text-secondary); display: block;">Stop Loss (%)</label>
+                                        <input type="number" id="alert-loss-pct" step="0.1" min="0" placeholder="2.5" value="2.5" oninput="onLossPctInput(this.value)" style="width: 100%; font-weight: 700;">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 0.75rem; color: var(--text-secondary); display: block;">Loss (₹)</label>
+                                        <input type="number" id="alert-loss-abs" step="100" min="0" placeholder="6250" oninput="onLossAbsInput(this.value)" style="width: 100%; font-weight: 700;">
+                                    </div>
+                                </div>
+                                <!-- 90% Early Warning Row -->
+                                <div style="margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px dashed rgba(239, 68, 68, 0.2); font-size: 0.78rem;">
+                                    <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+                                        <input type="checkbox" id="alert-loss-warn-active" checked onchange="onLossWarnToggle(this.checked)">
+                                        <span>Early Warning at</span>
+                                        <input type="number" id="alert-loss-warn-pct" value="90" min="50" max="99" style="width: 48px; text-align: center; padding: 2px 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: #fff;" oninput="onLossWarnPctChange(this.value)">
+                                        <span>% (-₹ <strong id="alert-loss-warn-preview" style="color: #f87171;">5,625</strong>)</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Row 2: User-Selectable Multi-Channel Notification Options -->
+                        <div style="background: rgba(0,0,0,0.18); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.75rem;">
+                            <span style="font-weight: 700; font-size: 0.8rem; color: var(--text-primary); display: block; margin-bottom: 0.4rem;">
+                                📢 Dispatch Alerts To (Choose any or all):
+                            </span>
+                            <div style="display: flex; flex-wrap: wrap; gap: 1.2rem; font-size: 0.82rem;">
+                                <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+                                    <input type="checkbox" id="alert-chan-inapp" checked>
+                                    <span>🔊 In-App Audio & Visual Toast</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+                                    <input type="checkbox" id="alert-chan-desktop" checked onchange="requestDesktopNotificationPermission(this)">
+                                    <span>🖥️ Browser Desktop Notification</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+                                    <input type="checkbox" id="alert-chan-telegram" checked>
+                                    <span>📱 Telegram Bot (@TTSStrategiesBot)</span>
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -2238,7 +2442,7 @@
     <script src="holidays.js?v=6.6"></script>
     <script src="capital-planner-data.js?v=6.6"></script>
     <script src="notes.js?v=6.6"></script>
-    <script src="app.js?v=8.4"></script>
+    <script src="app.js?v=8.5"></script>
 
     <!-- Maintenance Screen for Regular Users -->
     <div id="maintenance-screen" style="display: none; position: fixed; inset: 0; z-index: 999999; background: #0b0f19; align-items: center; justify-content: center; padding: 1.5rem; text-align: center;">

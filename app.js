@@ -1954,6 +1954,8 @@ function switchDbTab(tab) {
     if (dispatchBtn) dispatchBtn.classList.toggle("active", tab === 'dispatch');
     const aiBtn = document.getElementById("tab-ai-btn");
     if (aiBtn) aiBtn.classList.toggle("active", tab === 'ai');
+    const alertsBtn = document.getElementById("tab-alerts-btn");
+    if (alertsBtn) alertsBtn.classList.toggle("active", tab === 'alerts');
     
     document.getElementById("tab-users-content").style.display = tab === 'users' ? 'flex' : 'none';
     document.getElementById("tab-holidays-content").style.display = tab === 'holidays' ? 'flex' : 'none';
@@ -1965,6 +1967,8 @@ function switchDbTab(tab) {
     if (dispatchContent) dispatchContent.style.display = tab === 'dispatch' ? 'flex' : 'none';
     const aiContent = document.getElementById("tab-ai-content");
     if (aiContent) aiContent.style.display = tab === 'ai' ? 'flex' : 'none';
+    const alertsContent = document.getElementById("tab-alerts-content");
+    if (alertsContent) alertsContent.style.display = tab === 'alerts' ? 'flex' : 'none';
     
     if (tab === 'logs') {
         renderAuditLogsTable();
@@ -1989,6 +1993,9 @@ async function fetchAdminDbData() {
             updateAdminOnlyModeUI(window.adminOnlyMode);
         }
         auditLogsData = resJson.auditLogs || [];
+        if (resJson.upstox_config) {
+            populateUpstoxAdminUI(resJson.upstox_config);
+        }
         
         const ds = resJson.dispatch_settings || resJson.dispatchSettings;
         if (ds && Object.keys(ds).length > 0) {
@@ -3622,6 +3629,21 @@ function renderJournalTradesTable() {
         const isCustomTrade = trade.isCustom || trade.strategyId === 'custom';
         const customBadge = isCustomTrade ? `<span class="badge" style="background: rgba(168, 85, 247, 0.18); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.35); font-size: 0.68rem; padding: 1px 5px;">✨ Custom</span>` : '';
 
+        const alertBadge = (!isClosed && trade.alerts && trade.alerts.enabled !== false) ?
+            (trade.alerts.profitTarget?.finalTriggeredAt ? `<span class="badge" style="background: rgba(16,185,129,0.25); color: #34d399; font-size: 0.68rem; margin-top: 0.25rem; display: block;">🎯 Target Hit</span>` :
+             trade.alerts.stopLoss?.finalTriggeredAt ? `<span class="badge" style="background: rgba(239,68,68,0.25); color: #f87171; font-size: 0.68rem; margin-top: 0.25rem; display: block;">🛑 SL Hit</span>` :
+             trade.alerts.profitTarget?.earlyWarning?.triggeredAt ? `<span class="badge" style="background: rgba(245,158,11,0.25); color: #fbbf24; font-size: 0.68rem; margin-top: 0.25rem; display: block;">⚠️ 90% Target</span>` :
+             trade.alerts.stopLoss?.earlyWarning?.triggeredAt ? `<span class="badge" style="background: rgba(245,158,11,0.25); color: #fbbf24; font-size: 0.68rem; margin-top: 0.25rem; display: block;">⚠️ 90% SL</span>` :
+             `<span class="badge" style="background: rgba(59,130,246,0.15); color: #93c5fd; font-size: 0.68rem; margin-top: 0.25rem; display: block;">🔔 Alert Ready</span>`)
+            : '';
+
+        const liveMtm = (!isClosed && trade.currentMtmPnL !== undefined && trade.currentMtmPnL !== null) ? trade.currentMtmPnL : null;
+        const grossDisplay = isClosed 
+            ? `₹ ${grossPnlVal.toLocaleString('en-IN')}`
+            : (liveMtm !== null 
+                ? `<span title="Live Upstox Gross MTM" style="font-weight: 700; color: ${liveMtm > 0 ? '#34d399' : liveMtm < 0 ? '#fca5a5' : 'inherit'};">⚡ ${liveMtm > 0 ? '+' : ''}₹ ${liveMtm.toLocaleString('en-IN')}</span>` 
+                : `<span style="color: var(--text-secondary); font-size: 0.78rem;">Live Tracking</span>`);
+
         tr.innerHTML = `
             <td>
                 <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.15rem;">
@@ -3633,9 +3655,9 @@ function renderJournalTradesTable() {
             <td>
                 <span class="badge ${trade.category === 'discretionary' ? 'biweekly' : trade.category === 'adjustments' ? 'stbt' : 'monthly'}" style="font-size: 0.72rem;">${trade.sheet || trade.category || 'Strategy'}</span>
             </td>
-            <td>${statusBadge}</td>
+            <td>${statusBadge}${alertBadge}</td>
             <td style="font-weight: 600;">₹ ${marginVal.toLocaleString('en-IN')}</td>
-            <td style="font-weight: 600; color: ${grossPnlVal > 0 ? '#34d399' : grossPnlVal < 0 ? '#fca5a5' : 'inherit'};">₹ ${grossPnlVal.toLocaleString('en-IN')}</td>
+            <td style="font-weight: 600;">${grossDisplay}</td>
             <td style="color: var(--text-secondary);">₹ ${chargesVal.toLocaleString('en-IN')}</td>
             <td style="font-weight: 700; font-size: 0.92rem; color: ${netPnlColor};">₹ ${netPnlVal.toLocaleString('en-IN')}</td>
             <td style="font-weight: 700; font-size: 0.92rem; color: ${roiColor};">${isClosed ? `${roiVal.toFixed(2)}%` : '-'}</td>
@@ -3717,6 +3739,14 @@ function openNewTradeModal() {
     }
 
     onTradeStatusChange("OPEN");
+
+    const expiryInput = document.getElementById("trade-contract-expiry");
+    if (expiryInput) {
+        const strat = strats.length > 0 ? strats[0] : null;
+        expiryInput.value = getDefaultContractExpiry(strat ? strat.index : "Nifty");
+    }
+
+    resetTradeAlertFields(250000);
 
     document.getElementById("trade-modal").style.display = "flex";
 }
@@ -3830,6 +3860,13 @@ function editTradeRecord(tradeId) {
     });
 
     onTradeStatusChange(trade.status || "OPEN");
+
+    const expiryInput = document.getElementById("trade-contract-expiry");
+    if (expiryInput) {
+        expiryInput.value = trade.contractExpiry || getDefaultContractExpiry(trade.index || "Nifty");
+    }
+
+    populateTradeAlertFields(trade);
 
     document.getElementById("trade-modal").style.display = "flex";
 }
@@ -4049,12 +4086,14 @@ async function saveTradeFromModal(e) {
         isCustom: isCustom,
         status,
         marginUsed,
+        contractExpiry: document.getElementById("trade-contract-expiry")?.value || getDefaultContractExpiry(stratIndex),
         entryDate,
         exitDate: status === 'CLOSED' ? exitDate : null,
         charges: {
             brokerage,
             sttAndTaxes
         },
+        alerts: collectTradeAlertsFromModal(marginUsed, tradeId),
         legs,
         notes: {
             entry: entryNotes,
@@ -4912,4 +4951,572 @@ function showMaintenanceScreen(msg) {
         if (msgEl && msg) msgEl.innerText = msg;
         screen.style.display = "flex";
     }
+}
+
+
+// ==========================================
+// Upstox & PnL Alert Engine Admin Functions
+// ==========================================
+
+let activeUpstoxConfig = null;
+
+function populateUpstoxAdminUI(config) {
+    if (!config) return;
+    activeUpstoxConfig = config;
+
+    const tokenInput = document.getElementById("admin-upstox-token-input");
+    const statusBadge = document.getElementById("upstox-token-status-badge");
+    const intervalSelect = document.getElementById("admin-alert-poll-interval");
+    const tgToggle = document.getElementById("admin-telegram-alerts-toggle");
+    const mhToggle = document.getElementById("admin-market-hours-toggle");
+    const updatedSpan = document.getElementById("telemetry-token-updated-at");
+
+    if (tokenInput) {
+        if (config.hasToken) {
+            tokenInput.placeholder = `Token active: ${config.tokenMasked || 'Configured'}`;
+            tokenInput.dataset.configured = "true";
+        } else {
+            tokenInput.placeholder = "Paste Upstox Bearer token (eyJ...)";
+            tokenInput.dataset.configured = "false";
+        }
+    }
+
+    if (statusBadge) {
+        if (config.hasToken) {
+            statusBadge.innerText = "🟢 Active & Saved";
+            statusBadge.style.background = "rgba(16, 185, 129, 0.2)";
+            statusBadge.style.color = "#34d399";
+        } else {
+            statusBadge.innerText = "⚠️ No Token Configured";
+            statusBadge.style.background = "rgba(245, 158, 11, 0.2)";
+            statusBadge.style.color = "#fbbf24";
+        }
+    }
+
+    if (intervalSelect && config.pollInterval) {
+        intervalSelect.value = String(config.pollInterval);
+    }
+
+    if (tgToggle) {
+        tgToggle.checked = config.telegramAlertsEnabled !== false;
+    }
+
+    if (mhToggle) {
+        mhToggle.checked = config.marketHoursOnly !== false;
+    }
+
+    if (updatedSpan && config.updatedAt) {
+        try {
+            updatedSpan.innerText = new Date(config.updatedAt).toLocaleString('en-IN');
+        } catch (e) {
+            updatedSpan.innerText = config.updatedAt;
+        }
+    }
+}
+
+function toggleUpstoxTokenVisibility() {
+    const input = document.getElementById("admin-upstox-token-input");
+    if (!input) return;
+    input.type = input.type === "password" ? "text" : "password";
+}
+
+async function testUpstoxConnectionFromAdmin() {
+    const input = document.getElementById("admin-upstox-token-input");
+    const btn = document.getElementById("admin-test-upstox-btn");
+    const resBox = document.getElementById("upstox-test-result-box");
+    const tokenVal = input ? input.value.trim() : "";
+
+    if (!tokenVal && (!input || input.dataset.configured !== "true")) {
+        alert("Please paste an Upstox Bearer token to test.");
+        return;
+    }
+
+    if (btn) {
+        btn.innerText = "⏳ Testing...";
+        btn.disabled = true;
+    }
+    if (resBox) {
+        resBox.style.display = "block";
+        resBox.style.background = "rgba(59, 130, 246, 0.15)";
+        resBox.style.color = "#93c5fd";
+        resBox.innerText = "Connecting to Upstox API v2 endpoint...";
+    }
+
+    try {
+        const payload = {
+            action: 'test_upstox_token',
+            data: { token: tokenVal || undefined }
+        };
+
+        const resp = await fetch('/api/admin/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await resp.json();
+
+        if (data.success) {
+            const spotLtp = data.testQuote?.last_price;
+            const ltpMsg = spotLtp ? ` (Nifty 50 Spot Quote: ₹${Number(spotLtp).toLocaleString('en-IN')})` : "";
+            resBox.style.background = "rgba(16, 185, 129, 0.2)";
+            resBox.style.color = "#34d399";
+            resBox.innerText = `✅ Success: ${data.message || 'Connected to Upstox API successfully!'}${ltpMsg}`;
+            showToast("Upstox API connection verified!");
+        } else {
+            resBox.style.background = "rgba(239, 68, 68, 0.2)";
+            resBox.style.color = "#f87171";
+            resBox.innerText = `❌ Connection Failed: ${data.error || 'Invalid token or network error.'}`;
+            showToast("Upstox connection test failed", true);
+        }
+    } catch (err) {
+        if (resBox) {
+            resBox.style.background = "rgba(239, 68, 68, 0.2)";
+            resBox.style.color = "#f87171";
+            resBox.innerText = `❌ Network Error: ${err.message}`;
+        }
+        showToast("Error testing Upstox connection", true);
+    } finally {
+        if (btn) {
+            btn.innerText = "⚡ Test Connection";
+            btn.disabled = false;
+        }
+    }
+}
+
+async function saveUpstoxConfigFromAdmin() {
+    const input = document.getElementById("admin-upstox-token-input");
+    const saveBtn = document.getElementById("admin-save-upstox-btn");
+    const tokenVal = input ? input.value.trim() : "";
+
+    if (!tokenVal) {
+        alert("Please enter a valid Upstox Bearer token before saving.");
+        return;
+    }
+
+    if (saveBtn) {
+        saveBtn.innerText = "⏳ Saving...";
+        saveBtn.disabled = true;
+    }
+
+    try {
+        const resp = await fetch('/api/admin/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'save_upstox_config',
+                data: { token: tokenVal }
+            })
+        });
+
+        const resData = await resp.json();
+        if (resData.success) {
+            showToast("Upstox Analytics Token saved successfully!");
+            if (input) input.value = "";
+            if (resData.upstox_config) {
+                populateUpstoxAdminUI(resData.upstox_config);
+            }
+        } else {
+            showToast(resData.error || "Failed to save Upstox token", true);
+        }
+    } catch (err) {
+        showToast("Error saving token: " + err.message, true);
+    } finally {
+        if (saveBtn) {
+            saveBtn.innerText = "💾 Save Token";
+            saveBtn.disabled = false;
+        }
+    }
+}
+
+async function saveAlertEngineSettingsFromAdmin() {
+    const intervalSelect = document.getElementById("admin-alert-poll-interval");
+    const tgToggle = document.getElementById("admin-telegram-alerts-toggle");
+    const mhToggle = document.getElementById("admin-market-hours-toggle");
+
+    const pollInterval = intervalSelect ? parseInt(intervalSelect.value, 10) : 60;
+    const telegramAlertsEnabled = tgToggle ? tgToggle.checked : true;
+    const marketHoursOnly = mhToggle ? mhToggle.checked : true;
+
+    try {
+        const resp = await fetch('/api/admin/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'save_upstox_config',
+                data: {
+                    pollInterval,
+                    telegramAlertsEnabled,
+                    marketHoursOnly
+                }
+            })
+        });
+
+        const resData = await resp.json();
+        if (resData.success) {
+            showToast("Alert engine settings saved successfully!");
+            if (resData.upstox_config) {
+                populateUpstoxAdminUI(resData.upstox_config);
+            }
+        } else {
+            showToast(resData.error || "Failed to save settings", true);
+        }
+    } catch (err) {
+        showToast("Error saving settings: " + err.message, true);
+    }
+}
+
+
+
+function getDefaultContractExpiry(strategyIndex = "Nifty") {
+    const d = new Date();
+    // Default weekly/monthly expiry is Thursday (day 4), or Wednesday for Sensex (day 3)
+    const isSensex = (strategyIndex || "").toUpperCase().includes("SENSEX");
+    const targetDay = isSensex ? 3 : 4;
+    const currentDay = d.getDay();
+    let diff = (targetDay - currentDay + 7) % 7;
+    // If today is expiry day after 15:40 IST, roll to next week
+    if (diff === 0) {
+        const hours = d.getHours();
+        const mins = d.getMinutes();
+        if (hours > 15 || (hours === 15 && mins >= 40)) {
+            diff = 7;
+        }
+    }
+    d.setDate(d.getDate() + diff);
+    return d.toISOString().slice(0, 10);
+}
+
+
+// ==========================================
+// PnL Alert UI & Two-Way Reactive Math Logic
+// ==========================================
+
+function resetTradeAlertFields(margin = 250000) {
+    const alertToggle = document.getElementById("trade-alert-enabled");
+    if (alertToggle) alertToggle.checked = true;
+    toggleAlertFields(true);
+
+    const profitActive = document.getElementById("alert-profit-active");
+    if (profitActive) profitActive.checked = true;
+    onAlertProfitToggle(true);
+
+    const profitPctInput = document.getElementById("alert-profit-pct");
+    if (profitPctInput) profitPctInput.value = "2.0";
+
+    const profitWarnActive = document.getElementById("alert-profit-warn-active");
+    if (profitWarnActive) profitWarnActive.checked = true;
+
+    const profitWarnPctInput = document.getElementById("alert-profit-warn-pct");
+    if (profitWarnPctInput) profitWarnPctInput.value = "90";
+
+    const lossActive = document.getElementById("alert-loss-active");
+    if (lossActive) lossActive.checked = true;
+    onAlertLossToggle(true);
+
+    const lossPctInput = document.getElementById("alert-loss-pct");
+    if (lossPctInput) lossPctInput.value = "2.5";
+
+    const lossWarnActive = document.getElementById("alert-loss-warn-active");
+    if (lossWarnActive) lossWarnActive.checked = true;
+
+    const lossWarnPctInput = document.getElementById("alert-loss-warn-pct");
+    if (lossWarnPctInput) lossWarnPctInput.value = "90";
+
+    const chanInApp = document.getElementById("alert-chan-inapp");
+    const chanDesktop = document.getElementById("alert-chan-desktop");
+    const chanTelegram = document.getElementById("alert-chan-telegram");
+    if (chanInApp) chanInApp.checked = true;
+    if (chanDesktop) chanDesktop.checked = true;
+    if (chanTelegram) chanTelegram.checked = true;
+
+    recalculateAlertValuesFromMargin();
+}
+
+function populateTradeAlertFields(trade) {
+    const margin = parseFloat(trade.marginUsed) || 250000;
+    const a = trade.alerts || {};
+
+    const alertToggle = document.getElementById("trade-alert-enabled");
+    if (alertToggle) alertToggle.checked = a.enabled !== false;
+    toggleAlertFields(a.enabled !== false);
+
+    // Target Profit
+    const pt = a.profitTarget || {};
+    const profitActive = document.getElementById("alert-profit-active");
+    if (profitActive) profitActive.checked = pt.enabled !== false;
+    onAlertProfitToggle(pt.enabled !== false);
+
+    const profitPctInput = document.getElementById("alert-profit-pct");
+    if (profitPctInput) profitPctInput.value = pt.pct !== undefined ? pt.pct : "2.0";
+
+    const profitAbsInput = document.getElementById("alert-profit-abs");
+    if (profitAbsInput) profitAbsInput.value = pt.amount !== undefined ? pt.amount : Math.round(margin * 0.02);
+
+    const pw = pt.earlyWarning || {};
+    const profitWarnActive = document.getElementById("alert-profit-warn-active");
+    if (profitWarnActive) profitWarnActive.checked = pw.enabled !== false;
+    const profitWarnPct = document.getElementById("alert-profit-warn-pct");
+    if (profitWarnPct) profitWarnPct.value = pw.bufferPct !== undefined ? pw.bufferPct : "90";
+
+    // Stop Loss
+    const sl = a.stopLoss || {};
+    const lossActive = document.getElementById("alert-loss-active");
+    if (lossActive) lossActive.checked = sl.enabled !== false;
+    onAlertLossToggle(sl.enabled !== false);
+
+    const lossPctInput = document.getElementById("alert-loss-pct");
+    if (lossPctInput) lossPctInput.value = sl.pct !== undefined ? sl.pct : "2.5";
+
+    const lossAbsInput = document.getElementById("alert-loss-abs");
+    if (lossAbsInput) lossAbsInput.value = sl.amount !== undefined ? Math.abs(sl.amount) : Math.round(margin * 0.025);
+
+    const lw = sl.earlyWarning || {};
+    const lossWarnActive = document.getElementById("alert-loss-warn-active");
+    if (lossWarnActive) lossWarnActive.checked = lw.enabled !== false;
+    const lossWarnPct = document.getElementById("alert-loss-warn-pct");
+    if (lossWarnPct) lossWarnPct.value = lw.bufferPct !== undefined ? lw.bufferPct : "90";
+
+    // Channels
+    const ch = a.channels || {};
+    const chanInApp = document.getElementById("alert-chan-inapp");
+    const chanDesktop = document.getElementById("alert-chan-desktop");
+    const chanTelegram = document.getElementById("alert-chan-telegram");
+    if (chanInApp) chanInApp.checked = ch.inApp !== false;
+    if (chanDesktop) chanDesktop.checked = ch.desktop !== false;
+    if (chanTelegram) chanTelegram.checked = ch.telegram !== false;
+
+    updateProfitWarnPreview();
+    updateLossWarnPreview();
+}
+
+function collectTradeAlertsFromModal(marginUsed, tradeId) {
+    const alertsEnabled = document.getElementById("trade-alert-enabled")?.checked ?? true;
+
+    const profitActive = document.getElementById("alert-profit-active")?.checked ?? true;
+    const profitPct = parseFloat(document.getElementById("alert-profit-pct")?.value) || 2.0;
+    const profitAbs = parseFloat(document.getElementById("alert-profit-abs")?.value) || Math.round(marginUsed * (profitPct / 100));
+    const profitWarnActive = document.getElementById("alert-profit-warn-active")?.checked ?? true;
+    const profitWarnPct = parseFloat(document.getElementById("alert-profit-warn-pct")?.value) || 90;
+    const profitWarnAbs = Math.round(profitAbs * (profitWarnPct / 100));
+
+    const lossActive = document.getElementById("alert-loss-active")?.checked ?? true;
+    const lossPct = parseFloat(document.getElementById("alert-loss-pct")?.value) || 2.5;
+    const lossAbs = Math.abs(parseFloat(document.getElementById("alert-loss-abs")?.value) || Math.round(marginUsed * (lossPct / 100)));
+    const lossWarnActive = document.getElementById("alert-loss-warn-active")?.checked ?? true;
+    const lossWarnPct = parseFloat(document.getElementById("alert-loss-warn-pct")?.value) || 90;
+    const lossWarnAbs = -Math.round(lossAbs * (lossWarnPct / 100));
+
+    // Preserve existing triggered timestamps if editing trade
+    const existingTrade = (window.userTradesData || []).find(t => t.id === tradeId);
+    const ex = existingTrade ? existingTrade.alerts : null;
+
+    return {
+        enabled: alertsEnabled,
+        channels: {
+            inApp: document.getElementById("alert-chan-inapp")?.checked ?? true,
+            desktop: document.getElementById("alert-chan-desktop")?.checked ?? true,
+            telegram: document.getElementById("alert-chan-telegram")?.checked ?? true
+        },
+        profitTarget: {
+            enabled: profitActive,
+            pct: profitPct,
+            amount: profitAbs,
+            earlyWarning: {
+                enabled: profitWarnActive,
+                bufferPct: profitWarnPct,
+                amount: profitWarnAbs,
+                triggeredAt: ex?.profitTarget?.earlyWarning?.triggeredAt || null
+            },
+            finalTriggeredAt: ex?.profitTarget?.finalTriggeredAt || null
+        },
+        stopLoss: {
+            enabled: lossActive,
+            pct: lossPct,
+            amount: -lossAbs,
+            earlyWarning: {
+                enabled: lossWarnActive,
+                bufferPct: lossWarnPct,
+                amount: lossWarnAbs,
+                triggeredAt: ex?.stopLoss?.earlyWarning?.triggeredAt || null
+            },
+            finalTriggeredAt: ex?.stopLoss?.finalTriggeredAt || null
+        },
+        history: ex?.history || []
+    };
+}
+
+function recalculateAlertValuesFromMargin() {
+    const margin = parseFloat(document.getElementById("trade-margin-input")?.value) || 0;
+    const profitPct = parseFloat(document.getElementById("alert-profit-pct")?.value) || 0;
+    const lossPct = parseFloat(document.getElementById("alert-loss-pct")?.value) || 0;
+
+    const profitAbs = Math.round(margin * (profitPct / 100));
+    const lossAbs = Math.round(margin * (lossPct / 100));
+
+    const profitAbsInput = document.getElementById("alert-profit-abs");
+    const lossAbsInput = document.getElementById("alert-loss-abs");
+    if (profitAbsInput) profitAbsInput.value = profitAbs;
+    if (lossAbsInput) lossAbsInput.value = lossAbs;
+
+    updateProfitWarnPreview();
+    updateLossWarnPreview();
+}
+
+function onProfitPctInput(val) {
+    const margin = parseFloat(document.getElementById("trade-margin-input")?.value) || 0;
+    const pct = parseFloat(val) || 0;
+    const abs = Math.round(margin * (pct / 100));
+    const absInput = document.getElementById("alert-profit-abs");
+    if (absInput) absInput.value = abs;
+    updateProfitWarnPreview();
+}
+
+function onProfitAbsInput(val) {
+    const margin = parseFloat(document.getElementById("trade-margin-input")?.value) || 0;
+    const abs = parseFloat(val) || 0;
+    if (margin > 0) {
+        const pct = ((abs / margin) * 100).toFixed(1);
+        const pctInput = document.getElementById("alert-profit-pct");
+        if (pctInput) pctInput.value = pct;
+    }
+    updateProfitWarnPreview();
+}
+
+function onLossPctInput(val) {
+    const margin = parseFloat(document.getElementById("trade-margin-input")?.value) || 0;
+    const pct = parseFloat(val) || 0;
+    const abs = Math.round(margin * (pct / 100));
+    const absInput = document.getElementById("alert-loss-abs");
+    if (absInput) absInput.value = abs;
+    updateLossWarnPreview();
+}
+
+function onLossAbsInput(val) {
+    const margin = parseFloat(document.getElementById("trade-margin-input")?.value) || 0;
+    const abs = Math.abs(parseFloat(val) || 0);
+    if (margin > 0) {
+        const pct = ((abs / margin) * 100).toFixed(1);
+        const pctInput = document.getElementById("alert-loss-pct");
+        if (pctInput) pctInput.value = pct;
+    }
+    updateLossWarnPreview();
+}
+
+function onProfitWarnPctChange(val) {
+    updateProfitWarnPreview();
+}
+
+function onLossWarnPctChange(val) {
+    updateLossWarnPreview();
+}
+
+function updateProfitWarnPreview() {
+    const abs = parseFloat(document.getElementById("alert-profit-abs")?.value) || 0;
+    const warnPct = parseFloat(document.getElementById("alert-profit-warn-pct")?.value) || 90;
+    const preview = document.getElementById("alert-profit-warn-preview");
+    if (preview) {
+        preview.innerText = Math.round(abs * (warnPct / 100)).toLocaleString('en-IN');
+    }
+}
+
+function updateLossWarnPreview() {
+    const abs = parseFloat(document.getElementById("alert-loss-abs")?.value) || 0;
+    const warnPct = parseFloat(document.getElementById("alert-loss-warn-pct")?.value) || 90;
+    const preview = document.getElementById("alert-loss-warn-preview");
+    if (preview) {
+        preview.innerText = Math.round(abs * (warnPct / 100)).toLocaleString('en-IN');
+    }
+}
+
+function toggleAlertFields(enabled) {
+    const container = document.getElementById("trade-alerts-container");
+    if (container) {
+        container.style.opacity = enabled ? "1" : "0.35";
+        container.style.pointerEvents = enabled ? "auto" : "none";
+    }
+}
+
+function onAlertProfitToggle(checked) {
+    const pct = document.getElementById("alert-profit-pct");
+    const abs = document.getElementById("alert-profit-abs");
+    const warn = document.getElementById("alert-profit-warn-active");
+    const warnPct = document.getElementById("alert-profit-warn-pct");
+    [pct, abs, warn, warnPct].forEach(el => { if (el) el.disabled = !checked; });
+}
+
+function onAlertLossToggle(checked) {
+    const pct = document.getElementById("alert-loss-pct");
+    const abs = document.getElementById("alert-loss-abs");
+    const warn = document.getElementById("alert-loss-warn-active");
+    const warnPct = document.getElementById("alert-loss-warn-pct");
+    [pct, abs, warn, warnPct].forEach(el => { if (el) el.disabled = !checked; });
+}
+
+function onProfitWarnToggle(checked) {
+    const warnPct = document.getElementById("alert-profit-warn-pct");
+    if (warnPct) warnPct.disabled = !checked;
+}
+
+function onLossWarnToggle(checked) {
+    const warnPct = document.getElementById("alert-loss-warn-pct");
+    if (warnPct) warnPct.disabled = !checked;
+}
+
+function requestDesktopNotificationPermission(checkbox) {
+    if (checkbox.checked && "Notification" in window) {
+        if (Notification.permission === "default") {
+            Notification.requestPermission().then(permission => {
+                if (permission !== "granted") {
+                    checkbox.checked = false;
+                    showToast("Desktop notification permission denied", "warning");
+                } else {
+                    showToast("Desktop notifications enabled!");
+                }
+            });
+        } else if (Notification.permission === "denied") {
+            checkbox.checked = false;
+            showToast("Desktop notifications are blocked by your browser settings", "warning");
+        }
+    }
+}
+
+// In-App Audio & Desktop Notification Dispatchers
+function playAlertChime(isProfit = true) {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        const now = ctx.currentTime;
+        if (isProfit) {
+            osc.frequency.setValueAtTime(523.25, now); // C5
+            osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.15); // E5
+            osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.3); // G5
+        } else {
+            osc.frequency.setValueAtTime(440, now); // A4
+            osc.frequency.exponentialRampToValueAtTime(349.23, now + 0.25); // F4
+        }
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.55);
+        osc.start(now);
+        osc.stop(now + 0.55);
+    } catch (e) {
+        console.warn("Audio chime could not play:", e);
+    }
+}
+
+function showDesktopNotification(title, body) {
+    try {
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(title, {
+                body,
+                icon: "/favicon.ico"
+            });
+        }
+    } catch (e) {}
 }

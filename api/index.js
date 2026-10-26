@@ -9,6 +9,7 @@ const aiHandler = require('./_lib/ai');
 const telegramWebhookHandler = require('./_lib/telegram-webhook');
 const trackHandler = require('./_lib/track');
 const uploadHandler = require('./_lib/upload');
+const alertsHandler = require('./_lib/alerts');
 
 module.exports = async (req, res) => {
     let route = req.query ? req.query.route : null;
@@ -45,6 +46,8 @@ module.exports = async (req, res) => {
             return telegramWebhookHandler(req, res);
         case 'track':
             return trackHandler(req, res);
+        case 'alerts':
+            return alertsHandler(req, res);
         case 'upload':
         case 'image':
             return uploadHandler(req, res);
