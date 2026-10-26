@@ -26,10 +26,20 @@ function generateRandomPin() {
 
 module.exports = async (req, res) => {
     try {
+        let body = req.body || {};
+        if (typeof body === 'string') { try { body = JSON.parse(body); } catch(e){} }
+
         let action = (req.query && req.query.action) ? req.query.action : '';
-        if (!action && req.url) {
-            const urlPath = req.url.split('?')[0];
-            action = urlPath.split('/').filter(Boolean).pop() || '';
+        if (!action || action === 'admin' || action === 'index.js') {
+            if (body && body.action) {
+                action = body.action;
+            } else if (req.url) {
+                const urlPath = req.url.split('?')[0];
+                const lastSegment = urlPath.split('/').filter(Boolean).pop() || '';
+                if (lastSegment && lastSegment !== 'admin' && lastSegment !== 'index.js') {
+                    action = lastSegment;
+                }
+            }
         }
 
         // 1. ADMIN LOGIN
