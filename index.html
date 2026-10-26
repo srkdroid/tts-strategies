@@ -20,14 +20,6 @@
             <div class="admin-bar-left" style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
                 <span class="admin-badge">🛠️ Admin Mode</span>
                 <span id="admin-user-info">Logged in as Admin</span>
-                <!-- Admin-Only / Maintenance Mode Toggle in Admin Bar -->
-                <div id="admin-only-mode-banner" style="display: inline-flex; align-items: center; gap: 0.5rem; margin-left: 0.8rem; padding: 0.25rem 0.65rem; border-radius: 6px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35);">
-                    <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; font-weight: 700; color: #fca5a5; margin: 0;">
-                        <input type="checkbox" id="admin-only-mode-toggle" onchange="toggleAdminOnlyMode(this.checked)" style="width: 16px; height: 16px; cursor: pointer;">
-                        <span>🔒 Restrict Access to Admin Only</span>
-                    </label>
-                    <span id="admin-only-mode-status-badge" class="badge" style="font-size: 0.7rem; background: rgba(148, 163, 184, 0.2); color: #cbd5e1; padding: 1px 6px;">OFF</span>
-                </div>
             </div>
             <div class="admin-bar-right">
                 <button onclick="openDbManagementModal()" class="admin-btn edit">📂 Manage App</button>
@@ -2246,7 +2238,7 @@
     <script src="holidays.js?v=6.6"></script>
     <script src="capital-planner-data.js?v=6.6"></script>
     <script src="notes.js?v=6.6"></script>
-    <script src="app.js?v=8.2"></script>
+    <script src="app.js?v=8.3"></script>
 
     <!-- Maintenance Screen for Regular Users -->
     <div id="maintenance-screen" style="display: none; position: fixed; inset: 0; z-index: 999999; background: #0b0f19; align-items: center; justify-content: center; padding: 1.5rem; text-align: center;">
