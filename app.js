@@ -615,6 +615,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
         const response = await fetch('/api/data');
         if (!response.ok) {
+            if (response.status === 503) {
+                let msg = "TTS Strategies is temporarily restricted to administrators for scheduled maintenance.";
+                try {
+                    const errData = await response.json();
+                    if (errData.message) msg = errData.message;
+                } catch (e) {}
+                showMaintenanceScreen(msg);
+                return;
+            }
             if (response.status === 401) {
                 window.location.href = '/login.html';
                 return;
@@ -671,6 +680,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
         isAdminMode = !!resJson.isAdmin;
         window.isAdminMode = isAdminMode;
+        window.adminOnlyMode = resJson.adminOnlyMode === true;
+        updateAdminOnlyModeUI(window.adminOnlyMode);
         window.userCapital = resJson.userCapital || 5000000;
         const plannerCapitalInput = document.getElementById("planner-capital-input");
         if (plannerCapitalInput && resJson.userCapital) {
@@ -1973,6 +1984,10 @@ async function fetchAdminDbData() {
         const resJson = await response.json();
         whitelistData = resJson.whitelist || {};
         userPermissionsData = resJson.userPermissions || {};
+        if (resJson.adminOnlyMode !== undefined) {
+            window.adminOnlyMode = resJson.adminOnlyMode === true;
+            updateAdminOnlyModeUI(window.adminOnlyMode);
+        }
         auditLogsData = resJson.auditLogs || [];
         
         const ds = resJson.dispatch_settings || resJson.dispatchSettings;
@@ -4836,3 +4851,65 @@ async function submitTermsConsent() {
     }
 }
 
+
+
+// ==========================================
+// Admin-Only / Maintenance Mode Controllers
+// ==========================================
+function updateAdminOnlyModeUI(enabled) {
+    const toggle = document.getElementById("admin-only-mode-toggle");
+    const modalToggle = document.getElementById("modal-admin-only-toggle");
+    const badge = document.getElementById("admin-only-mode-status-badge");
+    const modalStatus = document.getElementById("modal-admin-only-status");
+    const banner = document.getElementById("admin-only-active-banner");
+
+    if (toggle) toggle.checked = enabled;
+    if (modalToggle) modalToggle.checked = enabled;
+    if (badge) {
+        badge.innerText = enabled ? "ACTIVE" : "OFF";
+        badge.style.background = enabled ? "rgba(239, 68, 68, 0.3)" : "rgba(148, 163, 184, 0.2)";
+        badge.style.color = enabled ? "#fca5a5" : "#cbd5e1";
+    }
+    if (modalStatus) {
+        modalStatus.innerText = enabled ? "ACTIVE (Restricted)" : "Inactive (Public)";
+        modalStatus.style.color = enabled ? "#f87171" : "#cbd5e1";
+    }
+    if (banner && window.isAdminMode) {
+        banner.style.display = enabled ? "flex" : "none";
+    }
+}
+
+async function toggleAdminOnlyMode(enabled) {
+    try {
+        const response = await fetch('/api/admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'save',
+                type: 'admin_only_mode',
+                data: { enabled }
+            })
+        });
+        const res = await response.json();
+        if (response.ok && res.success) {
+            window.adminOnlyMode = enabled;
+            updateAdminOnlyModeUI(enabled);
+            showToast(enabled ? "🔒 Admin-Only Mode ENABLED: Regular users are now blocked." : "🔓 Admin-Only Mode DISABLED: Normal user access restored.", !enabled);
+        } else {
+            showToast(res.error || "Failed to update Admin-Only mode", true);
+            updateAdminOnlyModeUI(window.adminOnlyMode);
+        }
+    } catch (err) {
+        showToast("Network error updating Admin-Only mode", true);
+        updateAdminOnlyModeUI(window.adminOnlyMode);
+    }
+}
+
+function showMaintenanceScreen(msg) {
+    const screen = document.getElementById("maintenance-screen");
+    const msgEl = document.getElementById("maintenance-message");
+    if (screen) {
+        if (msgEl && msg) msgEl.innerText = msg;
+        screen.style.display = "flex";
+    }
+}

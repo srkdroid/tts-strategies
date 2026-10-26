@@ -616,6 +616,17 @@ module.exports = async (req, res) => {
                 return res.status(401).json({ error: 'Unauthorized: Please log in to view the daily briefing.' });
             }
 
+            if (!isAdmin && !isCronAuth) {
+                let adminOnlyMode = false;
+                try {
+                    const aomRes = await queryKVSafe(['GET', 'system:admin_only_mode']);
+                    adminOnlyMode = aomRes === 'true' || aomRes === '1';
+                } catch (e) {}
+                if (adminOnlyMode) {
+                    return res.status(503).json({ error: 'System Under Maintenance', maintenance: true });
+                }
+            }
+
             // Force refresh is permitted ONLY for Admin or Cron secret
             const wantsForce = req.query && (req.query.force === 'true' || req.query.force === '1');
             const canForceRefresh = (isAdmin || isCronAuth) && wantsForce;

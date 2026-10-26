@@ -113,8 +113,15 @@ module.exports = async (req, res) => {
                 if (dsRes) { try { dispatch_settings = JSON.parse(dsRes); } catch(err){} }
             } catch (e) {}
 
+            let adminOnlyMode = false;
+            try {
+                const aomRes = await queryKV(['GET', 'system:admin_only_mode']);
+                adminOnlyMode = aomRes === 'true' || aomRes === '1';
+            } catch (e) {}
+
             return res.status(200).json({
                 success: true,
+                adminOnlyMode,
                 whitelist,
                 permissions,
                 auditLogs,
@@ -131,6 +138,16 @@ module.exports = async (req, res) => {
             if (typeof body === 'string') { try { body = JSON.parse(body); } catch(e){} }
             const { type, data } = body;
             const saveType = type || body.action;
+
+            if (saveType === 'save_admin_only_mode' || saveType === 'admin_only_mode') {
+                const isEnabled = Boolean(data && data.enabled);
+                await queryKV(['SET', 'system:admin_only_mode', isEnabled ? 'true' : 'false']);
+                return res.status(200).json({
+                    success: true,
+                    adminOnlyMode: isEnabled,
+                    message: `Admin-only access mode ${isEnabled ? 'enabled' : 'disabled'}`
+                });
+            }
 
             if (saveType === 'clear_logs' || saveType === 'clear_auth_logs') {
                 await queryKV(['DEL', 'auth_audit_logs']);

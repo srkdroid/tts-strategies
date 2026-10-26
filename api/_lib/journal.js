@@ -1,4 +1,4 @@
-const { verifyToken, parseCookies } = require('./common/auth');
+const { verifyToken, verifyAdminToken, parseCookies } = require('./common/auth');
 const { queryKV } = require('./common/redis');
 
 // Compute P&L and RoI for a single trade record
@@ -63,10 +63,29 @@ module.exports = async (req, res) => {
     try {
         const cookies = parseCookies(req.headers.cookie);
         const sessionToken = cookies['session_token'];
+        const adminToken = cookies['admin_token'];
         const phone = verifyToken(sessionToken);
+        const isAdmin = verifyAdminToken(adminToken);
 
-        if (!phone) {
+        if (!phone && !isAdmin) {
             return res.status(401).json({ error: 'Unauthorized. Login required to access Trade Journal.' });
+        }
+
+        if (!isAdmin) {
+            let adminOnlyMode = false;
+            try {
+                const aomRes = await queryKV(['GET', 'system:admin_only_mode']);
+                adminOnlyMode = aomRes === 'true' || aomRes === '1';
+            } catch (e) {}
+
+            if (adminOnlyMode) {
+                return res.status(503).json({
+                    error: 'System Under Maintenance',
+                    maintenance: true,
+                    adminOnlyMode: true,
+                    message: 'TTS Strategies is temporarily restricted to administrators.'
+                });
+            }
         }
 
         // Check if user has journal permission enabled

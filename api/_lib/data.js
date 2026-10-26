@@ -55,6 +55,22 @@ module.exports = async (req, res) => {
             return res.status(401).json({ error: 'Unauthorized. Please login first.' });
         }
 
+        // Check if System Admin-Only (Maintenance) Mode is active
+        let adminOnlyMode = false;
+        try {
+            const aomRes = await queryKV(['GET', 'system:admin_only_mode']);
+            adminOnlyMode = aomRes === 'true' || aomRes === '1';
+        } catch (e) {}
+
+        if (adminOnlyMode && !isAdmin) {
+            return res.status(503).json({
+                error: 'System Under Maintenance',
+                maintenance: true,
+                adminOnlyMode: true,
+                message: 'TTS Strategies is temporarily restricted to administrators for scheduled maintenance. Please check back shortly.'
+            });
+        }
+
         // Support POST /api/data for saving user trading capital or accepting terms
         if (req.method === 'POST') {
             const body = req.body || {};
@@ -306,6 +322,7 @@ module.exports = async (req, res) => {
             strategies: strategiesData || [],
             holidays: holidaysData || {},
             isAdmin: !!isAdmin,
+            adminOnlyMode: adminOnlyMode,
             userPhone: userPhone || 'Admin',
             permissions: userPermissions,
             userCapital: userCapital,

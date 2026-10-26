@@ -400,6 +400,11 @@
                         }
                     });
 
+                } else if (response.status === 503 || data.maintenance) {
+                    errorBox.innerHTML = '🚧 <strong>System Under Maintenance:</strong> ' + (data.message || data.error) + ' <br><a href="/admin.html" style="color: #60a5fa; text-decoration: underline; margin-top: 0.5rem; display: inline-block;">Admin Login 🔐</a>';
+                    errorBox.style.display = 'block';
+                    submitBtn.innerText = 'Verify on Telegram';
+                    submitBtn.disabled = false;
                 } else {
                     errorBox.innerText = data.error || 'Access denied.';
                     errorBox.style.display = 'block';

@@ -33,6 +33,7 @@ const KNOWN_KEYS = [
     'user_terms_consent',   // HASH — phone → consent record
     'user_activity_logs',   // LIST — activity log entries (max 2000)
     'auth_audit_logs',      // LIST — auth audit trail (max 1000)
+    'system:admin_only_mode', // STRING — maintenance mode flag
 ];
 
 // ── Redis REST client ────────────────────────────────────────

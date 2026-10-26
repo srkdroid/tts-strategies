@@ -72,6 +72,22 @@ module.exports = async (req, res) => {
 
         const cleanPhone = normalizePhoneNumber(phone);
 
+        // Check if System Admin-Only (Maintenance) Mode is active
+        let adminOnlyMode = false;
+        try {
+            const aomRes = await queryKV(['GET', 'system:admin_only_mode']);
+            adminOnlyMode = aomRes === 'true' || aomRes === '1';
+        } catch (e) {}
+
+        if (adminOnlyMode) {
+            return res.status(503).json({
+                error: 'System Under Maintenance',
+                maintenance: true,
+                adminOnlyMode: true,
+                message: 'TTS Strategies is temporarily restricted to administrators for scheduled maintenance. Please check back shortly.'
+            });
+        }
+
         // Rate limit check — 5 attempts per phone per 15-minute window
         const allowed = await checkRateLimit(cleanPhone, queryKV);
         if (!allowed) {

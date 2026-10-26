@@ -50,6 +50,23 @@ module.exports = async function handler(req, res) {
         return res.status(401).json({ error: 'Unauthorized. Please login.' });
     }
 
+    if (!isAdmin) {
+        let adminOnlyMode = false;
+        try {
+            const aomRes = await queryKV(['GET', 'system:admin_only_mode']);
+            adminOnlyMode = aomRes === 'true' || aomRes === '1';
+        } catch (e) {}
+
+        if (adminOnlyMode) {
+            return res.status(503).json({
+                error: 'System Under Maintenance',
+                maintenance: true,
+                adminOnlyMode: true,
+                message: 'TTS Strategies is temporarily restricted to administrators.'
+            });
+        }
+    }
+
     try {
         let notesData = null;
         const kvNotes = await queryKV(['GET', 'notes']);

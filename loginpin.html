@@ -210,6 +210,17 @@
         async function checkSession() {
             try {
                 const response = await fetch('/api/data');
+                if (response.status === 503) {
+                    const data = await response.json();
+                    const errorBox = document.getElementById('error-message');
+                    if (errorBox) {
+                        errorBox.innerHTML = '🚧 <strong>System Under Maintenance:</strong> ' + (data.message || 'Access is temporarily restricted to administrators.') + ' <br><a href="/admin.html" style="color: #60a5fa; text-decoration: underline; margin-top: 0.5rem; display: inline-block;">Admin Login 🔐</a>';
+                        errorBox.style.display = 'block';
+                    }
+                    const submitBtn = document.getElementById('submit-btn');
+                    if (submitBtn) submitBtn.disabled = true;
+                    return;
+                }
                 if (response.ok) {
                     window.location.href = '/index.html';
                 }
@@ -243,6 +254,11 @@
                 
                 if (response.ok && data.success) {
                     window.location.href = '/index.html';
+                } else if (response.status === 503 || data.maintenance) {
+                    errorBox.innerHTML = '🚧 <strong>System Under Maintenance:</strong> ' + (data.message || data.error) + ' <br><a href="/admin.html" style="color: #60a5fa; text-decoration: underline; margin-top: 0.5rem; display: inline-block;">Admin Login 🔐</a>';
+                    errorBox.style.display = 'block';
+                    submitBtn.innerText = 'Login with PIN';
+                    submitBtn.disabled = false;
                 } else {
                     errorBox.innerText = data.error || 'Authentication failed. Invalid details.';
                     errorBox.style.display = 'block';

@@ -20,11 +20,25 @@
             <div class="admin-bar-left" style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
                 <span class="admin-badge">🛠️ Admin Mode</span>
                 <span id="admin-user-info">Logged in as Admin</span>
+                <!-- Admin-Only / Maintenance Mode Toggle in Admin Bar -->
+                <div id="admin-only-mode-banner" style="display: inline-flex; align-items: center; gap: 0.5rem; margin-left: 0.8rem; padding: 0.25rem 0.65rem; border-radius: 6px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35);">
+                    <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; font-weight: 700; color: #fca5a5; margin: 0;">
+                        <input type="checkbox" id="admin-only-mode-toggle" onchange="toggleAdminOnlyMode(this.checked)" style="width: 16px; height: 16px; cursor: pointer;">
+                        <span>🔒 Restrict Access to Admin Only</span>
+                    </label>
+                    <span id="admin-only-mode-status-badge" class="badge" style="font-size: 0.7rem; background: rgba(148, 163, 184, 0.2); color: #cbd5e1; padding: 1px 6px;">OFF</span>
+                </div>
             </div>
             <div class="admin-bar-right">
                 <button onclick="openDbManagementModal()" class="admin-btn edit">📂 Manage App</button>
                 <button onclick="logoutAdmin()" class="admin-btn logout">🚪 Admin Logout</button>
             </div>
+        </div>
+
+        <!-- Persistent Warning Banner when Admin-Only Mode is ACTIVE -->
+        <div id="admin-only-active-banner" style="display: none; background: linear-gradient(90deg, #991b1b, #7f1d1d); color: #fef2f2; padding: 0.55rem 1.2rem; font-size: 0.85rem; font-weight: 600; text-align: center; border-bottom: 2px solid #ef4444; align-items: center; justify-content: center; gap: 0.8rem;">
+            <span>⚠️ <strong>Admin-Only Mode is ACTIVE</strong>: Regular users are currently blocked with a maintenance notice.</span>
+            <button onclick="toggleAdminOnlyMode(false)" style="background: #fff; color: #991b1b; border: none; padding: 0.2rem 0.65rem; border-radius: 4px; font-weight: 700; font-size: 0.78rem; cursor: pointer;">Disable & Restore Public Access</button>
         </div>
 
         <!-- Main Header -->
@@ -954,6 +968,25 @@
             <div class="modal-header">
                 <h2 id="db-modal-title" style="margin: 0; font-size: 1.3rem; display: flex; align-items: center; gap: 0.5rem;">⚙️ System Admin & Database Console</h2>
                 <button type="button" class="close-btn" onclick="closeDbManagementModal()" aria-label="Close dialog">&times;</button>
+            </div>
+
+            <!-- Admin-Only / Maintenance Mode Banner Card -->
+            <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 0.65rem 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                <div>
+                    <strong style="color: #fca5a5; font-size: 0.88rem; display: flex; align-items: center; gap: 0.4rem;">
+                        🔒 Admin-Only Access (Maintenance Mode)
+                    </strong>
+                    <span style="font-size: 0.76rem; color: var(--text-secondary);">
+                        When enabled, regular users cannot access the app. Only logged-in Admins have full access.
+                    </span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                    <span id="modal-admin-only-status" style="font-weight: 700; font-size: 0.8rem; color: #cbd5e1;">Inactive</span>
+                    <label class="switch-toggle" style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.82rem; font-weight: 700; color: #fff; margin: 0;">
+                        <input type="checkbox" id="modal-admin-only-toggle" onchange="toggleAdminOnlyMode(this.checked)" style="width: 17px; height: 17px; cursor: pointer;">
+                        <span>Enable Restriction</span>
+                    </label>
+                </div>
             </div>
             
             <!-- Modal Tabs Nav -->
@@ -2214,5 +2247,20 @@
     <script src="capital-planner-data.js?v=6.6"></script>
     <script src="notes.js?v=6.6"></script>
     <script src="app.js?v=7.9"></script>
+
+    <!-- Maintenance Screen for Regular Users -->
+    <div id="maintenance-screen" style="display: none; position: fixed; inset: 0; z-index: 999999; background: #0b0f19; align-items: center; justify-content: center; padding: 1.5rem; text-align: center;">
+        <div style="max-width: 480px; width: 100%; background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 16px; padding: 2.2rem; box-shadow: 0 25px 60px rgba(0,0,0,0.7); backdrop-filter: blur(16px);">
+            <div style="font-size: 3.5rem; margin-bottom: 0.8rem;">🚧</div>
+            <h2 style="font-size: 1.5rem; color: #f8fafc; margin-bottom: 0.6rem; font-family: Outfit, sans-serif;">System Maintenance in Progress</h2>
+            <p id="maintenance-message" style="color: #94a3b8; font-size: 0.92rem; line-height: 1.6; margin-bottom: 1.8rem;">
+                TTS Strategies is temporarily restricted to administrators for scheduled maintenance. Regular access will be restored shortly.
+            </p>
+            <div style="display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap;">
+                <button onclick="window.location.reload()" class="admin-btn edit" style="padding: 0.55rem 1.2rem; font-size: 0.85rem;">🔄 Check Again</button>
+                <a href="/admin.html" class="admin-btn add" style="padding: 0.55rem 1.2rem; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;">🔐 Admin Login</a>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
