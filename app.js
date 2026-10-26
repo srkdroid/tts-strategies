@@ -3641,7 +3641,7 @@ function renderJournalTradesTable() {
         const grossDisplay = isClosed 
             ? `₹ ${grossPnlVal.toLocaleString('en-IN')}`
             : (liveMtm !== null 
-                ? `<span title="Live Upstox Gross MTM" style="font-weight: 700; color: ${liveMtm > 0 ? '#34d399' : liveMtm < 0 ? '#fca5a5' : 'inherit'};">⚡ ${liveMtm > 0 ? '+' : ''}₹ ${liveMtm.toLocaleString('en-IN')}</span>` 
+                ? `<span title="Live Gross MTM" style="font-weight: 700; color: ${liveMtm > 0 ? '#34d399' : liveMtm < 0 ? '#fca5a5' : 'inherit'};">⚡ ${liveMtm > 0 ? '+' : ''}₹ ${liveMtm.toLocaleString('en-IN')}</span>` 
                 : `<span style="color: var(--text-secondary); font-size: 0.78rem;">Live Tracking</span>`);
 
         tr.innerHTML = `
