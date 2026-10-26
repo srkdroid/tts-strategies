@@ -12,22 +12,29 @@ const { evaluateAlertsCycle, isMarketOpenNow, getISTDateComponents } = require('
 const { getUpstoxConfig, maskToken } = require('./upstox');
 
 module.exports = async (req, res) => {
-    const cookies = parseCookies(req);
-    const isAdmin = verifyAdminToken(cookies['admin_token']);
-
-    const authHeader = req.headers['authorization'] || '';
-    const cronSecret = process.env.CRON_SECRET || process.env.ADMIN_PASSWORD;
-    const isCronAuthorized = cronSecret && (
-        authHeader === `Bearer ${cronSecret}` ||
-        authHeader === cronSecret ||
-        req.query?.secret === cronSecret
-    );
-
-    const action = req.query?.action || (req.body && req.body.action) || 'status';
-
-    // 1. GET /api/alerts -> Return live telemetry & market hours status
-    if (req.method === 'GET') {
+    try {
+        let isAdmin = false;
         try {
+            const cookies = parseCookies(req);
+            if (cookies && cookies['admin_token']) {
+                isAdmin = Boolean(verifyAdminToken(cookies['admin_token']));
+            }
+        } catch (authErr) {
+            isAdmin = false;
+        }
+
+        const authHeader = req.headers['authorization'] || '';
+        const cronSecret = process.env.CRON_SECRET || process.env.ADMIN_PASSWORD;
+        const isCronAuthorized = Boolean(cronSecret && (
+            authHeader === `Bearer ${cronSecret}` ||
+            authHeader === cronSecret ||
+            req.query?.secret === cronSecret
+        ));
+
+        const action = req.query?.action || (req.body && req.body.action) || 'status';
+
+        // 1. GET /api/alerts -> Return live telemetry & market hours status
+        if (req.method === 'GET') {
             const telemetryRaw = await queryKVSafe(['GET', 'system:alert_worker_telemetry']);
             let telemetry = null;
             if (telemetryRaw) {
@@ -54,34 +61,30 @@ module.exports = async (req, res) => {
                 },
                 telemetry: telemetry || { status: 'STANDBY', message: 'No evaluation cycles executed yet.' }
             });
-        } catch (err) {
-            return res.status(500).json({ error: err.message || 'Failed to fetch telemetry' });
-        }
-    }
-
-    // 2. POST /api/alerts -> Trigger evaluation cycle
-    if (req.method === 'POST') {
-        if (!isAdmin && !isCronAuthorized) {
-            return res.status(401).json({ error: 'Unauthorized. Admin credentials or CRON_SECRET required.' });
         }
 
-        const force = req.query?.force === 'true' || (req.body && req.body.force === true);
+        // 2. POST /api/alerts -> Trigger evaluation cycle
+        if (req.method === 'POST') {
+            if (!isAdmin && !isCronAuthorized) {
+                return res.status(401).json({ error: 'Unauthorized. Admin credentials or CRON_SECRET required.' });
+            }
 
-        try {
+            const force = req.query?.force === 'true' || (req.body && req.body.force === true);
+
             const result = await evaluateAlertsCycle({ force });
             return res.status(200).json({
                 success: true,
                 triggeredBy: isAdmin ? 'ADMIN' : 'CRON',
                 result
             });
-        } catch (err) {
-            console.error('[AlertAPI] Error in evaluateAlertsCycle:', err);
-            return res.status(500).json({
-                success: false,
-                error: err.message || 'Evaluation cycle failed'
-            });
         }
-    }
 
-    return res.status(405).json({ error: 'Method Not Allowed' });
+        return res.status(405).json({ error: 'Method Not Allowed' });
+    } catch (err) {
+        console.error('[AlertAPI] Uncaught Handler Error:', err);
+        return res.status(500).json({
+            success: false,
+            error: err.message || 'Internal Server Error'
+        });
+    }
 };
