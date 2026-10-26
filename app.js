@@ -762,11 +762,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (mobileUserPhone && resJson.userPhone) {
             mobileUserPhone.innerText = resJson.userPhone;
         }
-        if (userInfoDisplay && resJson.userPhone) {
-            userInfoDisplay.style.display = "inline-flex";
+        if (userInfoDisplay) {
+            userInfoDisplay.style.display = (resJson.userPhone && !isAdminMode) ? "inline-flex" : "none";
         }
-        if (mobileUserInfo && resJson.userPhone) {
-            mobileUserInfo.style.display = "block";
+        if (mobileUserInfo) {
+            mobileUserInfo.style.display = (resJson.userPhone && !isAdminMode) ? "block" : "none";
         }
         if (mobileUserLogout) {
             mobileUserLogout.style.display = "flex";

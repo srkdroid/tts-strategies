@@ -47,7 +47,7 @@
                 <button id="header-planner-btn" onclick="switchViewMode('planner')" class="header-btn header-btn-planner">💰 Capital Planner</button>
                 <div id="current-time-display">Date: 28/07/2026</div>
                 <button id="theme-toggle-btn" class="header-btn header-btn-theme" title="Toggle Theme">☀️</button>
-                <div id="user-info-display" onclick="if(window.isAdminMode) openDbManagementModal()" title="Manage App (Admin Console)" style="display: none; font-size: 0.78rem; font-weight: 700; color: var(--text-primary); background: rgba(255, 255, 255, 0.08); padding: 0.35rem 0.65rem; border-radius: 6px; border: 1px solid var(--border-color); align-items: center; gap: 0.35rem; cursor: pointer;">
+                <div id="user-info-display" style="display: none; font-size: 0.78rem; font-weight: 700; color: var(--text-primary); background: rgba(255, 255, 255, 0.08); padding: 0.35rem 0.65rem; border-radius: 6px; border: 1px solid var(--border-color); align-items: center; gap: 0.35rem;">
                     <span>👤</span> <span id="user-phone-number"></span>
                 </div>
                 <button id="user-logout-btn" onclick="logoutUser()" class="header-btn header-btn-logout" style="display: none;">🚪 Logout</button>
@@ -2238,7 +2238,7 @@
     <script src="holidays.js?v=6.6"></script>
     <script src="capital-planner-data.js?v=6.6"></script>
     <script src="notes.js?v=6.6"></script>
-    <script src="app.js?v=8.3"></script>
+    <script src="app.js?v=8.4"></script>
 
     <!-- Maintenance Screen for Regular Users -->
     <div id="maintenance-screen" style="display: none; position: fixed; inset: 0; z-index: 999999; background: #0b0f19; align-items: center; justify-content: center; padding: 1.5rem; text-align: center;">
