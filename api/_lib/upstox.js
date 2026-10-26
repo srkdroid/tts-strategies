@@ -244,12 +244,11 @@ async function fetchOptionChain(underlyingKey, expiryDate, overrideToken = null)
  */
 function getUnderlyingKey(indexName) {
     if (!indexName) return 'NSE_INDEX|Nifty 50';
-    const upper = indexName.toUpperCase().trim();
-    for (const [key, val] of Object.entries(INDEX_INSTRUMENT_MAP)) {
-        if (upper.includes(key) || key.includes(upper)) {
-            return val;
-        }
-    }
+    const upper = indexName.toUpperCase().replace(/[\s\-_]/g, '');
+    if (upper.includes('BANK')) return 'NSE_INDEX|Nifty Bank';
+    if (upper.includes('FIN')) return 'NSE_INDEX|Nifty Fin Service';
+    if (upper.includes('MIDCAP') || upper.includes('MIDCP')) return 'NSE_INDEX|NIFTY MID SELECT';
+    if (upper.includes('SENSEX')) return 'BSE_INDEX|SENSEX';
     return 'NSE_INDEX|Nifty 50';
 }
 
