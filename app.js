@@ -853,16 +853,18 @@ function dispatchAdminTrade(mode) {
     
     // Helper to parse individual leg details
     function parseLegDetails(st, side, activeAtm) {
-        const formatted = generateConcreteStrikeText(st, side, activeAtm);
+        const legSide = side || (st.toUpperCase().includes("PE") ? "PE" : st.toUpperCase().includes("CE") ? "CE" : null);
+        const effectiveAtm = getEffectiveAtmForStrategy(strategy, activeAtm, legSide);
+        const formatted = generateConcreteStrikeText(st, legSide, activeAtm, strategy);
         const match = st.match(/^(Buy|Sell)\s+(\d+)\s+ATM\s*([+-]\s*\d+)?/i);
         if (match) {
             const action = match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
             const qty = parseInt(match[2], 10);
             const offsetStr = match[3] ? match[3].replace(/\s+/g, '') : '0';
             const offset = parseInt(offsetStr, 10) || 0;
-            const strike = activeAtm + offset;
+            const strike = effectiveAtm + offset;
             return {
-                side: side,
+                side: legSide,
                 formula: st,
                 action: action,
                 quantity: qty,
@@ -870,7 +872,7 @@ function dispatchAdminTrade(mode) {
                 formatted: formatted
             };
         }
-        return { side: side, formula: st, formatted: formatted };
+        return { side: legSide, formula: st, formatted: formatted };
     }
 
     // Build calculated legs
@@ -1158,13 +1160,26 @@ function updateCalendars() {
 
 const INDEX_STRIKE_STEPS = {
     "Nifty": 50,
+    "Nifty (Expiry Tue)": 50,
+    "Nifty (Expiry Thu)": 50,
     "Bank Nifty": 100,
+    "Bank Nifty (Expiry Wed)": 100,
     "Fin Nifty": 50,
     "Fin Nifty (Expiry Tue)": 50,
     "Sensex": 100,
     "Sensex (Exp Thur)": 100,
     "Sensex (Expiry Thur)": 100
 };
+
+function getIndexStrikeStep(indexName) {
+    if (!indexName) return 50;
+    if (INDEX_STRIKE_STEPS[indexName]) return INDEX_STRIKE_STEPS[indexName];
+    if (indexName.includes("Bank Nifty")) return 100;
+    if (indexName.includes("Sensex")) return 100;
+    if (indexName.includes("Fin Nifty")) return 50;
+    if (indexName.includes("Midcap")) return 25;
+    return 50;
+}
 
 const INDEX_BENCHMARK_ATMS = {
     "Nifty": 25000,
@@ -1194,21 +1209,46 @@ function getStrategyRoundingStep(strategy) {
     if (allNotesText.includes("multiple of 500") || allNotesText.includes("500 strikes") || allNotesText.includes("closest multiple of 500")) {
         return 500;
     }
-    if (allNotesText.includes("multiple of 100") || allNotesText.includes("100 strikes")) {
+    if (allNotesText.includes("multiple of 100") || allNotesText.includes("100 strikes") || allNotesText.includes("multiple of 100 strikes")) {
         return 100;
     }
     
-    return INDEX_STRIKE_STEPS[strategy.index] || 50;
+    return getIndexStrikeStep(strategy.index);
 }
 
-// Compute Effective ATM after applying strategy-specific rounding rules
-function getEffectiveAtmForStrategy(strategy, rawAtm) {
+// Compute Effective ATM after applying strategy-specific rounding rules:
+// - PE legs: go LOWER (down / floor) to stay further away from spot (further OTM)
+// - CE legs: go HIGHER (up / ceil) to stay further away from spot (further OTM)
+function getEffectiveAtmForStrategy(strategy, rawAtm, side) {
     if (!strategy || isNaN(rawAtm)) return rawAtm;
     const roundStep = getStrategyRoundingStep(strategy);
-    if (roundStep > 1) {
+    if (roundStep <= 1) return rawAtm;
+
+    let targetSide = side;
+    if (!targetSide && strategy.type) {
+        if (strategy.type.includes("PE") && !strategy.type.includes("CE")) {
+            targetSide = "PE";
+        } else if (strategy.type.includes("CE") && !strategy.type.includes("PE")) {
+            targetSide = "CE";
+        }
+    }
+
+    // Check if rawAtm is already an exact multiple of roundStep
+    const rem = ((rawAtm % roundStep) + roundStep) % roundStep;
+    if (rem === 0 || Math.abs(rem) < 1e-6 || Math.abs(rem - roundStep) < 1e-6) {
         return Math.round(rawAtm / roundStep) * roundStep;
     }
-    return rawAtm;
+
+    if (targetSide === "PE") {
+        // Stay further away (further OTM) by picking lower strike (e.g. 23050 -> 23000)
+        return Math.floor(rawAtm / roundStep) * roundStep;
+    } else if (targetSide === "CE") {
+        // Stay further away (further OTM) by picking higher strike (e.g. 23050 -> 23100)
+        return Math.ceil(rawAtm / roundStep) * roundStep;
+    }
+
+    // Fallback if strategy is dual-sided and side was not specified
+    return Math.round(rawAtm / roundStep) * roundStep;
 }
 
 function getSavedAtmForStrategy(strategy, defaultAtm) {
@@ -1235,9 +1275,10 @@ function saveAtmForStrategy(strategy, atmVal) {
 // Helper to dynamically calculate and format concrete strike labels with strategy rounding rules
 function generateConcreteStrikeText(legStr, side, atmPrice, strategy) {
     if (!legStr) return legStr;
-    const effectiveAtm = getEffectiveAtmForStrategy(strategy, atmPrice);
+    const legSide = side || (legStr.toUpperCase().includes("PE") ? "PE" : legStr.toUpperCase().includes("CE") ? "CE" : null);
+    const effectiveAtm = getEffectiveAtmForStrategy(strategy, atmPrice, legSide);
     
-    // Parse setup leg strings like "Buy 1 ATM+1000", "Sell 2 ATM+1500", "Buy 1 ATM+3500", "Buy 1 ATM"
+    // Parse setup leg strings like "Buy 1 ATM+1000", "Sell 2 ATM+1500", "Buy 1 ATM+3500", "Buy 1 ATM", "Buy 1 ATM-200"
     const match = legStr.match(/^(Buy|Sell)\s+(\d+)\s+ATM\s*([+-]\s*\d+)?/i);
     if (match) {
         const action = match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
@@ -1245,13 +1286,13 @@ function generateConcreteStrikeText(legStr, side, atmPrice, strategy) {
         const offsetStr = match[3] ? match[3].replace(/\s+/g, '') : '0';
         const offset = parseInt(offsetStr, 10) || 0;
         const strike = effectiveAtm + offset;
-        return `${action} ${qty} ${strike} ${side}`;
+        return `${action} ${qty} ${strike} ${legSide || side || ''}`.trim();
     }
     
     // Parse numerical strike inputs like "25200" or "25200 CE"
     const numMatch = legStr.trim().match(/^(\d+)(\s+(CE|PE))?$/i);
     if (numMatch) {
-        return `${numMatch[1]} ${side}`;
+        return `${numMatch[1]} ${legSide || side || ''}`.trim();
     }
     
     return legStr;
@@ -1386,15 +1427,46 @@ function showStrategyDetails(dep) {
     function renderStrikesForAtm(activeAtm) {
         strikeExampleContainer.innerHTML = "";
         
-        const effectiveAtm = getEffectiveAtmForStrategy(strategy, activeAtm);
-        if (effectiveAtm !== activeAtm) {
+        const roundStep = getStrategyRoundingStep(strategy);
+        const peAtm = getEffectiveAtmForStrategy(strategy, activeAtm, "PE");
+        const ceAtm = getEffectiveAtmForStrategy(strategy, activeAtm, "CE");
+        
+        const isDual = strategy.type.includes("Both") || strategy.type.includes("Either") || (strategy.setup && strategy.setup.PE && strategy.setup.CE);
+        const isPeOnly = strategy.type.includes("PE") && !strategy.type.includes("CE");
+        const isCeOnly = strategy.type.includes("CE") && !strategy.type.includes("PE");
+
+        let noticeHtml = "";
+        if (isDual) {
+            if (peAtm !== activeAtm || ceAtm !== activeAtm) {
+                if (peAtm !== ceAtm) {
+                    noticeHtml = `💡 <strong>ATM ${activeAtm.toLocaleString('en-IN')}</strong>: PE rounded to <strong>${peAtm.toLocaleString('en-IN')}</strong> (lower strike), CE rounded to <strong>${ceAtm.toLocaleString('en-IN')}</strong> (higher strike) to stay further OTM per strategy ${roundStep}-multiple rule.`;
+                } else {
+                    noticeHtml = `💡 <strong>ATM ${activeAtm.toLocaleString('en-IN')}</strong> rounded to <strong>${peAtm.toLocaleString('en-IN')}</strong> per strategy ${roundStep}-multiple rule.`;
+                }
+            }
+        } else if (isPeOnly) {
+            if (peAtm !== activeAtm) {
+                noticeHtml = `💡 <strong>ATM ${activeAtm.toLocaleString('en-IN')}</strong> rounded to <strong>${peAtm.toLocaleString('en-IN')}</strong> (lower strike for PE to stay further OTM) per strategy ${roundStep}-multiple rule.`;
+            }
+        } else if (isCeOnly) {
+            if (ceAtm !== activeAtm) {
+                noticeHtml = `💡 <strong>ATM ${activeAtm.toLocaleString('en-IN')}</strong> rounded to <strong>${ceAtm.toLocaleString('en-IN')}</strong> (higher strike for CE to stay further OTM) per strategy ${roundStep}-multiple rule.`;
+            }
+        } else {
+            const effAtm = getEffectiveAtmForStrategy(strategy, activeAtm);
+            if (effAtm !== activeAtm) {
+                noticeHtml = `💡 <strong>ATM ${activeAtm.toLocaleString('en-IN')}</strong> rounded to <strong>${effAtm.toLocaleString('en-IN')}</strong> per strategy ${roundStep}-multiple rule.`;
+            }
+        }
+
+        if (noticeHtml) {
             const roundingNotice = document.createElement("p");
             roundingNotice.className = "setup-note";
             roundingNotice.style.color = "#fbbf24";
             roundingNotice.style.marginTop = "0";
             roundingNotice.style.marginBottom = "0.6rem";
             roundingNotice.style.fontSize = "0.78rem";
-            roundingNotice.innerHTML = `💡 <strong>ATM ${activeAtm.toLocaleString('en-IN')}</strong> rounded to <strong>${effectiveAtm.toLocaleString('en-IN')}</strong> per strategy ${roundStep}-multiple rule.`;
+            roundingNotice.innerHTML = noticeHtml;
             strikeExampleContainer.appendChild(roundingNotice);
         }
         

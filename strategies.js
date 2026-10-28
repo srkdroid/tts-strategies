@@ -519,19 +519,19 @@ const strategiesData = [
         "type": "PE Only",
         "setup": {
             "PE": [
-                "Buy 1  ATM-200",
-                "Sell 3  ATM-600",
-                "Buy 2  ATM-1000"
+                "Buy 1 ATM-200",
+                "Sell 2 ATM-400",
+                "Buy 1 ATM-800"
             ],
-            "notes": "1) pick only multiple of 100 strikes; since it is biweekly; if ATM is 23050; consider it as 23000; Don't trade if Tuesday is holiday "
+            "notes": "1) pick only multiple of 100 strikes; since it is biweekly; if ATM is 23050; consider it as 23000 (50 points lower for PE to stay further OTM); Don't trade if Tuesday is holiday"
         },
         "strike_example": {
-            "ATM": 23100,
-            "notes": null,
+            "ATM": 23000,
+            "notes": "If ATM is 23050, consider 23000 as ATM (50 points lower for PE to stay further OTM)",
             "PE": [
-                "Buy 1 22900 PE",
-                "Sell 3 22500 PE",
-                "Buy 2 22100 PE"
+                "Buy 1 22800 PE",
+                "Sell 2 22600 PE",
+                "Buy 1 22200 PE"
             ]
         },
         "conditions": {

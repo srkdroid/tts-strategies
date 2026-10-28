@@ -134,6 +134,37 @@ module.exports = async (req, res) => {
                 strategiesData = await runStrategiesMigration();
             }
 
+            // Automatic Migration: Update Blaze Butterfly strikes and legs in Redis KV
+            if (Array.isArray(strategiesData)) {
+                let blazeUpdated = false;
+                strategiesData.forEach(strat => {
+                    if (strat && (strat.id === 'biweekly-blazeBF-1' || strat.name === 'Blaze Butterfly')) {
+                        if (strat.strike_example && strat.strike_example.ATM === 23100) {
+                            strat.strike_example.ATM = 23000;
+                            strat.strike_example.notes = "If ATM is 23050, consider 23000 as ATM (50 points lower for PE to stay further OTM)";
+                            strat.strike_example.PE = ["Buy 1 22800 PE", "Sell 2 22600 PE", "Buy 1 22200 PE"];
+                            blazeUpdated = true;
+                        }
+                        if (strat.setup && Array.isArray(strat.setup.PE) && strat.setup.PE.some(l => l.includes('ATM-600') || l.includes('Sell 3'))) {
+                            strat.setup.PE = ["Buy 1 ATM-200", "Sell 2 ATM-400", "Buy 1 ATM-800"];
+                            strat.setup.notes = "1) pick only multiple of 100 strikes; since it is biweekly; if ATM is 23050; consider it as 23000 (50 points lower for PE to stay further OTM); Don't trade if Tuesday is holiday";
+                            blazeUpdated = true;
+                        }
+                    }
+                });
+                if (blazeUpdated) {
+                    try {
+                        queryKV(['SET', 'strategies', JSON.stringify(strategiesData)]).then(() => {
+                            console.log("Updated Blaze Butterfly strikes and legs in Redis KV");
+                        }).catch(e => {
+                            console.error("Failed to update Blaze Butterfly in Redis:", e);
+                        });
+                    } catch (e) {
+                        console.error("Failed to trigger update Blaze Butterfly in Redis:", e);
+                    }
+                }
+            }
+
             // Automatic Migration: Rename "Iron Fly - Nifty" to "Axis Fly - Nifty"
             if (Array.isArray(strategiesData)) {
                 let renamed = false;
